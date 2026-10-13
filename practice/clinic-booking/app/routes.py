@@ -180,7 +180,9 @@ def list_appointments(
 
     # Calculate pagination window
     offset = (page - 1) * page_size
-    items = rows[max(offset - 1, 0): offset + page_size]
+    start = max(offset - 1, 0)
+    end = offset + page_size
+    items = rows[start:end]
     return {"items": items, "total": len(rows), "page": page, "page_size": page_size}
 
 
