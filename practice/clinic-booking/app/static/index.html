@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clinic Booking</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #fff; --text: #1d2330; --muted: #667085; --line: #e2e5ea;
+    --brand: #0f766e; --brand-ink: #fff; --danger: #b42318; --warn: #b54708; --ok: #067647;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #14171c; --card: #1c2027; --text: #e8eaee; --muted: #9aa3b2; --line: #2d333d;
+            --brand: #2dd4bf; --brand-ink: #06201d; --danger: #f97066; --warn: #fdb022; --ok: #47cd89; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.45 system-ui, sans-serif; background: var(--bg); color: var(--text); }
+  header { padding: 16px 24px; border-bottom: 1px solid var(--line); background: var(--card);
+           display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 18px; }
+  header small { color: var(--muted); }
+  nav { display: flex; gap: 4px; padding: 0 24px; background: var(--card); border-bottom: 1px solid var(--line); }
+  nav button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 12px 14px;
+               font: inherit; color: var(--muted); cursor: pointer; }
+  nav button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--brand); font-weight: 600; }
+  main { max-width: 980px; margin: 0 auto; padding: 20px 16px 60px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+  label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+  select, input { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
+                  background: var(--bg); color: var(--text); min-width: 160px; }
+  button.btn { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line);
+               background: var(--card); color: var(--text); cursor: pointer; }
+  button.btn.primary { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); font-weight: 600; }
+  button.btn.danger { color: var(--danger); }
+  button.btn:disabled { opacity: .5; cursor: not-allowed; }
+  button.btn.sm { padding: 3px 9px; font-size: 13px; }
+  .slots { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .slot { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg);
+          color: var(--text); font: inherit; cursor: pointer; }
+  .slot[aria-pressed="true"] { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  td.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .num { font-variant-numeric: tabular-nums; }
+  .badge { padding: 2px 9px; border-radius: 99px; font-size: 12px; border: 1px solid var(--line); }
+  .badge.scheduled { color: var(--brand); } .badge.checked_in { color: var(--warn); }
+  .badge.completed { color: var(--ok); } .badge.cancelled, .badge.no_show { color: var(--danger); }
+  .muted { color: var(--muted); }
+  .empty { padding: 28px; text-align: center; color: var(--muted); }
+  .pager { display: flex; gap: 10px; align-items: center; margin-top: 12px; }
+  #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); max-width: 90vw;
+           padding: 10px 16px; border-radius: 8px; color: #fff; display: none; z-index: 5; }
+  #toast.ok { background: var(--ok); } #toast.err { background: var(--danger); }
+  .overflow { overflow-x: auto; }
+  @media (max-width: 600px) { header, nav { padding-left: 12px; padding-right: 12px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Clinic Booking</h1>
+  <small>Times shown in clinic time (<span id="tzname"></span>)</small>
+</header>
+<nav role="tablist" aria-label="Sections">
+  <button role="tab" aria-selected="true" data-tab="book">Book</button>
+  <button role="tab" aria-selected="false" data-tab="list">Appointments</button>
+  <button role="tab" aria-selected="false" data-tab="today">Today</button>
+</nav>
+
+<main>
+  <!-- BOOK -->
+  <section id="tab-book" class="card">
+    <div class="row">
+      <label>Doctor <select id="doctor"></select></label>
+      <label>Patient <select id="patient"></select></label>
+      <label>Date <input id="date" type="date"></label>
+      <label>Length
+        <select id="duration"><option value="30">30 min</option><option value="60">60 min</option></select>
+      </label>
+    </div>
+    <h3 style="margin:18px 0 0;font-size:15px">Free slots</h3>
+    <div id="slots" class="slots" aria-live="polite"></div>
+    <div class="row" style="margin-top:16px">
+      <button class="btn primary" id="confirm" disabled>Confirm booking</button>
+      <span id="selected" class="muted"></span>
+    </div>
+  </section>
+
+  <!-- LIST -->
+  <section id="tab-list" class="card" hidden>
+    <div class="row">
+      <label>Status
+        <select id="f-status">
+          <option value="">All</option><option>scheduled</option><option>checked_in</option>
+          <option>completed</option><option>cancelled</option><option>no_show</option>
+        </select>
+      </label>
+      <label>Per page
+        <select id="f-size"><option>5</option><option selected>10</option><option>20</option></select>
+      </label>
+      <button class="btn" id="refresh">Refresh</button>
+    </div>
+    <div class="overflow" style="margin-top:12px"><div id="list"></div></div>
+    <div class="pager">
+      <button class="btn sm" id="prev">Previous</button>
+      <span id="pageinfo" class="muted"></span>
+      <button class="btn sm" id="next">Next</button>
+    </div>
+  </section>
+
+  <!-- TODAY -->
+  <section id="tab-today" class="card" hidden>
+    <div class="row"><strong id="todaylabel"></strong><button class="btn" id="refresh-today">Refresh</button></div>
+    <div class="overflow" style="margin-top:12px"><div id="today"></div></div>
+  </section>
+</main>
+<div id="toast" role="status"></div>
+
+<script>
+// The documented clinic time zone (docs/business-rules.md). Deliberately NOT read from the server,
+// so a misconfigured server shows up as wrong times here.
+const CLINIC_TZ = "America/New_York";
+document.getElementById("tzname").textContent = CLINIC_TZ;
+
+const $ = (id) => document.getElementById(id);
+const state = { doctors: [], patients: [], slot: null, page: 1, total: 0 };
+
+// ---------- helpers ----------
+function esc(v) {
+  const d = document.createElement("div");
+  d.textContent = String(v ?? "");
+  return d.innerHTML;
+}
+const money = (cents) => "$" + (cents / 100).toFixed(2);
+const fmtDate = (iso) => new Date(iso).toLocaleDateString("en-US", { timeZone: CLINIC_TZ, weekday: "short", month: "short", day: "numeric" });
+const fmtTime = (iso) => new Date(iso).toLocaleTimeString("en-US", { timeZone: CLINIC_TZ, hour: "numeric", minute: "2-digit" });
+const fmtWhen = (iso) => `${fmtDate(iso)} ${fmtTime(iso)}`;
+const clinicDate = (offsetDays = 0) =>
+  new Date(Date.now() + offsetDays * 864e5).toLocaleDateString("en-CA", { timeZone: CLINIC_TZ });
+const nameOf = (list, id) => (list.find((x) => x.id === id) || {}).name || `#${id}`;
+
+let toastTimer;
+function toast(msg, kind = "ok") {
+  const t = $("toast");
+  t.textContent = msg; t.className = kind; t.style.display = "block";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (t.style.display = "none"), 4500);
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, {
+    headers: opts.body ? { "Content-Type": "application/json" } : {},
+    ...opts,
+  });
+  if (res.status === 204) return null;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    let msg = data.detail ?? res.statusText;
+    if (Array.isArray(msg)) msg = msg.map((e) => `${(e.loc || []).slice(1).join(".")}: ${e.msg}`).join("; ");
+    throw new Error(`${res.status} ${msg}`);
+  }
+  return data;
+}
+
+// ---------- tabs ----------
+document.querySelectorAll("nav button").forEach((b) =>
+  b.addEventListener("click", () => {
+    document.querySelectorAll("nav button").forEach((x) => x.setAttribute("aria-selected", x === b));
+    for (const name of ["book", "list", "today"]) $("tab-" + name).hidden = name !== b.dataset.tab;
+    if (b.dataset.tab === "list") loadList();
+    if (b.dataset.tab === "today") loadToday();
+  })
+);
+
+// ---------- book ----------
+async function loadSlots() {
+  state.slot = null; updateConfirm();
+  const doctorId = $("doctor").value, date = $("date").value;
+  if (!doctorId || !date) return;
+  try {
+    const { slots } = await api(`/doctors/${doctorId}/slots?date=${date}`);
+    $("slots").innerHTML = slots.length
+      ? slots.map((s) => `<button class="slot" aria-pressed="false" data-start="${esc(s)}">${esc(fmtTime(s))}</button>`).join("")
+      : `<span class="muted">No free slots on this day.</span>`;
+  } catch (e) { $("slots").innerHTML = ""; toast(e.message, "err"); }
+}
+
+$("slots").addEventListener("click", (e) => {
+  const b = e.target.closest(".slot");
+  if (!b) return;
+  document.querySelectorAll(".slot").forEach((x) => x.setAttribute("aria-pressed", x === b));
+  state.slot = b.dataset.start;
+  updateConfirm();
+});
+
+function updateConfirm() {
+  $("confirm").disabled = !state.slot;
+  $("selected").textContent = state.slot ? `Selected: ${fmtWhen(state.slot)}` : "";
+}
+
+$("confirm").addEventListener("click", async () => {
+  $("confirm").disabled = true;
+  try {
+    const a = await api("/appointments", {
+      method: "POST",
+      body: JSON.stringify({
+        doctor_id: +$("doctor").value, patient_id: +$("patient").value,
+        start: state.slot, duration_minutes: +$("duration").value,
+      }),
+    });
+    toast(`Booked #${a.id} for ${fmtWhen(a.start)}. Fee ${money(a.fee_cents)}`);
+  } catch (e) { toast(e.message, "err"); }
+  await loadSlots();
+});
+["doctor", "date"].forEach((id) => $(id).addEventListener("change", loadSlots));
+
+// ---------- tables ----------
+function actionsFor(a) {
+  const btn = (act, label, cls = "") => `<button class="btn sm ${cls}" data-act="${act}" data-id="${a.id}">${label}</button>`;
+  if (a.status === "scheduled") return btn("check-in", "Check in") + btn("no-show", "No-show") + btn("cancel", "Cancel", "danger");
+  if (a.status === "checked_in") return btn("complete", "Complete");
+  return "";
+}
+
+function table(rows, withActions = true) {
+  if (!rows.length) return `<div class="empty">Nothing to show.</div>`;
+  const body = rows.map((a) => `
+    <tr>
+      <td class="num">${esc(a.id)}</td>
+      <td class="num">${esc(fmtWhen(a.start))}</td>
+      <td>${esc(nameOf(state.doctors, a.doctor_id))}</td>
+      <td>${esc(nameOf(state.patients, a.patient_id))}</td>
+      <td class="num">${esc(a.duration_minutes)} min</td>
+      <td><span class="badge ${esc(a.status)}">${esc(a.status.replace("_", " "))}</span></td>
+      <td class="num">${money(a.fee_cents)}${a.cancellation_fee_cents ? ` <span class="muted">(+${money(a.cancellation_fee_cents)} fee)</span>` : ""}</td>
+      ${withActions ? `<td class="actions">${actionsFor(a)}</td>` : ""}
+    </tr>`).join("");
+  return `<table><thead><tr><th>#</th><th>When</th><th>Doctor</th><th>Patient</th><th>Length</th><th>Status</th><th>Fee</th>${withActions ? "<th></th>" : ""}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+async function loadList() {
+  try {
+    const q = new URLSearchParams({ page: state.page, page_size: $("f-size").value });
+    if ($("f-status").value) q.set("status", $("f-status").value);
+    const data = await api("/appointments?" + q);
+    state.total = data.total;
+    $("list").innerHTML = table(data.items);
+    const pages = Math.max(1, Math.ceil(data.total / data.page_size));
+    $("pageinfo").textContent = `Page ${data.page} of ${pages} (${data.total} total)`;
+    $("prev").disabled = data.page <= 1;
+    $("next").disabled = data.page >= pages;
+  } catch (e) { toast(e.message, "err"); }
+}
+
+async function loadToday() {
+  $("todaylabel").textContent = "Today, " + new Date().toLocaleDateString("en-US", { timeZone: CLINIC_TZ, weekday: "long", month: "long", day: "numeric" });
+  try { $("today").innerHTML = table(await api("/appointments/today"), false); }
+  catch (e) { toast(e.message, "err"); }
+}
+
+$("prev").addEventListener("click", () => { state.page--; loadList(); });
+$("next").addEventListener("click", () => { state.page++; loadList(); });
+["f-status", "f-size"].forEach((id) => $(id).addEventListener("change", () => { state.page = 1; loadList(); }));
+$("refresh").addEventListener("click", loadList);
+$("refresh-today").addEventListener("click", loadToday);
+
+$("list").addEventListener("click", async (e) => {
+  const b = e.target.closest("button[data-act]");
+  if (!b) return;
+  const { act, id } = b.dataset;
+  if (act === "cancel" && !confirm(`Cancel appointment #${id}?`)) return;
+  try {
+    const a = await api(`/appointments/${id}/${act}`, { method: "POST" });
+    const fee = a.cancellation_fee_cents ? ` Fee charged: ${money(a.cancellation_fee_cents)}.` : "";
+    toast(`#${a.id} is now ${a.status.replace("_", " ")}.${fee}`);
+  } catch (err) { toast(err.message, "err"); }
+  loadList();
+});
+
+// ---------- init ----------
+(async function init() {
+  try {
+    [state.doctors, state.patients] = await Promise.all([api("/doctors"), api("/patients")]);
+    $("doctor").innerHTML = state.doctors.map((d) => `<option value="${esc(d.id)}">${esc(d.name)} (${esc(d.specialty)})</option>`).join("");
+    $("patient").innerHTML = state.patients.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}${p.insured ? " (insured)" : ""}</option>`).join("");
+    $("date").value = clinicDate(1);
+    $("date").min = clinicDate(0);
+    await loadSlots();
+  } catch (e) { toast("Could not reach the API: " + e.message, "err"); }
+})();
+</script>
+</body>
+</html>
