@@ -112,6 +112,21 @@ def _book_twelve(client):
         assert book(client, f"2026-10-14T{s}:00-04:00").status_code == 201
 
 
+def _walk(client, page_size, **filters):
+    """Fetch every page; return (ids in order, total reported)."""
+    ids, page, total = [], 1, None
+    while True:
+        body = client.get(
+            "/appointments", params={"page": page, "page_size": page_size, **filters}
+        ).json()
+        total = body["total"]
+        if not body["items"]:
+            break
+        ids.extend(a["id"] for a in body["items"])
+        page += 1
+    return ids, total
+
+
 def test_list_first_page(client):
     _book_twelve(client)
     body = client.get("/appointments", params={"page_size": 5}).json()
@@ -132,6 +147,48 @@ def test_today_lists_todays_appointments(client):
     book(client, WED_9, patient_id=3)
     today = client.get("/appointments/today").json()
     assert len(today) == 1
+
+
+def test_pages_are_disjoint_and_cover_everything(client):
+    _book_twelve(client)
+    ids, total = _walk(client, page_size=5)  # 5 + 5 + 2
+    assert total == 12
+    assert len(ids) == len(set(ids)) == 12
+    assert sorted(ids) == list(range(1, 13))
+
+
+def test_last_partial_page_has_no_overlap_with_previous(client):
+    _book_twelve(client)
+    p2 = client.get("/appointments", params={"page": 2, "page_size": 5}).json()["items"]
+    p3 = client.get("/appointments", params={"page": 3, "page_size": 5}).json()["items"]
+    assert len(p3) == 2
+    assert {a["id"] for a in p2}.isdisjoint({a["id"] for a in p3})
+
+
+def test_page_size_that_divides_total_has_no_repeated_page(client):
+    _book_twelve(client)
+    ids, _ = _walk(client, page_size=4)
+    assert len(ids) == len(set(ids)) == 12
+
+
+def test_page_size_one_returns_each_appointment_once(client):
+    _book_twelve(client)
+    ids, _ = _walk(client, page_size=1)
+    assert len(ids) == len(set(ids)) == 12
+
+
+def test_page_beyond_last_is_empty_but_total_is_unchanged(client):
+    _book_twelve(client)
+    body = client.get("/appointments", params={"page": 99, "page_size": 5}).json()
+    assert body["items"] == []
+    assert body["total"] == 12
+
+
+def test_same_page_requested_twice_is_identical(client):
+    _book_twelve(client)
+    a = client.get("/appointments", params={"page": 2, "page_size": 5}).json()
+    b = client.get("/appointments", params={"page": 2, "page_size": 5}).json()
+    assert a == b
 
 
 # --- admin delete -------------------------------------------------------
