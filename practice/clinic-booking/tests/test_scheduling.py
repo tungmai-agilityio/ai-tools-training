@@ -33,6 +33,14 @@ def test_booked_slot_disappears(client):
     assert "09:30" in hours
 
 
+def test_long_visit_hides_both_slots(client):
+    assert book(client, f"{WED}T09:00:00-04:00", duration=60).status_code == 201
+    hours = local_hours(client.get("/doctors/1/slots", params={"date": WED}).json()["slots"])
+    assert "09:00" not in hours
+    assert "09:30" not in hours
+    assert "10:00" in hours
+
+
 @pytest.mark.parametrize(
     "start,duration",
     [

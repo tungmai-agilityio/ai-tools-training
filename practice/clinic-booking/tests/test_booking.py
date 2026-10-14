@@ -43,6 +43,26 @@ def test_back_to_back_is_allowed(client):
     assert book(client, "2026-10-14T09:30:00-04:00").status_code == 201
 
 
+def test_booking_inside_existing_long_visit_is_409(client):
+    assert book(client, WED_9, patient_id=1, duration=60).status_code == 201
+    assert book(client, "2026-10-14T09:30:00-04:00", patient_id=2).status_code == 409
+
+
+def test_long_visit_over_existing_short_one_is_409(client):
+    assert book(client, "2026-10-14T09:30:00-04:00", patient_id=1).status_code == 201
+    assert book(client, WED_9, patient_id=2, duration=60).status_code == 409
+
+
+def test_patient_cannot_overlap_long_visit_with_other_doctor(client):
+    assert book(client, WED_9, doctor_id=1, patient_id=1, duration=60).status_code == 201
+    assert book(client, "2026-10-14T09:30:00-04:00", doctor_id=2, patient_id=1).status_code == 409
+
+
+def test_back_to_back_after_long_visit_is_allowed(client):
+    assert book(client, WED_9, duration=60).status_code == 201
+    assert book(client, "2026-10-14T10:00:00-04:00").status_code == 201
+
+
 # --- lifecycle ----------------------------------------------------------
 
 def test_check_in_then_complete(client):
