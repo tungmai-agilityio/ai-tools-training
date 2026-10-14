@@ -17,9 +17,10 @@ def to_local(dt: datetime) -> datetime:
 
 
 def overlaps(a_start: datetime, a_minutes: int, b_start: datetime, b_minutes: int) -> bool:
-    """True if appointment A (the new one) collides with appointment B (existing)."""
+    """True if appointments A and B share any time. Back-to-back is not an overlap."""
     a_end = a_start + timedelta(minutes=a_minutes)
-    return a_start <= b_start < a_end
+    b_end = b_start + timedelta(minutes=b_minutes)
+    return a_start < b_end and b_start < a_end
 
 
 def validate_start(start: datetime, duration_minutes: int, now: datetime) -> None:
