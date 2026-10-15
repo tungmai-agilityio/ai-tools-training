@@ -192,7 +192,7 @@ def todays_appointments():
     to convert each appointment's UTC start time to a local date before
     comparing against today's date.
     """
-    today = clock.now_utc().date()
+    today = scheduling.to_local(clock.now_utc()).date()
     return [
         a
         for a in sorted(store.appointments.values(), key=lambda a: a.start)
