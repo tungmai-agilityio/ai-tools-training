@@ -21,7 +21,8 @@ Then open:
 - http://127.0.0.1:8000/ for the web app (book, appointment list, today's schedule)
 - http://127.0.0.1:8000/docs for the raw API (Swagger)
 
-Data lives in memory and resets on restart. To fill the list with demo data
+Appointments persist in SQLite (`DB_PATH`, default `data/clinic.db`) via stdlib `sqlite3`.
+No ORM, no new dependency. Delete the file to start fresh. To fill the list with demo data
 (you need 11+ appointments to see pagination), run in another terminal:
 
 ```bash
@@ -45,6 +46,7 @@ cover behaviour that already works.
 | `app/scheduling.py` | Slot generation, booking validation, overlap check |
 | `app/static/index.html` | The frontend: one HTML file, vanilla JS, calls the API with `fetch` |
 | `app/fees.py` | Consultation, late-cancel and no-show fees (integer cents) |
+| `app/store.py` | Seed doctors/patients; appointments written through to SQLite |
 | `app/config.py` | Business hours and settings read from the environment |
 | `scripts/seed_demo.py` | Books demo appointments through the API |
 | `data/seed.json` | Doctors and patients loaded at startup |

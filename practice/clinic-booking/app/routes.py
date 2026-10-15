@@ -3,8 +3,8 @@ API route definitions for the clinic booking system.
 
 This module defines all HTTP endpoints for managing doctors, patients,
 appointments, and appointment lifecycle actions (check-in, complete,
-no-show, cancel). It uses an in-memory store and delegates business
-logic to the scheduling, fees, and clock modules.
+no-show, cancel). It reads and writes through the store and delegates
+business logic to the scheduling, fees, and clock modules.
 """
 
 import hmac
@@ -160,7 +160,7 @@ def create_appointment(body: AppointmentIn) -> Appointment:
         fee_cents=fees.consultation_fee(doctor["fee_cents"], patient["insured"], body.duration_minutes),
         created_at=now,
     )
-    store.appointments[appt.id] = appt
+    store.save(appt)
     return appt
 
 
@@ -225,6 +225,7 @@ def check_in(appointment_id: int) -> Appointment:
     """
     appt = _get(appointment_id)
     _move(appt, "checked_in")
+    store.save(appt)
     return appt
 
 
@@ -236,6 +237,7 @@ def complete(appointment_id: int) -> Appointment:
     """
     appt = _get(appointment_id)
     _move(appt, "completed")
+    store.save(appt)
     return appt
 
 
@@ -247,6 +249,7 @@ def left_unseen(appointment_id: int) -> Appointment:
     """
     appt = _get(appointment_id)
     _move(appt, "left_unseen")
+    store.save(appt)
     return appt
 
 
@@ -265,6 +268,7 @@ def no_show(appointment_id: int) -> Appointment:
     _move(appt, "no_show")
     # Apply the no-show penalty fee
     appt.cancellation_fee_cents = fees.no_show_fee(appt.fee_cents)
+    store.save(appt)
     return appt
 
 
@@ -296,6 +300,7 @@ def cancel(appointment_id: int) -> Appointment:
     else:
         # Late cancellation — charge the penalty fee
         appt.cancellation_fee_cents = fees.late_cancellation_fee(appt.fee_cents)
+    store.save(appt)
     return appt
 
 
@@ -322,6 +327,7 @@ def reschedule(appointment_id: int, body: RescheduleIn) -> Appointment:
         appt.fee_cents = fees.consultation_fee(doctor["fee_cents"], patient["insured"], duration)
     appt.start = body.start
     appt.duration_minutes = duration
+    store.save(appt)
     return appt
 
 
@@ -335,5 +341,5 @@ def delete_appointment(appointment_id: int, x_admin_token: str | None = Header(d
     require_admin(x_admin_token)
     # Verify the appointment exists before deleting
     _get(appointment_id)
-    del store.appointments[appointment_id]
+    store.delete(appointment_id)
     return Response(status_code=204)
