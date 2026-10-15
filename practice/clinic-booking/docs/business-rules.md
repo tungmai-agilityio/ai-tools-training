@@ -22,10 +22,10 @@ Last updated by the clinic manager. Some points are still open. Those are marked
 - A no-show costs 100% of the consultation fee. It can only be marked once the start time has passed.
 
 ## Lifecycle
-`scheduled -> checked_in -> completed`, or `scheduled -> cancelled`, or `scheduled -> no_show`.
+`scheduled -> checked_in -> completed`, or `scheduled -> checked_in -> left_unseen`, or `scheduled -> cancelled`, or `scheduled -> no_show`.
 
-- Only a `scheduled` appointment can be cancelled.
-- OPEN QUESTION: should reception be able to cancel a patient who has already checked in but then leaves? Waiting on the clinic manager.
+- Only a `scheduled` appointment can be cancelled, and only before its start time. After the start time, mark it `no_show` or check the patient in. (T-005, pending clinic manager confirmation)
+- A patient who checks in but leaves before being seen is marked `left_unseen`. No fee. (T-005, pending clinic manager confirmation)
 - OPEN QUESTION: can a doctor reschedule an existing appointment, or must it be cancelled and rebooked? Waiting on the clinic manager.
 
 ## Admin

@@ -109,7 +109,52 @@ def test_late_cancel_charges_half(client):
 def test_cancel_twice_is_409(client):
     appt_id = book(client, WED_9).json()["id"]
     assert client.post(f"/appointments/{appt_id}/cancel").status_code == 200
+    r = client.post(f"/appointments/{appt_id}/cancel")
+    assert r.status_code == 409
+    assert r.json()["detail"] == "Appointment is already cancelled"
+
+
+def test_cannot_cancel_completed_visit(client):
+    appt_id = book(client, WED_9).json()["id"]
+    client.post(f"/appointments/{appt_id}/check-in")
+    client.post(f"/appointments/{appt_id}/complete")
     assert client.post(f"/appointments/{appt_id}/cancel").status_code == 409
+    body = client.get(f"/appointments/{appt_id}").json()
+    assert body["status"] == "completed"
+    assert body["cancellation_fee_cents"] == 0
+
+
+def test_cannot_cancel_no_show(client, now):
+    appt_id = book(client, WED_9, patient_id=2).json()["id"]
+    now["value"] = datetime(2026, 10, 14, 14, 0, tzinfo=timezone.utc)  # after start
+    client.post(f"/appointments/{appt_id}/no-show")
+    assert client.post(f"/appointments/{appt_id}/cancel").status_code == 409
+    body = client.get(f"/appointments/{appt_id}").json()
+    assert body["status"] == "no_show"
+    assert body["cancellation_fee_cents"] == 15000
+
+
+def test_cannot_cancel_after_start_time(client, now):
+    appt_id = book(client, WED_9, patient_id=2).json()["id"]
+    now["value"] = datetime(2026, 10, 14, 14, 0, tzinfo=timezone.utc)  # after start, never marked
+    assert client.post(f"/appointments/{appt_id}/cancel").status_code == 409
+    body = client.get(f"/appointments/{appt_id}").json()
+    assert body["status"] == "scheduled"
+    assert body["cancellation_fee_cents"] == 0
+
+
+def test_checked_in_patient_who_leaves_is_left_unseen_with_no_fee(client):
+    appt_id = book(client, WED_9, patient_id=2).json()["id"]
+    client.post(f"/appointments/{appt_id}/check-in")
+    r = client.post(f"/appointments/{appt_id}/left-unseen")
+    assert r.status_code == 200
+    assert r.json()["status"] == "left_unseen"
+    assert r.json()["cancellation_fee_cents"] == 0
+
+
+def test_left_unseen_needs_check_in_first(client):
+    appt_id = book(client, WED_9).json()["id"]
+    assert client.post(f"/appointments/{appt_id}/left-unseen").status_code == 409
 
 
 def test_cancelled_slot_can_be_rebooked(client):

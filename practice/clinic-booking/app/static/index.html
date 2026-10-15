@@ -46,7 +46,7 @@
   .num { font-variant-numeric: tabular-nums; }
   .badge { padding: 2px 9px; border-radius: 99px; font-size: 12px; border: 1px solid var(--line); }
   .badge.scheduled { color: var(--brand); } .badge.checked_in { color: var(--warn); }
-  .badge.completed { color: var(--ok); } .badge.cancelled, .badge.no_show { color: var(--danger); }
+  .badge.completed { color: var(--ok); } .badge.cancelled, .badge.no_show, .badge.left_unseen { color: var(--danger); }
   .muted { color: var(--muted); }
   .empty { padding: 28px; text-align: center; color: var(--muted); }
   .pager { display: flex; gap: 10px; align-items: center; margin-top: 12px; }
@@ -93,7 +93,7 @@
       <label>Status
         <select id="f-status">
           <option value="">All</option><option>scheduled</option><option>checked_in</option>
-          <option>completed</option><option>cancelled</option><option>no_show</option>
+          <option>completed</option><option>cancelled</option><option>no_show</option><option>left_unseen</option>
         </select>
       </label>
       <label>Per page
@@ -219,7 +219,7 @@ $("confirm").addEventListener("click", async () => {
 function actionsFor(a) {
   const btn = (act, label, cls = "") => `<button class="btn sm ${cls}" data-act="${act}" data-id="${a.id}">${label}</button>`;
   if (a.status === "scheduled") return btn("check-in", "Check in") + btn("no-show", "No-show") + btn("cancel", "Cancel", "danger");
-  if (a.status === "checked_in") return btn("complete", "Complete");
+  if (a.status === "checked_in") return btn("complete", "Complete") + btn("left-unseen", "Left unseen");
   return "";
 }
 
