@@ -8,14 +8,14 @@ logic to the scheduling, fees, and clock modules.
 """
 
 import hmac
-from datetime import date
+from datetime import date, datetime
 
 from fastapi import APIRouter, Header, Query
 from fastapi.responses import Response
 
 from app import clock, config, fees, scheduling
 from app.errors import DomainError
-from app.models import Appointment, AppointmentIn, Status
+from app.models import Appointment, AppointmentIn, RescheduleIn, Status
 from app.store import store
 
 router = APIRouter()
@@ -51,6 +51,19 @@ def _move(appt: Appointment, new_status: Status) -> None:
     if new_status not in TRANSITIONS.get(appt.status, set()):
         raise DomainError(f"Cannot go from {appt.status} to {new_status}", 409)
     appt.status = new_status
+
+
+def _check_conflicts(doctor_id: int, patient_id: int, start: datetime, duration_minutes: int, ignore_id: int | None = None) -> None:
+    """Reject if any active appointment (other than *ignore_id*) overlaps the same doctor or patient."""
+    for other in store.active_appointments():
+        if other.id == ignore_id:
+            continue
+        if not scheduling.overlaps(start, duration_minutes, other.start, other.duration_minutes):
+            continue
+        if other.doctor_id == doctor_id:
+            raise DomainError("Doctor is not available at that time", 409)
+        if other.patient_id == patient_id:
+            raise DomainError("Patient already has an appointment at that time", 409)
 
 
 def require_admin(x_admin_token: str | None = Header(default=None)) -> None:
@@ -135,15 +148,7 @@ def create_appointment(body: AppointmentIn) -> Appointment:
     now = clock.now_utc()
     scheduling.validate_start(body.start, body.duration_minutes, now)
 
-    # Conflict detection: iterate over all non-cancelled/non-completed
-    # appointments and reject if any overlap with the same doctor or patient.
-    for other in store.active_appointments():
-        if not scheduling.overlaps(body.start, body.duration_minutes, other.start, other.duration_minutes):
-            continue
-        if other.doctor_id == body.doctor_id:
-            raise DomainError("Doctor is not available at that time", 409)
-        if other.patient_id == body.patient_id:
-            raise DomainError("Patient already has an appointment at that time", 409)
+    _check_conflicts(body.doctor_id, body.patient_id, body.start, body.duration_minutes)
 
     appt = Appointment(
         id=store.next_id(),
@@ -291,6 +296,32 @@ def cancel(appointment_id: int) -> Appointment:
     else:
         # Late cancellation — charge the penalty fee
         appt.cancellation_fee_cents = fees.late_cancellation_fee(appt.fee_cents)
+    return appt
+
+
+@router.post("/appointments/{appointment_id}/reschedule")
+def reschedule(appointment_id: int, body: RescheduleIn) -> Appointment:
+    """Move a scheduled appointment to a new time with the same doctor. No fee.
+
+    Keeps the same record. Only valid from ``scheduled`` and before the
+    current start time. The new slot gets the same checks as a new booking.
+    """
+    appt = _get(appointment_id)
+    if appt.status != "scheduled":
+        raise DomainError(f"Cannot reschedule a {appt.status} appointment", 409)
+    now = clock.now_utc()
+    if now >= appt.start:
+        raise DomainError("Cannot reschedule after the start time", 409)
+    duration = body.duration_minutes or appt.duration_minutes
+    scheduling.validate_start(body.start, duration, now)
+    _check_conflicts(appt.doctor_id, appt.patient_id, body.start, duration, ignore_id=appt.id)
+
+    if duration != appt.duration_minutes:
+        doctor = store.doctors[appt.doctor_id]
+        patient = store.patients[appt.patient_id]
+        appt.fee_cents = fees.consultation_fee(doctor["fee_cents"], patient["insured"], duration)
+    appt.start = body.start
+    appt.duration_minutes = duration
     return appt
 
 
