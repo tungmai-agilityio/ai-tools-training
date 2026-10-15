@@ -7,6 +7,12 @@ WED_9 = "2026-10-14T09:00:00-04:00"
 
 # --- creating -----------------------------------------------------------
 
+def test_dr_mitchell_30_minute_visit_costs_150_dollars(client):
+    r = book(client, WED_9, doctor_id=3, patient_id=2, duration=30)
+    assert r.status_code == 201
+    assert r.json()["fee_cents"] == 15000
+
+
 def test_book_returns_201_with_fee(client):
     r = book(client, WED_9, doctor_id=1, patient_id=2)
     assert r.status_code == 201
