@@ -65,3 +65,17 @@ def test_start_without_timezone_is_rejected(client):
 
 def test_unknown_doctor_slots_404(client):
     assert client.get("/doctors/99/slots", params={"date": WED}).status_code == 404
+
+
+def test_clinic_timezone_defaults_to_new_york():
+    import importlib
+
+    from app import config
+
+    try:
+        with pytest.MonkeyPatch.context() as mp:
+            mp.delenv("CLINIC_TIMEZONE", raising=False)
+            importlib.reload(config)
+            assert config.CLINIC_TIMEZONE == "America/New_York"
+    finally:
+        importlib.reload(config)  # env is restored by now; reload so other tests see it
