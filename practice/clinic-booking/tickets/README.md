@@ -6,3 +6,6 @@ is missing and asking for it before you start.
 
 Before touching code, for each ticket, write three sentences: what it asks for,
 what is ambiguous, and your first step. Then reproduce it.
+
+Each ticket's `**Status:**` is one of `Open`, `In Progress`, `In Review` (MR open),
+or `Done` (merged into `develop`).
