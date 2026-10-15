@@ -71,6 +71,10 @@
 <main>
   <!-- BOOK -->
   <section id="tab-book" class="card">
+    <div class="row" id="resched-bar" hidden style="margin-bottom:12px">
+      <strong id="resched-label"></strong>
+      <button class="btn sm" id="resched-exit">Back to booking</button>
+    </div>
     <div class="row">
       <label>Doctor <select id="doctor"></select></label>
       <label>Patient <select id="patient"></select></label>
@@ -124,7 +128,7 @@ const CLINIC_TZ = "America/New_York";
 document.getElementById("tzname").textContent = CLINIC_TZ;
 
 const $ = (id) => document.getElementById(id);
-const state = { doctors: [], patients: [], slot: null, page: 1, total: 0 };
+const state = { doctors: [], patients: [], slot: null, page: 1, total: 0, resched: null };
 
 // ---------- helpers ----------
 function esc(v) {
@@ -179,7 +183,7 @@ async function loadSlots() {
   const doctorId = $("doctor").value, date = $("date").value;
   if (!doctorId || !date) return;
   try {
-    const { slots } = await api(`/doctors/${doctorId}/slots?date=${date}`);
+    const slots = withOwnSlots((await api(`/doctors/${doctorId}/slots?date=${date}`)).slots, state.resched, date);
     $("slots").innerHTML = slots.length
       ? slots.map((s) => `<button class="slot" aria-pressed="false" data-start="${esc(s)}">${esc(fmtTime(s))}</button>`).join("")
       : `<span class="muted">No free slots on this day.</span>`;
@@ -196,11 +200,13 @@ $("slots").addEventListener("click", (e) => {
 
 function updateConfirm() {
   $("confirm").disabled = !state.slot;
+  $("confirm").textContent = state.resched ? `Reschedule #${state.resched.id}` : "Confirm booking";
   $("selected").textContent = state.slot ? `Selected: ${fmtWhen(state.slot)}` : "";
 }
 
 $("confirm").addEventListener("click", async () => {
   $("confirm").disabled = true;
+  if (state.resched) return reschedule();
   try {
     const a = await api("/appointments", {
       method: "POST",
@@ -215,10 +221,48 @@ $("confirm").addEventListener("click", async () => {
 });
 ["doctor", "date"].forEach((id) => $(id).addEventListener("change", loadSlots));
 
+// ---------- reschedule (reuses the Book tab's slot picker) ----------
+// The slots API counts the appointment being moved as busy, but the reschedule endpoint ignores it,
+// so add its own 30-min starts back. Nothing else can sit there: the doctor can't be double-booked.
+function withOwnSlots(slots, appt, day) {
+  if (!appt || new Date(appt.start).toLocaleDateString("en-CA", { timeZone: CLINIC_TZ }) !== day) return slots;
+  const own = [];
+  for (let m = 0; m < appt.duration_minutes; m += 30) own.push(new Date(Date.parse(appt.start) + m * 6e4).toISOString());
+  const taken = new Set(slots.map(Date.parse));
+  return [...slots, ...own.filter((s) => !taken.has(Date.parse(s)))].sort((a, b) => Date.parse(a) - Date.parse(b));
+}
+
+function setReschedule(a) {
+  state.resched = a;
+  $("resched-bar").hidden = !a;
+  $("doctor").disabled = $("patient").disabled = !!a;
+  if (a) {
+    $("resched-label").textContent = `Rescheduling #${a.id} (now ${fmtWhen(a.start)})`;
+    $("doctor").value = a.doctor_id;
+    $("patient").value = a.patient_id;
+    $("duration").value = a.duration_minutes;
+    $("date").value = new Date(a.start).toLocaleDateString("en-CA", { timeZone: CLINIC_TZ });
+    document.querySelector('nav button[data-tab="book"]').click();
+  }
+  loadSlots();
+}
+
+async function reschedule() {
+  try {
+    const a = await api(`/appointments/${state.resched.id}/reschedule`, {
+      method: "POST",
+      body: JSON.stringify({ start: state.slot, duration_minutes: +$("duration").value }),
+    });
+    toast(`Moved #${a.id} to ${fmtWhen(a.start)}. Fee ${money(a.fee_cents)}`);
+    setReschedule(null);
+  } catch (e) { toast(e.message, "err"); await loadSlots(); }
+}
+$("resched-exit").addEventListener("click", () => setReschedule(null));
+
 // ---------- tables ----------
 function actionsFor(a) {
   const btn = (act, label, cls = "") => `<button class="btn sm ${cls}" data-act="${act}" data-id="${a.id}">${label}</button>`;
-  if (a.status === "scheduled") return btn("check-in", "Check in") + btn("no-show", "No-show") + btn("cancel", "Cancel", "danger");
+  if (a.status === "scheduled") return btn("check-in", "Check in") + btn("reschedule", "Reschedule") + btn("no-show", "No-show") + btn("cancel", "Cancel", "danger");
   if (a.status === "checked_in") return btn("complete", "Complete") + btn("left-unseen", "Left unseen");
   return "";
 }
@@ -269,6 +313,10 @@ $("list").addEventListener("click", async (e) => {
   const b = e.target.closest("button[data-act]");
   if (!b) return;
   const { act, id } = b.dataset;
+  if (act === "reschedule") {
+    try { setReschedule(await api(`/appointments/${id}`)); } catch (err) { toast(err.message, "err"); }
+    return;
+  }
   if (act === "cancel" && !confirm(`Cancel appointment #${id}?`)) return;
   try {
     const a = await api(`/appointments/${id}/${act}`, { method: "POST" });
