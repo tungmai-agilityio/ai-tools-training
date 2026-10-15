@@ -7,6 +7,7 @@ no-show, cancel). It uses an in-memory store and delegates business
 logic to the scheduling, fees, and clock modules.
 """
 
+import hmac
 from datetime import date
 
 from fastapi import APIRouter, Header, Query
@@ -55,11 +56,12 @@ def _move(appt: Appointment, new_status: Status) -> None:
 def require_admin(x_admin_token: str | None = Header(default=None)) -> None:
     """Validate the admin token from the X-Admin-Token header.
 
-    If ADMIN_TOKEN is configured and the provided token does not match,
-    a 403 DomainError is raised.  When ADMIN_TOKEN is empty/unset the
-    check is skipped (open access).
+    Raises a 403 DomainError if the provided token does not match.
+    Fails closed: when ADMIN_TOKEN is empty/unset, every request is refused.
     """
-    if config.ADMIN_TOKEN and x_admin_token != config.ADMIN_TOKEN:
+    expected = config.ADMIN_TOKEN.encode()
+    given = (x_admin_token or "").encode()
+    if not expected or not hmac.compare_digest(given, expected):
         raise DomainError("Admin token required", 403)
 
 
