@@ -174,6 +174,85 @@ def test_unknown_appointment_is_404(client):
     assert client.post("/appointments/999/cancel").status_code == 404
 
 
+# --- rescheduling -------------------------------------------------------
+
+def _reschedule(client, appt_id, start, duration=None):
+    body = {"start": start}
+    if duration:
+        body["duration_minutes"] = duration
+    return client.post(f"/appointments/{appt_id}/reschedule", json=body)
+
+
+def test_reschedule_keeps_same_record_and_charges_nothing(client):
+    appt_id = book(client, WED_9).json()["id"]
+    r = _reschedule(client, appt_id, "2026-10-14T10:00:00-04:00")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["id"] == appt_id
+    assert body["status"] == "scheduled"
+    assert body["start"] == "2026-10-14T14:00:00Z"
+    assert body["cancellation_fee_cents"] == 0
+    assert len(client.get("/appointments").json()["items"]) == 1
+
+
+def test_reschedule_within_24h_is_still_free(client):
+    appt_id = book(client, "2026-10-13T15:00:00-04:00").json()["id"]
+    r = _reschedule(client, appt_id, "2026-10-14T10:00:00-04:00")
+    assert r.status_code == 200
+    assert r.json()["cancellation_fee_cents"] == 0
+
+
+def test_reschedule_frees_the_old_slot(client):
+    appt_id = book(client, WED_9, patient_id=1).json()["id"]
+    _reschedule(client, appt_id, "2026-10-14T10:00:00-04:00")
+    assert book(client, WED_9, patient_id=2).status_code == 201
+
+
+def test_reschedule_to_overlapping_own_slot_is_allowed(client):
+    appt_id = book(client, WED_9, duration=60).json()["id"]
+    assert _reschedule(client, appt_id, "2026-10-14T09:30:00-04:00", 60).status_code == 200
+
+
+def test_reschedule_to_longer_visit_updates_fee(client):
+    appt_id = book(client, WED_9, patient_id=2).json()["id"]
+    r = _reschedule(client, appt_id, "2026-10-14T10:00:00-04:00", 60)
+    assert r.json()["duration_minutes"] == 60
+    assert r.json()["fee_cents"] == 30000
+
+
+def test_reschedule_into_doctor_conflict_is_409(client):
+    book(client, "2026-10-14T10:00:00-04:00", patient_id=2)
+    appt_id = book(client, WED_9, patient_id=1).json()["id"]
+    assert _reschedule(client, appt_id, "2026-10-14T10:00:00-04:00").status_code == 409
+
+
+def test_reschedule_into_patient_conflict_is_409(client):
+    book(client, "2026-10-14T10:00:00-04:00", doctor_id=2, patient_id=1)
+    appt_id = book(client, WED_9, patient_id=1).json()["id"]
+    assert _reschedule(client, appt_id, "2026-10-14T10:00:00-04:00").status_code == 409
+
+
+def test_reschedule_into_lunch_is_422(client):
+    appt_id = book(client, WED_9).json()["id"]
+    assert _reschedule(client, appt_id, "2026-10-14T12:00:00-04:00").status_code == 422
+
+
+def test_reschedule_after_start_is_409(client, now):
+    appt_id = book(client, WED_9).json()["id"]
+    now["value"] = datetime(2026, 10, 14, 13, 0, tzinfo=timezone.utc)
+    assert _reschedule(client, appt_id, "2026-10-15T10:00:00-04:00").status_code == 409
+
+
+def test_cannot_reschedule_cancelled_appointment(client):
+    appt_id = book(client, WED_9).json()["id"]
+    client.post(f"/appointments/{appt_id}/cancel")
+    assert _reschedule(client, appt_id, "2026-10-14T10:00:00-04:00").status_code == 409
+
+
+def test_reschedule_unknown_appointment_is_404(client):
+    assert _reschedule(client, 999, "2026-10-14T10:00:00-04:00").status_code == 404
+
+
 # --- listing ------------------------------------------------------------
 
 def _book_twelve(client):

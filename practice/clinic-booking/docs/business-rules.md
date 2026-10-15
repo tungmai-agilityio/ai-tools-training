@@ -26,7 +26,7 @@ Last updated by the clinic manager. Some points are still open. Those are marked
 
 - Only a `scheduled` appointment can be cancelled, and only before its start time. After the start time, mark it `no_show` or check the patient in. (T-005, pending clinic manager confirmation)
 - A patient who checks in but leaves before being seen is marked `left_unseen`. No fee. (T-005, pending clinic manager confirmation)
-- OPEN QUESTION: can a doctor reschedule an existing appointment, or must it be cancelled and rebooked? Waiting on the clinic manager.
+- A `scheduled` appointment can be rescheduled before its start time. It keeps the same record and doctor, and there is no fee. The new time must pass the same booking checks; changing the length changes the consultation fee. To change doctor, cancel and rebook. (T-009, approved by the clinic manager)
 
 ## Admin
 - Deleting an appointment is for administrators only and needs the admin token.

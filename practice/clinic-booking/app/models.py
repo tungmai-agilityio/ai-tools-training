@@ -6,18 +6,26 @@ from pydantic import BaseModel, field_validator
 Status = Literal["scheduled", "checked_in", "completed", "cancelled", "no_show", "left_unseen"]
 
 
+def _aware_utc(v: datetime) -> datetime:
+    if v.tzinfo is None:
+        raise ValueError("start must include a timezone offset")
+    return v.astimezone(timezone.utc)
+
+
 class AppointmentIn(BaseModel):
     doctor_id: int
     patient_id: int
     start: datetime
     duration_minutes: Literal[30, 60] = 30
 
-    @field_validator("start")
-    @classmethod
-    def _require_timezone(cls, v: datetime) -> datetime:
-        if v.tzinfo is None:
-            raise ValueError("start must include a timezone offset")
-        return v.astimezone(timezone.utc)
+    _require_timezone = field_validator("start")(_aware_utc)
+
+
+class RescheduleIn(BaseModel):
+    start: datetime
+    duration_minutes: Literal[30, 60] | None = None  # None keeps the current length
+
+    _require_timezone = field_validator("start")(_aware_utc)
 
 
 class Appointment(BaseModel):
