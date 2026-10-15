@@ -1,7 +1,7 @@
 import os
 
 # Clinic-local timezone. All business hours below are expressed in this zone.
-CLINIC_TIMEZONE = os.getenv("CLINIC_TIMEZONE", "UTC")
+CLINIC_TIMEZONE = os.getenv("CLINIC_TIMEZONE", "America/New_York")
 
 # Token for admin-only endpoints (see routes.require_admin).
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
