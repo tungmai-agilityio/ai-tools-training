@@ -8,7 +8,7 @@ Clinic Booking: a FastAPI training project with fake data only. The spec is `doc
 
 ```bash
 pip install -r requirements.txt && cp .env.example .env && set -a; source .env; set +a
-uvicorn app.main:app --reload       # UI at /, Swagger at /docs; data is in memory and resets on restart
+uvicorn app.main:app --reload       # UI at /, Swagger at /docs; appointments persist in data/clinic.db (DB_PATH)
 python scripts/seed_demo.py         # demo data through the API (server must be running)
 pytest                              # full suite; single test: pytest tests/test_fees.py::test_name
 ```
@@ -26,12 +26,12 @@ pytest                              # full suite; single test: pytest tests/test
 - Get "now" from `clock.now_utc()`, called through the module so the tests can freeze it.
 - Business-rule failures raise `DomainError(message, status)`, which defaults to 409. Don't raise `HTTPException`.
 - Lifecycle changes go through `routes._move()`, which checks the `TRANSITIONS` map.
-- Tests: the `client` fixture resets the store, and `tests/helpers.book()` creates appointments. Time is frozen at Tue 2026-10-13 10:00 New York time; set `now["value"]` to move it. Name tests after the behaviour, like `test_insured_gets_20_percent_off`.
+- Tests: `DB_PATH` is `:memory:`, the `client` fixture resets the store, and `tests/helpers.book()` creates appointments. Time is frozen at Tue 2026-10-13 10:00 New York time; set `now["value"]` to move it. Name tests after the behaviour, like `test_insured_gets_20_percent_off`.
 
 ## Never do
 
 - **NEVER open, read, or grep `.instructor/`.** It holds the answer key.
 - Don't add real patient or client data, and don't commit `.env` or a real `ADMIN_TOKEN`.
 - Don't weaken or delete an existing test to get the suite green.
-- Don't add a dependency or a database. The in-memory `store` is intentional.
+- Don't add a dependency or an ORM. Appointments persist in SQLite (`DB_PATH`) via stdlib `sqlite3`, written through `store.save()`/`store.delete()`; doctors and patients stay seed-only.
 - Don't fix more than the current ticket. Note anything else you find for a separate ticket.

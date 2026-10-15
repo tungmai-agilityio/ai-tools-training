@@ -3,7 +3,7 @@
 Usage:  python scripts/seed_demo.py [base_url]     (default http://127.0.0.1:8000)
 
 Books 14 appointments for Dr. Carter on the next weekday, plus a couple for today
-if it is still early enough. Re-run after restarting the server (data is in memory).
+if it is still early enough. Appointments persist across restarts (SQLite).
 """
 import sys
 from datetime import date, datetime, timedelta
