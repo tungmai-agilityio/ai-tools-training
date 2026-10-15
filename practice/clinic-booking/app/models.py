@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, field_validator
 
-Status = Literal["scheduled", "checked_in", "completed", "cancelled", "no_show"]
+Status = Literal["scheduled", "checked_in", "completed", "cancelled", "no_show", "left_unseen"]
 
 
 class AppointmentIn(BaseModel):

@@ -25,7 +25,7 @@ router = APIRouter()
 # Transitions not listed here (e.g. completed -> anything) are forbidden.
 TRANSITIONS = {
     "scheduled": {"checked_in", "no_show", "cancelled"},
-    "checked_in": {"completed"},
+    "checked_in": {"completed", "left_unseen"},
 }
 
 
@@ -232,6 +232,17 @@ def complete(appointment_id: int) -> Appointment:
     return appt
 
 
+@router.post("/appointments/{appointment_id}/left-unseen")
+def left_unseen(appointment_id: int) -> Appointment:
+    """Mark a checked-in patient as having left before being seen. No fee.
+
+    Only valid from the ``checked_in`` status.
+    """
+    appt = _get(appointment_id)
+    _move(appt, "left_unseen")
+    return appt
+
+
 @router.post("/appointments/{appointment_id}/no-show")
 def no_show(appointment_id: int) -> Appointment:
     """Mark an appointment as a no-show and apply a no-show fee.
@@ -254,6 +265,8 @@ def no_show(appointment_id: int) -> Appointment:
 def cancel(appointment_id: int) -> Appointment:
     """Cancel an appointment and apply a cancellation fee if applicable.
 
+    Only valid from the ``scheduled`` status, and only before the start time.
+
     Fee logic:
       - If cancelled at least ``CANCEL_FREE_HOURS`` hours before the start
         time, no fee is charged (free cancellation window).
@@ -262,6 +275,10 @@ def cancel(appointment_id: int) -> Appointment:
     appt = _get(appointment_id)
     if appt.status == "cancelled":
         raise DomainError("Appointment is already cancelled", 409)
+    if clock.now_utc() >= appt.start:
+        raise DomainError("Cannot cancel after the start time; mark it as no-show or check the patient in", 409)
+    # Before the fee calc, so a rejected cancel leaves the fee untouched
+    _move(appt, "cancelled")
 
     # Determine how far in advance the cancellation is being made
     hours_left = (appt.start - clock.now_utc()).total_seconds() / 3600
@@ -272,7 +289,6 @@ def cancel(appointment_id: int) -> Appointment:
     else:
         # Late cancellation — charge the penalty fee
         appt.cancellation_fee_cents = fees.late_cancellation_fee(appt.fee_cents)
-    appt.status = "cancelled"
     return appt
 
 
