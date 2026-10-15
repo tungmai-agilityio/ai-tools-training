@@ -12,7 +12,7 @@ def consultation_fee(base_fee_cents: int, insured: bool, duration_minutes: int) 
 
 def late_cancellation_fee(fee_cents: int) -> int:
     """50% of the consultation fee."""
-    return round(fee_cents * 0.5)
+    return _percent(fee_cents, 50)
 
 
 def no_show_fee(fee_cents: int) -> int:

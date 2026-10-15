@@ -19,3 +19,7 @@ def test_late_cancellation_is_half_of_fee():
 
 def test_no_show_is_full_fee():
     assert fees.no_show_fee(15000) == 15000
+
+
+def test_late_cancellation_rounds_half_up_on_odd_cents():
+    assert fees.late_cancellation_fee(12997) == 6499
