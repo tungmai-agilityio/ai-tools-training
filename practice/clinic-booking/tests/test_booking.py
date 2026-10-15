@@ -169,6 +169,14 @@ def test_today_lists_todays_appointments(client):
     assert len(today) == 1
 
 
+def test_today_uses_clinic_date_late_in_the_evening(client, now):
+    book(client, "2026-10-13T15:00:00-04:00", patient_id=2)
+    book(client, WED_9, patient_id=3)
+    now["value"] = datetime(2026, 10, 14, 1, 0, tzinfo=timezone.utc)  # Tue 9 PM in New York
+    today = client.get("/appointments/today").json()
+    assert [a["patient_id"] for a in today] == [2]
+
+
 def test_pages_are_disjoint_and_cover_everything(client):
     _book_twelve(client)
     ids, total = _walk(client, page_size=5)  # 5 + 5 + 2
