@@ -19,7 +19,8 @@
 - <what happens; paste the response body / screenshot>
 
 ## 5. Expected behaviour
-- <what should happen, with the line of `docs/business-rules.md` that says so>
+<The line of `docs/business-rules.md` that says so, then the acceptance criteria:>
+- AC-1 Given <state>, when <action>, then <correct result>.
 
 ## 6. Analysis
 - **Asks:** <one sentence>
@@ -31,9 +32,10 @@
 1. <question> — <who answers>
 
 ## 8. Fix and test
-- Failing test: `tests/test_<area>.py::test_<behaviour>` (fails before, passes after).
+- Code bug: failing test `tests/test_<area>.py::test_<behaviour>` (fails before, passes after).
+- Config or data bug: no red-to-green test. Give the exact setting or record to change, and how to verify it (for example `GET /health`).
 - Fix: <one line>
 
 ## 9. Definition of Done
-- [ ] Failing test written first, now green; `pytest` green.
-- [ ] Branch `fix/T-0NN`, one commit `fix: <what> (T-0NN)`, MR into `develop`. Status → In Review.
+- [ ] Code bug: failing test written first, now green, and `pytest` green. Config or data bug: change applied and verified on the server.
+- [ ] Code bug: branch `fix/T-0NN`, one commit `fix: <what> (T-0NN)`, MR into `develop`. Status → In Review.
