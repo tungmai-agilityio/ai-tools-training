@@ -58,6 +58,9 @@ cover behaviour that already works.
 | `scripts/seed_demo.py` | Books demo appointments through the API |
 | `data/seed.json` | Doctors and patients loaded at startup |
 | `docs/business-rules.md` | What the clinic says the system should do |
+| `docs/references/` | Code, git and testing conventions |
+| `docs/templates/` | Ticket (feature/bug/chore), PRD, spec, MR, test and status report templates |
+| `.claude/skills/` | `/ticket`, `/prd`, `/spec`, `/mr`, `/report` |
 | `tickets/` | Your backlog. Each ticket is imperfect on purpose |
 | `PRACTICE.md` | How to use this repo with the role-play drills |
 
