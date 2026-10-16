@@ -29,9 +29,10 @@ Conventional Commits, one line, imperative, lower case, no period, ticket id in 
 | `docs` | docs, tickets, templates |
 | `chore` | tooling, config, dependencies, housekeeping |
 
+- No ticket (a `chore/` or `docs/` branch): leave the suffix off, e.g. `chore: ignore .claude/worktrees/`.
 - Good: `fix: charge 50% for cancels inside 24 hours (T-003)`
 - Bad: `Fixed bug`, `fix: T-003`, `WIP`, `fix: stuff and also refactor fees`
-- Aim for **one commit per ticket**. Squash fixups before asking for review (`git commit --fixup` + `git rebase --autosquash develop`).
+- Aim for **one commit per ticket**. Squash fixups before asking for review (`git commit --fixup <sha>` + `git rebase -i --autosquash develop`; agents: `GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash develop`).
 - Add a body (blank line, then wrapped text) only when the *why* is not obvious from the ticket.
 
 ## Merge requests

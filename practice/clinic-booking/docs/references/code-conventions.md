@@ -13,8 +13,8 @@ The rules every change in Clinic Booking follows. CLAUDE.md has the short versio
 ## Naming and style
 - PEP 8, 4-space indent, max ~110 chars per line. `snake_case` functions and variables, `PascalCase` classes,
   `UPPER_CASE` config constants.
-- Type hints on every function signature. Return `None` explicitly in the hint.
-- A module starts with a one-line docstring saying what it owns. Functions get a docstring only when the name
+- New code: type hints on every function signature. Return `None` explicitly in the hint.
+- A new module starts with a one-line docstring saying what it owns. Functions get a docstring only when the name
   does not say everything (an edge case, a unit, a rule).
 - Comments explain *why*, never *what*. A deliberate shortcut gets a `ponytail:` comment naming its ceiling:
   `# ponytail: one shared connection + lock, use a pool if write throughput matters`.
@@ -32,7 +32,7 @@ The rules every change in Clinic Booking follows. CLAUDE.md has the short versio
 ## API
 - REST, JSON, plural nouns: `/appointments`, `/appointments/{id}/cancel`.
 - Errors return `{"detail": "<human sentence>"}`. The message is shown to reception as-is, so write it for them.
-- Admin-only endpoints use `require_admin` (fails closed when `ADMIN_TOKEN` is unset). Never log or echo the token.
+- Admin-only endpoints call `require_admin(x_admin_token)` first, as `delete_appointment` does (fails closed when `ADMIN_TOKEN` is unset). Existing code that predates these rules is not fixed outside its ticket. Never log or echo the token.
 
 ## Data and secrets
 - Fake data only. No real names, phones, emails or IDs, ever.

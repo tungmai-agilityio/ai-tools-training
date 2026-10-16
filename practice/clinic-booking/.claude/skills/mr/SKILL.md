@@ -5,8 +5,8 @@ description: Prepare a Clinic Booking branch for a GitLab merge request — chec
 Never open, read, or grep `.instructor/`.
 
 1. Check against `docs/references/git-conventions.md`:
-   - branch is `feat/T-0NN`, `fix/T-0NN` or `chore/<slug>`, based on `develop`;
-   - `git log develop..HEAD --oneline` is one commit named `<type>: <what> (T-0NN)`. If not, tell the user and suggest the squash; do not rewrite history without asking.
+   - branch is `feat/T-0NN`, `fix/T-0NN`, `chore/<slug>` or `docs/<slug>`, based on `develop`;
+   - `git log develop..HEAD --oneline` is one commit named `<type>: <what> (T-0NN)` (no `(T-0NN)` on a no-ticket chore/docs branch). If not, tell the user and suggest the squash; do not rewrite history without asking.
 2. Run `pytest` and keep the summary line. If it fails, stop and report.
 3. Read the ticket and `git diff develop...HEAD`. Flag anything outside the ticket's scope.
 4. Fill `docs/templates/merge-request.md`: title = commit subject, every AC mapped to a test or manual step, checklist ticked only for what you verified.

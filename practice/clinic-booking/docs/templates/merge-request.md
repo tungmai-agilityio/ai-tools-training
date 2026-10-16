@@ -26,7 +26,7 @@ Manual: <steps in the UI or `/docs`, with the expected result>
 <Test output before (failing) and after (passing); screenshots for UI changes.>
 
 ## Checklist
-- [ ] Branch `feat|fix|chore/...` from `develop`, one commit, rebased on latest `develop`
+- [ ] Branch `feat|fix|chore|docs/...` from `develop`, one commit, rebased on latest `develop`
 - [ ] A test that failed before the change now passes; `pytest` green
 - [ ] No existing test weakened or deleted
 - [ ] Follows `docs/references/code-conventions.md` (cents, UTC, `clock.now_utc()`, `DomainError`, `_move()`, `store.save()`)
