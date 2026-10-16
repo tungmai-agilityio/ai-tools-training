@@ -35,6 +35,13 @@ python scripts/seed_demo.py
 pytest
 ```
 
+Optional browser smoke test for the web app (dev-only; skipped when Playwright is missing):
+
+```bash
+pip install -r requirements-dev.txt && playwright install chromium
+pytest tests/test_ui_browser.py
+```
+
 The suite is green on a fresh clone. Green does not mean bug-free: the tests only
 cover behaviour that already works.
 

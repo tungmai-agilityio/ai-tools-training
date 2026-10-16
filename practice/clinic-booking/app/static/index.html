@@ -3,132 +3,498 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>Clinic Booking</title>
+<script>
+  // Apply a saved theme before first paint, so a forced theme never flashes the other one.
+  try { const t = localStorage.getItem("cb-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}
+</script>
 <style>
+  /* Design tokens: https://claude.ai/artifact/QEYU98ZvzUPL9PQpDAFzw1 (project/tokens.json). Light on :root, dark below. */
   :root {
-    --bg: #f6f7f9; --card: #fff; --text: #1d2330; --muted: #667085; --line: #e2e5ea;
-    --brand: #0f766e; --brand-ink: #fff; --danger: #b42318; --warn: #b54708; --ok: #067647;
+    --bg: #f6f7f9; --surface: #ffffff; --surface-sunken: #eef1f4; --line: #e2e5ea; --control-border: #848e9e;
+    --ink: #1d2330; --ink-muted: #5b6576;
+    --brand: #0f766e; --brand-strong: #115e59; --brand-soft: #e6f4f2; --brand-ink: #ffffff; --focus: #0f766e;
+    --danger: #b42318; --danger-ink: #ffffff; --success: #067647; --warning: #9a3f07; --warning-soft: #fef0e2;
+    --now-line: #d92d20; --lunch: #d9dee5; --scrim: rgba(15, 23, 42, 0.45);
+    --status-scheduled: #1d4ed8; --status-scheduled-bg: #e8efff;
+    --status-checked-in: #92400e; --status-checked-in-bg: #fdf1df;
+    --status-completed: #166534; --status-completed-bg: #e5f5ea;
+    --status-cancelled: #4b5563; --status-cancelled-bg: #eceef2;
+    --status-no-show: #b42318; --status-no-show-bg: #fdecea;
+    --status-left-unseen: #86198f; --status-left-unseen-bg: #f8eafa;
+    --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.06);
+    --shadow-pop: 0 12px 32px rgba(16, 24, 40, 0.16), 0 2px 6px rgba(16, 24, 40, 0.08);
+    --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px; --space-7: 48px;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px; --radius-pill: 999px;
+    --control-h: 40px; --touch-min: 44px; --sidebar-w: 232px; --tabbar-h: 64px; --summary-w: 320px; --hour-h: 80px;
   }
+  /* Dark: follows the OS unless the sidebar's Theme control forces light or dark (data-theme on <html>). */
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #14171c; --card: #1c2027; --text: #e8eaee; --muted: #9aa3b2; --line: #2d333d;
-            --brand: #2dd4bf; --brand-ink: #06201d; --danger: #f97066; --warn: #fdb022; --ok: #47cd89; }
+    :root:not([data-theme="light"]) {
+      --bg: #14171c; --surface: #1c2027; --surface-sunken: #171a20; --line: #2d333d; --control-border: #6b7584;
+      --ink: #e8eaee; --ink-muted: #9aa3b2;
+      --brand: #2dd4bf; --brand-strong: #5eead4; --brand-soft: #123b37; --brand-ink: #06201d; --focus: #5eead4;
+      --danger: #f97066; --danger-ink: #2a0905; --success: #47cd89; --warning: #fdb022; --warning-soft: #3a2a12;
+      --now-line: #ff8a7d; --lunch: #2f3540; --scrim: rgba(0, 0, 0, 0.6);
+      --status-scheduled: #93b4ff; --status-scheduled-bg: #1b2a4a;
+      --status-checked-in: #fbbf6a; --status-checked-in-bg: #3a2a12;
+      --status-completed: #6fd99a; --status-completed-bg: #133222;
+      --status-cancelled: #b4bcc8; --status-cancelled-bg: #262b33;
+      --status-no-show: #ff9b8f; --status-no-show-bg: #3d1a17;
+      --status-left-unseen: #f0a6f7; --status-left-unseen-bg: #36183a;
+      --shadow-card: none; --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.5);
+    }
   }
-  * { box-sizing: border-box; }
-  body { margin: 0; font: 15px/1.45 system-ui, sans-serif; background: var(--bg); color: var(--text); }
-  header { padding: 16px 24px; border-bottom: 1px solid var(--line); background: var(--card);
-           display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
-  header h1 { margin: 0; font-size: 18px; }
-  header small { color: var(--muted); }
-  nav { display: flex; gap: 4px; padding: 0 24px; background: var(--card); border-bottom: 1px solid var(--line); }
-  nav button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 12px 14px;
-               font: inherit; color: var(--muted); cursor: pointer; }
-  nav button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--brand); font-weight: 600; }
-  main { max-width: 980px; margin: 0 auto; padding: 20px 16px 60px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
-  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
-  label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
-  select, input { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
-                  background: var(--bg); color: var(--text); min-width: 160px; }
-  button.btn { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line);
-               background: var(--card); color: var(--text); cursor: pointer; }
-  button.btn.primary { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); font-weight: 600; }
-  button.btn.danger { color: var(--danger); }
-  button.btn:disabled { opacity: .5; cursor: not-allowed; }
-  button.btn.sm { padding: 3px 9px; font-size: 13px; }
-  .slots { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-  .slot { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg);
-          color: var(--text); font: inherit; cursor: pointer; }
-  .slot[aria-pressed="true"] { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
-  th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
-  td.actions { display: flex; gap: 6px; flex-wrap: wrap; }
-  .num { font-variant-numeric: tabular-nums; }
-  .badge { padding: 2px 9px; border-radius: 99px; font-size: 12px; border: 1px solid var(--line); }
-  .badge.scheduled { color: var(--brand); } .badge.checked_in { color: var(--warn); }
-  .badge.completed { color: var(--ok); } .badge.cancelled, .badge.no_show, .badge.left_unseen { color: var(--danger); }
-  .muted { color: var(--muted); }
-  .empty { padding: 28px; text-align: center; color: var(--muted); }
-  .pager { display: flex; gap: 10px; align-items: center; margin-top: 12px; }
-  #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); max-width: 90vw;
-           padding: 10px 16px; border-radius: 8px; color: #fff; display: none; z-index: 5; }
-  #toast.ok { background: var(--ok); } #toast.err { background: var(--danger); }
-  .overflow { overflow-x: auto; }
-  @media (max-width: 600px) { header, nav { padding-left: 12px; padding-right: 12px; } }
+  :root[data-theme="dark"] {
+    --bg: #14171c; --surface: #1c2027; --surface-sunken: #171a20; --line: #2d333d; --control-border: #6b7584;
+    --ink: #e8eaee; --ink-muted: #9aa3b2;
+    --brand: #2dd4bf; --brand-strong: #5eead4; --brand-soft: #123b37; --brand-ink: #06201d; --focus: #5eead4;
+    --danger: #f97066; --danger-ink: #2a0905; --success: #47cd89; --warning: #fdb022; --warning-soft: #3a2a12;
+    --now-line: #ff8a7d; --lunch: #2f3540; --scrim: rgba(0, 0, 0, 0.6);
+    --status-scheduled: #93b4ff; --status-scheduled-bg: #1b2a4a;
+    --status-checked-in: #fbbf6a; --status-checked-in-bg: #3a2a12;
+    --status-completed: #6fd99a; --status-completed-bg: #133222;
+    --status-cancelled: #b4bcc8; --status-cancelled-bg: #262b33;
+    --status-no-show: #ff9b8f; --status-no-show-bg: #3d1a17;
+    --status-left-unseen: #f0a6f7; --status-left-unseen-bg: #36183a;
+    --shadow-card: none; --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.5);
+  }
+  :root { color-scheme: light dark; } :root[data-theme="light"] { color-scheme: light; } :root[data-theme="dark"] { color-scheme: dark; }
+  /* Components: the design system's components/bundle.css. Every value comes from the tokens above. */
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 15px/22px var(--font-sans); -webkit-font-smoothing: antialiased; }
+  :where(a, button, input, select, summary, [tabindex]):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .cb-num { font-variant-numeric: tabular-nums; }
+  .cb-muted { color: var(--ink-muted); }
+  .cb-sub { display: block; font-size: 13px; line-height: 18px; color: var(--ink-muted); }
+  .cb-caption { margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-muted); }
+  .cb-h2 { margin: 0; font-size: 18px; line-height: 26px; font-weight: 600; }
+  .cb-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+  .cb-stack { display: grid; gap: var(--space-5); }
+  .cb-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); padding: var(--space-5); min-width: 0; }
+  .cb-card__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); flex-wrap: wrap; }
+  
+  /* Button */
+  .cb-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: var(--control-h); padding: 0 var(--space-4);
+    border: 1px solid var(--control-border); border-radius: var(--radius-md); background: var(--surface); color: var(--ink);
+    font: 600 15px/22px var(--font-sans); text-decoration: none; cursor: pointer; white-space: nowrap; }
+  .cb-btn:hover { background: var(--surface-sunken); }
+  .cb-btn--primary { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+  .cb-btn--primary:hover { background: var(--brand-strong); border-color: var(--brand-strong); }
+  .cb-btn--danger { background: var(--danger); border-color: var(--danger); color: var(--danger-ink); }
+  .cb-btn--danger:hover { background: var(--danger); filter: brightness(.92); }
+  .cb-btn--ghost { background: transparent; border-color: transparent; }
+  .cb-btn--sm { min-height: 32px; padding: 0 var(--space-3); font-size: 13px; line-height: 18px; }
+  .cb-btn--block { width: 100%; }
+  .cb-btn--icon { width: var(--control-h); padding: 0; }
+  .cb-btn:disabled { opacity: .45; cursor: not-allowed; }
+  .cb-btn svg { width: 18px; height: 18px; flex: none; }
+  
+  /* Status badge: data-status is the API value; the word is always shown */
+  .cb-badge { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 8px; border-radius: var(--radius-pill);
+    background: var(--st-bg); color: var(--st-fg); font-size: 12px; line-height: 16px; font-weight: 500; white-space: nowrap; }
+  .cb-badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  [data-status="scheduled"]   { --st-fg: var(--status-scheduled);   --st-bg: var(--status-scheduled-bg); }
+  [data-status="checked_in"]  { --st-fg: var(--status-checked-in);  --st-bg: var(--status-checked-in-bg); }
+  [data-status="completed"]   { --st-fg: var(--status-completed);   --st-bg: var(--status-completed-bg); }
+  [data-status="cancelled"]   { --st-fg: var(--status-cancelled);   --st-bg: var(--status-cancelled-bg); }
+  [data-status="no_show"]     { --st-fg: var(--status-no-show);     --st-bg: var(--status-no-show-bg); }
+  [data-status="left_unseen"] { --st-fg: var(--status-left-unseen); --st-bg: var(--status-left-unseen-bg); }
+  
+  /* Tag */
+  .cb-tag { display: inline-block; padding: 0 6px; border-radius: var(--radius-sm); background: var(--surface-sunken); color: var(--ink-muted);
+    font-size: 12px; line-height: 18px; font-weight: 600; vertical-align: 1px; white-space: nowrap; }
+  .cb-tag--brand { background: var(--brand-soft); color: var(--brand-strong); }
+  .cb-tag--warn { background: var(--warning-soft); color: var(--warning); }
+  
+  /* Field, input, combobox */
+  .cb-field { display: grid; gap: var(--space-1); min-width: 0; }
+  .cb-field__label { font-size: 13px; line-height: 18px; font-weight: 500; color: var(--ink-muted); }
+  .cb-field__hint { font-size: 12px; line-height: 16px; color: var(--ink-muted); }
+  .cb-input { width: 100%; min-height: var(--control-h); padding: 0 var(--space-3); border: 1px solid var(--control-border); border-radius: var(--radius-md);
+    background: var(--surface); color: var(--ink); font: inherit; }
+  .cb-input:disabled { background: var(--surface-sunken); color: var(--ink-muted); }
+  .cb-combo { position: relative; }
+  .cb-listbox { margin: var(--space-1) 0 0; padding: var(--space-1); list-style: none; background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius-md); box-shadow: var(--shadow-pop); }
+  .cb-option { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); cursor: pointer; }
+  .cb-option[aria-selected="true"] { background: var(--brand-soft); }
+  .cb-option mark { background: none; color: inherit; font-weight: 700; }
+  .cb-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4); }
+  
+  /* Segmented control (radios) */
+  .cb-seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--control-border); border-radius: var(--radius-md); background: var(--surface); }
+  .cb-seg label { position: relative; }
+  .cb-seg input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .cb-seg span { display: block; padding: 0 var(--space-4); line-height: 34px; border-radius: var(--radius-sm); font-weight: 500; }
+  .cb-seg input:checked + span { background: var(--brand); color: var(--brand-ink); }
+  .cb-seg input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: 2px; }
+  
+  /* Date strip */
+  .cb-datestrip { display: flex; align-items: stretch; gap: var(--space-2); overflow-x: auto; padding: 2px 2px var(--space-1); scrollbar-width: thin; }
+  .cb-day { flex: none; display: grid; justify-items: center; width: 60px; padding: var(--space-2) 0; border: 1px solid var(--control-border);
+    border-radius: var(--radius-md); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; }
+  .cb-day__dow { font-size: 12px; line-height: 16px; font-weight: 600; text-transform: uppercase; color: var(--ink-muted); }
+  .cb-day__num { font-size: 20px; line-height: 26px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .cb-day__mon { font-size: 12px; line-height: 16px; color: var(--ink-muted); }
+  .cb-day[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+  .cb-day[aria-pressed="true"] :is(.cb-day__dow, .cb-day__mon) { color: inherit; }
+  .cb-datestrip__pick { flex: none; display: grid; align-content: center; gap: 2px; padding: 0 var(--space-2); }
+  .cb-datestrip__pick .cb-input { min-height: 36px; width: 150px; }
+  
+  /* Slot picker */
+  .cb-slots__group + .cb-slots__group { margin-top: var(--space-4); }
+  .cb-slots__group .cb-caption { margin-bottom: var(--space-2); }
+  .cb-slots__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: var(--space-2); }
+  .cb-slot { min-height: var(--control-h); border: 1px solid var(--control-border); border-radius: var(--radius-md); background: var(--surface); color: var(--ink);
+    font: 500 15px/22px var(--font-sans); font-variant-numeric: tabular-nums; cursor: pointer; }
+  .cb-slot:hover { border-color: var(--brand); color: var(--brand-strong); }
+  .cb-slot[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+  .cb-slot--current { border-style: dashed; }
+  .cb-slot--current::after { content: " · now"; font-size: 12px; color: var(--ink-muted); }
+  .cb-slot--current[aria-pressed="true"]::after { color: inherit; }
+  
+  /* Booking summary */
+  .cb-summary { display: grid; gap: var(--space-4); }
+  .cb-summary dl { display: grid; gap: var(--space-3); margin: 0; }
+  .cb-summary dl > div { display: grid; gap: 2px; }
+  .cb-summary dt { font-size: 13px; line-height: 18px; font-weight: 500; color: var(--ink-muted); }
+  .cb-summary dd { margin: 0; font-weight: 600; }
+  .cb-summary dd .cb-sub { font-weight: 400; }
+  .cb-summary__old { color: var(--ink-muted); font-weight: 400; text-decoration: line-through; }
+  .cb-summary__note { margin: 0; font-size: 13px; line-height: 18px; color: var(--ink-muted); }
+  
+  /* Reschedule banner */
+  .cb-banner { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md); background: var(--brand-soft); color: var(--ink); }
+  .cb-banner svg { width: 20px; height: 20px; color: var(--brand-strong); flex: none; }
+  .cb-banner__text { flex: 1 1 220px; }
+  .cb-banner__text strong { color: var(--brand-strong); }
+  
+  /* Filter chips */
+  .cb-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .cb-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 var(--space-3); border: 1px solid var(--control-border);
+    border-radius: var(--radius-pill); background: var(--surface); color: var(--ink); font: 500 13px/18px var(--font-sans); cursor: pointer; }
+  .cb-chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+  .cb-chip[data-status]::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--st-fg); }
+  .cb-chip[aria-pressed="true"][data-status]::before { background: currentColor; }
+  
+  /* Appointment list: table on desktop, cards at 768px and below */
+  .cb-table { width: 100%; border-collapse: collapse; }
+  .cb-table th { padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--line); text-align: left;
+    font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-muted); }
+  .cb-table td { padding: var(--space-3); border-bottom: 1px solid var(--line); vertical-align: middle; }
+  .cb-table tbody tr:hover td { background: var(--surface-sunken); }
+  .cb-table .cb-right { text-align: right; }
+  .cb-actions { display: flex; justify-content: flex-end; align-items: center; gap: var(--space-1); }
+  .cb-more { position: relative; }
+  .cb-more > summary { list-style: none; display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: var(--radius-md);
+    color: var(--ink-muted); cursor: pointer; font-size: 18px; line-height: 1; }
+  .cb-more > summary::-webkit-details-marker { display: none; }
+  .cb-more > summary:hover, .cb-more[open] > summary { background: var(--surface-sunken); color: var(--ink); }
+  .cb-menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; min-width: 180px; padding: var(--space-1); background: var(--surface);
+    border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-pop); }
+  .cb-menu button { display: flex; width: 100%; align-items: center; min-height: 36px; padding: 0 var(--space-3); border: 0; border-radius: var(--radius-sm);
+    background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+  .cb-menu button:hover { background: var(--surface-sunken); }
+  .cb-menu .cb-menu__danger { color: var(--danger); }
+  .cb-menu hr { margin: var(--space-1) 0; border: 0; border-top: 1px solid var(--line); }
+  .cb-pager { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-4); }
+  .cb-pager__size { display: flex; align-items: center; gap: var(--space-2); font-size: 13px; color: var(--ink-muted); }
+  .cb-pager__size .cb-input { width: auto; min-height: 32px; }
+  @media (max-width: 768px) {
+    .cb-table, .cb-table tbody { display: block; }
+    .cb-table thead { display: none; }
+    .cb-table tr { display: grid; grid-template-columns: 1fr auto; gap: var(--space-1) var(--space-3); padding: var(--space-4);
+      border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); }
+    .cb-table tr + tr { margin-top: var(--space-3); }
+    .cb-table td { display: block; padding: 0; border: 0; }
+    .cb-table tbody tr:hover td { background: none; }
+    .cb-table td[data-col="when"] { grid-column: 1; }
+    .cb-table td[data-col="status"] { grid-column: 2; grid-row: 1; justify-self: end; }
+    .cb-table td[data-col="who"], .cb-table td[data-col="fee"] { grid-column: 1 / -1; }
+    .cb-table td[data-col="id"], .cb-table td[data-col="length"] { display: none; }
+    .cb-table td[data-col="actions"] { grid-column: 1 / -1; padding-top: var(--space-2); }
+    .cb-table td[data-col="actions"] .cb-actions { justify-content: flex-start; }
+    .cb-table td[data-col="actions"] .cb-more > summary { width: var(--touch-min); height: 32px; }
+    .cb-table td[data-col="actions"] .cb-menu { left: 0; right: auto; }
+  }
+  
+  /* Dialog */
+  .cb-dialog { width: min(440px, calc(100vw - 32px)); padding: var(--space-5); border: 0; border-radius: var(--radius-lg);
+    background: var(--surface); color: var(--ink); box-shadow: var(--shadow-pop); }
+  .cb-dialog::backdrop { background: var(--scrim, rgba(15, 23, 42, .45)); }
+  .cb-dialog h2 { margin: 0 0 var(--space-2); font-size: 16px; line-height: 24px; font-weight: 600; }
+  .cb-dialog p { margin: 0; color: var(--ink-muted); }
+  .cb-dialog__facts { margin: var(--space-4) 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--surface-sunken); }
+  .cb-dialog__facts strong { display: block; }
+  .cb-dialog__actions { display: flex; justify-content: flex-end; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-5); }
+  
+  /* Toasts */
+  .cb-toasts { position: fixed; right: var(--space-4); bottom: var(--space-4); z-index: 50; display: grid; gap: var(--space-2); width: min(380px, calc(100vw - 32px)); }
+  .cb-toast { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-pop); }
+  .cb-toast__icon { flex: none; width: 20px; height: 20px; margin-top: 1px; }
+  .cb-toast--ok .cb-toast__icon { color: var(--success); }
+  .cb-toast--err .cb-toast__icon { color: var(--danger); }
+  .cb-toast__body { flex: 1; min-width: 0; }
+  .cb-toast__body strong { display: block; }
+  .cb-toast__close { flex: none; width: 28px; height: 28px; border: 0; border-radius: var(--radius-sm); background: none; color: var(--ink-muted); font-size: 18px; cursor: pointer; }
+  .cb-toast__close:hover { background: var(--surface-sunken); color: var(--ink); }
+  @media (max-width: 768px) { .cb-toasts { left: var(--space-4); right: var(--space-4); width: auto; bottom: calc(var(--tabbar-h) + var(--space-3)); } }
+  
+  /* Empty state, skeleton */
+  .cb-empty { display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-6) var(--space-4); text-align: center; color: var(--ink-muted); }
+  .cb-empty svg { width: 40px; height: 40px; color: var(--ink-muted); }
+  .cb-empty__title { margin: 0; color: var(--ink); font-size: 16px; line-height: 24px; font-weight: 600; }
+  .cb-empty p { margin: 0; }
+  .cb-empty .cb-btn { margin-top: var(--space-2); }
+  .cb-skel { display: block; height: 14px; border-radius: var(--radius-sm); background: var(--line); animation: cb-pulse 1.4s ease-in-out infinite; }
+  @keyframes cb-pulse { 50% { opacity: .45; } }
+  @media (prefers-reduced-motion: reduce) { .cb-skel { animation: none; } }
+  
+  /* App shell: sidebar on desktop, bottom tab bar at 768px and below */
+  .cb-app { display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: 100vh; }
+  .cb-sidebar { display: flex; flex-direction: column; gap: var(--space-5); padding: var(--space-5) var(--space-3); background: var(--surface); border-right: 1px solid var(--line); }
+  .cb-brandline { display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-2); font-size: 16px; line-height: 24px; font-weight: 650; }
+  .cb-mark { display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--radius-sm); background: var(--brand); color: var(--brand-ink); }
+  .cb-mark svg { width: 16px; height: 16px; }
+  .cb-nav { display: grid; gap: 2px; }
+  .cb-nav a { display: flex; align-items: center; gap: var(--space-3); min-height: var(--control-h); padding: 0 var(--space-3); border-radius: var(--radius-md);
+    color: var(--ink-muted); font-weight: 500; text-decoration: none; }
+  .cb-nav a:hover { background: var(--surface-sunken); color: var(--ink); }
+  .cb-nav a[aria-current="page"] { background: var(--brand-soft); color: var(--brand-strong); font-weight: 600; }
+  .cb-nav svg { width: 20px; height: 20px; flex: none; }
+  .cb-tz { margin-top: auto; padding: 0 var(--space-3); font-size: 12px; line-height: 16px; color: var(--ink-muted); }
+  .cb-main { min-width: 0; padding: var(--space-6); }
+  .cb-main > * { max-width: 1120px; }
+  .cb-pagehead { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-5); }
+  .cb-pagehead h1 { margin: 0; font-size: 28px; line-height: 34px; font-weight: 650; letter-spacing: -.01em; }
+  .cb-pagehead p { margin: 2px 0 0; color: var(--ink-muted); }
+  @media (max-width: 768px) {
+    .cb-app { grid-template-columns: minmax(0, 1fr); }
+    .cb-sidebar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; flex-direction: row; height: var(--tabbar-h); padding: 0;
+      border-right: 0; border-top: 1px solid var(--line); }
+    .cb-brandline, .cb-tz { display: none; }
+    .cb-nav { width: 100%; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0; }
+    .cb-nav a { flex-direction: column; justify-content: center; gap: 2px; min-height: var(--tabbar-h); border-radius: 0; font-size: 12px; line-height: 16px; }
+    .cb-nav a[aria-current="page"] { background: none; }
+    .cb-main { padding: var(--space-4) var(--space-4) calc(var(--tabbar-h) + var(--space-5)); }
+    .cb-pagehead h1 { font-size: 22px; line-height: 28px; }
+  }
+  
+  /* Book layout */
+  .cb-book { display: grid; grid-template-columns: minmax(0, 1fr) var(--summary-w); gap: var(--space-5); align-items: start; }
+  .cb-book__aside { position: sticky; top: var(--space-5); }
+  @media (max-width: 1024px) { .cb-book { grid-template-columns: minmax(0, 1fr); } .cb-book__aside { position: static; } }
+  
+  /* Today: counts, timeline, list */
+  .cb-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-3); }
+  .cb-stat { display: grid; gap: var(--space-1); justify-items: start; padding: var(--space-3) var(--space-4); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); }
+  .cb-stat__n { font-size: 28px; line-height: 32px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .cb-tl { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); }
+  .cb-tl__grid { display: grid; grid-template-columns: 64px repeat(var(--cols, 3), minmax(150px, 1fr)); min-width: calc(64px + var(--cols, 3) * 150px); }
+  .cb-tl__corner, .cb-tl__doc { position: sticky; top: 0; z-index: 2; padding: var(--space-3); background: var(--surface); border-bottom: 1px solid var(--line); }
+  .cb-tl__doc { border-left: 1px solid var(--line); }
+  .cb-tl__doc strong { display: block; font-size: 15px; line-height: 22px; }
+  .cb-tl__body { position: relative; grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; height: calc(9 * var(--hour-h));
+    background: repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px var(--hour-h)); }
+  .cb-tl__axis { position: relative; background: var(--surface-sunken); }
+  .cb-tl__hour { position: absolute; right: var(--space-2); top: calc(var(--h) * var(--hour-h) + 4px); font-size: 12px; line-height: 16px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+  .cb-tl__col { position: relative; border-left: 1px solid var(--line); }
+  .cb-tl__lunch { position: absolute; left: 64px; right: 0; top: calc(4 * var(--hour-h)); height: var(--hour-h); display: grid; place-items: center;
+    background: repeating-linear-gradient(135deg, var(--lunch) 0 6px, transparent 6px 12px); color: var(--ink-muted); font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; pointer-events: none; }
+  .cb-tl__lunch span { padding: 0 var(--space-2); background: var(--surface); border-radius: var(--radius-sm); }
+  .cb-tl__block { position: absolute; left: 4px; right: 4px; top: calc(var(--start) * var(--hour-h) / 60 + 2px); height: calc(var(--len) * var(--hour-h) / 60 - 4px);
+    display: grid; align-content: start; gap: 0; padding: 3px var(--space-2); overflow: hidden; border: 1px solid var(--st-fg); border-radius: var(--radius-sm);
+    background: var(--st-bg); color: var(--ink); font-size: 13px; line-height: 16px; }
+  .cb-tl__block b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .cb-tl__block i { font-style: normal; color: var(--st-fg); font-weight: 600; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cb-tl__block[data-status="cancelled"] b { text-decoration: line-through; }
+  .cb-tl__now { position: absolute; left: 64px; right: 0; top: calc(var(--now) * var(--hour-h) / 60); z-index: 1; border-top: 2px solid var(--now-line); pointer-events: none; }
+  .cb-tl__now::before { content: ""; position: absolute; left: -5px; top: -6px; width: 10px; height: 10px; border-radius: 50%; background: var(--now-line); }
+  .cb-tl__nowlabel { position: absolute; right: var(--space-2); top: calc(var(--now) * var(--hour-h) / 60 - 8px); z-index: 3; font-size: 12px; line-height: 16px; font-weight: 700; color: var(--now-line); background: var(--surface-sunken); }
+  .cb-daylist { display: grid; gap: var(--space-4); }
+  .cb-daylist section { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
+  .cb-daylist h3 { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); margin: 0; padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--line); font-size: 16px; line-height: 24px; }
+  .cb-daylist h3 small { font-size: 13px; font-weight: 400; color: var(--ink-muted); }
+  .cb-daylist ol { margin: 0; padding: 0; list-style: none; }
+  .cb-daylist li { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); }
+  .cb-daylist li + li { border-top: 1px solid var(--line); }
+  .cb-daylist li[data-next] { background: var(--brand-soft); }
+  .cb-daylist time { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .cb-daylist .cb-who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cb-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  /* App-specific additions */
+  [hidden] { display: none !important; }
+  .cb-field { align-content: start; } /* an empty hint must not stretch the input to match its neighbour */
+  .cb-combo .cb-listbox { position: absolute; z-index: 30; left: 0; right: 0; top: calc(18px + var(--space-1) + var(--control-h));
+    max-height: 280px; overflow-y: auto; }
+  .cb-option .cb-sub { flex: none; }
+  .cb-option[aria-disabled="true"] { color: var(--ink-muted); cursor: default; }
+  .cb-stack { grid-template-columns: minmax(0, 1fr); }
+  .cb-theme { display: grid; gap: var(--space-1); margin-top: auto; padding: 0 var(--space-3); }
+  .cb-theme .cb-seg { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .cb-theme .cb-seg span { padding: 0; text-align: center; font-size: 13px; line-height: 30px; }
+  .cb-theme + .cb-tz { margin-top: 0; }
+  @media (max-width: 768px) { .cb-theme { display: none; } } /* no room in the tab bar; phones follow the OS */ /* wide children (timeline, date strip) scroll inside, not the page */
+  .cb-slots .cb-empty { padding: var(--space-5) var(--space-4); }
+  .cb-dialog__facts .cb-sub { margin-top: 2px; }
 </style>
 </head>
 <body>
-<header>
-  <h1>Clinic Booking</h1>
-  <small>Times shown in clinic time (<span id="tzname"></span>)</small>
-</header>
-<nav role="tablist" aria-label="Sections">
-  <button role="tab" aria-selected="true" data-tab="book">Book</button>
-  <button role="tab" aria-selected="false" data-tab="list">Appointments</button>
-  <button role="tab" aria-selected="false" data-tab="today">Today</button>
-</nav>
+<div class="cb-app">
+  <aside class="cb-sidebar">
+    <div class="cb-brandline"><span class="cb-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke-width="3"/></svg></span>Clinic Booking</div>
+    <nav class="cb-nav" aria-label="Main">
+      <a href="#book"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18M12 13v5M9.5 15.5h5"/></svg><span>Book</span></a>
+      <a href="#appointments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg><span>Appointments</span></a>
+      <a href="#today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Today</span></a>
+    </nav>
+    <div class="cb-theme">
+      <span class="cb-field__label" id="theme-label">Theme</span>
+      <div class="cb-seg" role="radiogroup" aria-labelledby="theme-label">
+        <label><input type="radio" name="theme" value="system"><span>System</span></label>
+        <label><input type="radio" name="theme" value="light"><span>Light</span></label>
+        <label><input type="radio" name="theme" value="dark"><span>Dark</span></label>
+      </div>
+    </div>
+    <p class="cb-tz">Times in <span class="tzname"></span></p>
+  </aside>
 
-<main>
-  <!-- BOOK -->
-  <section id="tab-book" class="card">
-    <div class="row" id="resched-bar" hidden style="margin-bottom:12px">
-      <strong id="resched-label"></strong>
-      <button class="btn sm" id="resched-exit">Back to booking</button>
-    </div>
-    <div class="row">
-      <label>Doctor <select id="doctor"></select></label>
-      <label>Patient <select id="patient"></select></label>
-      <label>Date <input id="date" type="date"></label>
-      <label>Length
-        <select id="duration"><option value="30">30 min</option><option value="60">60 min</option></select>
-      </label>
-    </div>
-    <h3 style="margin:18px 0 0;font-size:15px">Free slots</h3>
-    <div id="slots" class="slots" aria-live="polite"></div>
-    <div class="row" style="margin-top:16px">
-      <button class="btn primary" id="confirm" disabled>Confirm booking</button>
-      <span id="selected" class="muted"></span>
-    </div>
-  </section>
+  <main class="cb-main">
+    <!-- BOOK -->
+    <section id="screen-book" hidden>
+      <header class="cb-pagehead"><div><h1 id="book-title">Book a visit</h1><p>Times in <span class="tzname"></span></p></div></header>
+      <div class="cb-book">
+        <div class="cb-stack">
+          <div class="cb-banner" id="resched-bar" role="status" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>
+            <span class="cb-banner__text" id="resched-label"></span>
+            <button class="cb-btn cb-btn--sm" id="resched-exit">Cancel</button>
+          </div>
+          <section class="cb-card">
+            <div class="cb-fields">
+              <div class="cb-field cb-combo">
+                <label class="cb-field__label" for="doctor">Doctor</label>
+                <input class="cb-input" id="doctor" role="combobox" aria-expanded="false" aria-controls="doctor-list" aria-autocomplete="list"
+                  autocomplete="off" placeholder="Search doctors" aria-describedby="doctor-hint">
+                <ul class="cb-listbox" id="doctor-list" role="listbox" aria-label="Doctors" hidden></ul>
+                <span class="cb-field__hint" id="doctor-hint"></span>
+              </div>
+              <div class="cb-field cb-combo">
+                <label class="cb-field__label" for="patient">Patient</label>
+                <input class="cb-input" id="patient" role="combobox" aria-expanded="false" aria-controls="patient-list" aria-autocomplete="list"
+                  autocomplete="off" placeholder="Search patients" aria-describedby="patient-hint">
+                <ul class="cb-listbox" id="patient-list" role="listbox" aria-label="Patients" hidden></ul>
+                <span class="cb-field__hint" id="patient-hint"></span>
+              </div>
+            </div>
+          </section>
+          <section class="cb-card">
+            <div class="cb-card__head">
+              <h2 class="cb-h2">Day and time</h2>
+              <div class="cb-seg" role="radiogroup" aria-label="Length">
+                <label><input type="radio" name="len" value="30" checked><span>30 min</span></label>
+                <label><input type="radio" name="len" value="60"><span>60 min</span></label>
+              </div>
+            </div>
+            <div class="cb-datestrip" role="group" aria-label="Day">
+              <span id="days" style="display:contents"></span>
+              <label class="cb-datestrip__pick"><span class="cb-field__label">Other date</span><input class="cb-input" id="date" type="date"></label>
+            </div>
+            <div class="cb-slots" id="slots" aria-live="polite" style="margin-top:var(--space-5)"></div>
+          </section>
+        </div>
+        <aside class="cb-book__aside">
+          <section class="cb-card cb-summary" aria-labelledby="sum-h">
+            <h2 class="cb-h2" id="sum-h">Summary</h2>
+            <dl id="summary"></dl>
+            <button class="cb-btn cb-btn--primary cb-btn--block" id="confirm" disabled>Confirm booking</button>
+            <p class="cb-summary__note">The fee is worked out by the clinic and shown once the booking is saved.</p>
+          </section>
+        </aside>
+      </div>
+    </section>
 
-  <!-- LIST -->
-  <section id="tab-list" class="card" hidden>
-    <div class="row">
-      <label>Status
-        <select id="f-status">
-          <option value="">All</option><option>scheduled</option><option>checked_in</option>
-          <option>completed</option><option>cancelled</option><option>no_show</option><option>left_unseen</option>
-        </select>
-      </label>
-      <label>Per page
-        <select id="f-size"><option>5</option><option selected>10</option><option>20</option></select>
-      </label>
-      <button class="btn" id="refresh">Refresh</button>
-    </div>
-    <div class="overflow" style="margin-top:12px"><div id="list"></div></div>
-    <div class="pager">
-      <button class="btn sm" id="prev">Previous</button>
-      <span id="pageinfo" class="muted"></span>
-      <button class="btn sm" id="next">Next</button>
-    </div>
-  </section>
+    <!-- APPOINTMENTS -->
+    <section id="screen-appointments" hidden>
+      <header class="cb-pagehead"><div><h1>Appointments</h1><p>Times in <span class="tzname"></span></p></div><button class="cb-btn" id="refresh">Refresh</button></header>
+      <section class="cb-card">
+        <div class="cb-chips" id="chips" role="group" aria-label="Filter by status" style="margin-bottom:var(--space-4)"></div>
+        <div id="list"></div>
+        <div class="cb-pager">
+          <span class="cb-muted cb-num" id="pageinfo"></span>
+          <div class="cb-row">
+            <label class="cb-pager__size">Per page
+              <select class="cb-input" id="f-size"><option>5</option><option selected>10</option><option>20</option></select>
+            </label>
+            <button class="cb-btn cb-btn--sm" id="prev">Previous</button>
+            <button class="cb-btn cb-btn--sm" id="next">Next</button>
+          </div>
+        </div>
+      </section>
+    </section>
 
-  <!-- TODAY -->
-  <section id="tab-today" class="card" hidden>
-    <div class="row"><strong id="todaylabel"></strong><button class="btn" id="refresh-today">Refresh</button></div>
-    <div class="overflow" style="margin-top:12px"><div id="today"></div></div>
-  </section>
-</main>
-<div id="toast" role="status"></div>
+    <!-- TODAY -->
+    <section id="screen-today" hidden>
+      <header class="cb-pagehead">
+        <div><h1>Today</h1><p><span id="todaylabel"></span> · Times in <span class="tzname"></span></p></div>
+        <div class="cb-row">
+          <div class="cb-seg" role="radiogroup" aria-label="View">
+            <label><input type="radio" name="view" value="timeline"><span>Timeline</span></label>
+            <label><input type="radio" name="view" value="list"><span>List</span></label>
+          </div>
+          <button class="cb-btn" id="refresh-today">Refresh</button>
+        </div>
+      </header>
+      <div class="cb-stack">
+        <div class="cb-stats" id="stats"></div>
+        <div id="today"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="cb-toasts" id="toasts"></div>
+
+<dialog class="cb-dialog" id="dlg" aria-labelledby="dlg-title">
+  <form method="dialog">
+    <h2 id="dlg-title"></h2>
+    <p id="dlg-rule"></p>
+    <div class="cb-dialog__facts" id="dlg-facts"></div>
+    <div class="cb-dialog__actions">
+      <button class="cb-btn" value="keep" autofocus>Keep appointment</button>
+      <button class="cb-btn cb-btn--danger" value="ok" id="dlg-ok"></button>
+    </div>
+  </form>
+</dialog>
 
 <script>
 // The documented clinic time zone (docs/business-rules.md). Deliberately NOT read from the server,
 // so a misconfigured server shows up as wrong times here.
 const CLINIC_TZ = "America/New_York";
-document.getElementById("tzname").textContent = CLINIC_TZ;
+// Opening hours and lunch, in minutes after clinic midnight (docs/business-rules.md; T-011 Q3: hard-coded).
+const OPEN = 8 * 60, CLOSE = 17 * 60, LUNCH = 12 * 60;
+document.querySelectorAll(".tzname").forEach((el) => (el.textContent = CLINIC_TZ));
 
 const $ = (id) => document.getElementById(id);
-const state = { doctors: [], patients: [], slot: null, page: 1, total: 0, resched: null };
+const state = {
+  doctors: [], patients: [], doctorId: null, patientId: null, date: null, len: 30, slot: null, resched: null,
+  page: 1, status: "", rows: [], today: [], todayView: matchMedia("(max-width: 768px)").matches ? "list" : "timeline",
+};
+const STATUS = { scheduled: "Scheduled", checked_in: "Checked in", completed: "Completed", cancelled: "Cancelled", no_show: "No-show", left_unseen: "Left unseen" };
+const ICON = {
+  ok: '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+  err: '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/>',
+  empty: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18M9 14l6 5M15 14l-6 5"/>',
+  chevron: '<path d="m9 6 6 6-6 6"/>',
+};
+const svg = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[name]}</svg>`;
 
 // ---------- helpers ----------
 function esc(v) {
@@ -137,71 +503,213 @@ function esc(v) {
   return d.innerHTML;
 }
 const money = (cents) => "$" + (cents / 100).toFixed(2);
-const fmtDate = (iso) => new Date(iso).toLocaleDateString("en-US", { timeZone: CLINIC_TZ, weekday: "short", month: "short", day: "numeric" });
+const fmtDay = (iso) => new Date(iso).toLocaleDateString("en-GB", { timeZone: CLINIC_TZ, weekday: "short", day: "numeric", month: "short" });
 const fmtTime = (iso) => new Date(iso).toLocaleTimeString("en-US", { timeZone: CLINIC_TZ, hour: "numeric", minute: "2-digit" });
-const fmtWhen = (iso) => `${fmtDate(iso)} ${fmtTime(iso)}`;
-const clinicDate = (offsetDays = 0) =>
-  new Date(Date.now() + offsetDays * 864e5).toLocaleDateString("en-CA", { timeZone: CLINIC_TZ });
-const nameOf = (list, id) => (list.find((x) => x.id === id) || {}).name || `#${id}`;
-
-let toastTimer;
-function toast(msg, kind = "ok") {
-  const t = $("toast");
-  t.textContent = msg; t.className = kind; t.style.display = "block";
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => (t.style.display = "none"), 4500);
+const fmtWhen = (iso) => `${fmtDay(iso)}, ${fmtTime(iso)}`;
+const shortTime = (iso) => fmtTime(iso).replace(/ [AP]M$/, "");
+const clinicDay = (iso) => new Date(iso).toLocaleDateString("en-CA", { timeZone: CLINIC_TZ });
+// Minutes after clinic midnight.
+function clinicMinutes(iso) {
+  const [h, m] = new Date(iso).toLocaleTimeString("en-GB", { timeZone: CLINIC_TZ, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).split(":");
+  return +h * 60 + +m;
 }
+// Calendar arithmetic on "YYYY-MM-DD" keys (noon UTC, so no time zone can shift the day).
+const keyDate = (key) => new Date(key + "T12:00:00Z");
+const addDays = (key, n) => new Date(keyDate(key).getTime() + n * 864e5).toISOString().slice(0, 10);
+const isWeekend = (key) => [0, 6].includes(keyDate(key).getUTCDay());
+const nextClinicDay = (key) => { do key = addDays(key, 1); while (isWeekend(key)); return key; };
+const fmtKey = (key, opts) => keyDate(key).toLocaleDateString("en-GB", { timeZone: "UTC", ...opts });
+const todayKey = () => clinicDay(Date.now());
+const nameOf = (list, id) => (list.find((x) => x.id === id) || {}).name || `#${id}`;
+const badge = (s) => `<span class="cb-badge" data-status="${esc(s)}">${esc(STATUS[s] || s)}</span>`;
+const empty = (title, hint = "", action = "") =>
+  `<div class="cb-empty">${svg("empty")}<p class="cb-empty__title">${title}</p>${hint ? `<p>${hint}</p>` : ""}${action}</div>`;
+const skeleton = (n = 5) =>
+  `<div aria-busy="true" style="display:grid;gap:14px;padding:var(--space-3) 0">${Array.from({ length: n }, (_, i) => `<span class="cb-skel" style="width:${[40, 100, 85, 70, 90][i % 5]}%"></span>`).join("")}</div>`;
+
+// Success toasts hide themselves; errors stay until dismissed (FR-4).
+function toast(title, sub = "", kind = "ok") {
+  const t = document.createElement("div");
+  t.className = `cb-toast cb-toast--${kind}`;
+  t.setAttribute("role", kind === "ok" ? "status" : "alert");
+  t.innerHTML = `<span class="cb-toast__icon">${svg(kind)}</span><div class="cb-toast__body"><strong>${esc(title)}</strong>${sub ? `<span class="cb-sub">${esc(sub)}</span>` : ""}</div>` +
+    (kind === "ok" ? "" : `<button class="cb-toast__close" aria-label="Dismiss">×</button>`);
+  t.querySelector(".cb-toast__close")?.addEventListener("click", () => t.remove());
+  $("toasts").append(t);
+  if (kind === "ok") setTimeout(() => t.remove(), 5000);
+}
+const fail = (title, e) => toast(title, e.message, "err");
 
 async function api(path, opts = {}) {
-  const res = await fetch(path, {
-    headers: opts.body ? { "Content-Type": "application/json" } : {},
-    ...opts,
-  });
+  let res;
+  try {
+    res = await fetch(path, { headers: opts.body ? { "Content-Type": "application/json" } : {}, ...opts });
+  } catch { throw new Error("Could not reach the server"); }
   if (res.status === 204) return null;
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     let msg = data.detail ?? res.statusText;
     if (Array.isArray(msg)) msg = msg.map((e) => `${(e.loc || []).slice(1).join(".")}: ${e.msg}`).join("; ");
-    throw new Error(`${res.status} ${msg}`);
+    throw new Error(`${res.status} · ${msg}`);
   }
   return data;
 }
 
-// ---------- tabs ----------
-document.querySelectorAll("nav button").forEach((b) =>
-  b.addEventListener("click", () => {
-    document.querySelectorAll("nav button").forEach((x) => x.setAttribute("aria-selected", x === b));
-    for (const name of ["book", "list", "today"]) $("tab-" + name).hidden = name !== b.dataset.tab;
-    if (b.dataset.tab === "list") loadList();
-    if (b.dataset.tab === "today") loadToday();
-  })
-);
+// ---------- theme: System follows the OS; Light and Dark are remembered in this browser ----------
+document.querySelectorAll('input[name="theme"]').forEach((r) => {
+  r.checked = r.value === (document.documentElement.dataset.theme || "system");
+  r.addEventListener("change", () => {
+    if (r.value === "system") delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = r.value;
+    try { r.value === "system" ? localStorage.removeItem("cb-theme") : localStorage.setItem("cb-theme", r.value); } catch {}
+  });
+});
+
+// ---------- routing (FR-2) ----------
+const SCREENS = ["book", "appointments", "today"];
+function route() {
+  const screen = SCREENS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "book"; // T-011 Q2: Book by default
+  for (const s of SCREENS) $("screen-" + s).hidden = s !== screen;
+  document.querySelectorAll(".cb-nav a").forEach((a) =>
+    a.getAttribute("href") === "#" + screen ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
+  if (screen === "appointments") loadList();
+  if (screen === "today") loadToday();
+}
+window.addEventListener("hashchange", route);
 
 // ---------- book ----------
+// Searchable pickers (FR-5): the typed name must match one exactly, and the combobox below fills it in.
+function pick(kind) {
+  const list = kind === "doctor" ? state.doctors : state.patients;
+  const name = $(kind).value.trim().toLowerCase();
+  const found = list.find((x) => x.name.toLowerCase() === name);
+  state[kind + "Id"] = found ? found.id : null;
+  $(kind + "-hint").textContent = !found ? (name ? "Pick a name from the list" : "")
+    : kind === "doctor" ? found.specialty : found.insured ? "Insured" : "Not insured";
+}
+// Combobox: a filtered listbox under the input. Arrow keys move, Enter picks, Esc closes.
+function combo(kind, items, extra, changed) {
+  const input = $(kind), box = $(kind + "-list");
+  let matches = [], active = -1;
+  const show = (open) => { box.hidden = !open; input.setAttribute("aria-expanded", open); if (!open) input.removeAttribute("aria-activedescendant"); };
+  const mark = (name, q) => {
+    const i = q ? name.toLowerCase().indexOf(q) : -1;
+    return i < 0 ? esc(name) : esc(name.slice(0, i)) + `<mark>${esc(name.slice(i, i + q.length))}</mark>` + esc(name.slice(i + q.length));
+  };
+  function render() {
+    // A name that is already picked shows the whole list again, so it is easy to switch.
+    const q = state[kind + "Id"] ? "" : input.value.trim().toLowerCase();
+    matches = items().filter((x) => x.name.toLowerCase().includes(q));
+    active = Math.min(Math.max(active, q ? 0 : -1), matches.length - 1);
+    box.innerHTML = matches.length
+      ? matches.map((x, i) => `<li class="cb-option" role="option" id="${kind}-opt-${esc(x.id)}" data-i="${i}" aria-selected="${i === active}"><span>${mark(x.name, q)}</span>${extra(x)}</li>`).join("")
+      : `<li class="cb-option" aria-disabled="true">No ${kind} matches “${esc(input.value)}”</li>`;
+    if (active >= 0) { input.setAttribute("aria-activedescendant", `${kind}-opt-${matches[active].id}`); box.children[active].scrollIntoView({ block: "nearest" }); }
+    else input.removeAttribute("aria-activedescendant");
+    show(true);
+  }
+  const choose = (x) => { input.value = x.name; changed(); show(false); };
+  input.addEventListener("input", () => { active = 0; changed(); render(); });
+  input.addEventListener("focus", render);
+  input.addEventListener("click", () => box.hidden && render());
+  input.addEventListener("blur", () => show(false));
+  box.addEventListener("mousedown", (e) => { // mousedown + preventDefault keeps focus in the input
+    const li = e.target.closest("[data-i]");
+    e.preventDefault();
+    if (li) choose(matches[+li.dataset.i]);
+  });
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      if (box.hidden) return render();
+      active = (active + (e.key === "ArrowDown" ? 1 : -1) + matches.length) % matches.length;
+      render();
+    } else if (e.key === "Enter" && !box.hidden && matches[active]) { e.preventDefault(); choose(matches[active]); }
+    else if (e.key === "Escape" && !box.hidden) { e.stopPropagation(); show(false); }
+  });
+}
+combo("doctor", () => state.doctors, (d) => `<span class="cb-sub">${esc(d.specialty)}</span>`,
+  () => { const before = state.doctorId; pick("doctor"); if (state.doctorId !== before) loadSlots(); });
+combo("patient", () => state.patients, (p) => p.insured ? '<span class="cb-tag cb-tag--brand">Insured</span>' : "",
+  () => { pick("patient"); renderSummary(); });
+
+function renderDays() {
+  let key = todayKey();
+  if (isWeekend(key)) key = nextClinicDay(key);
+  const days = [];
+  for (let i = 0; i < 10; i++, key = nextClinicDay(key)) days.push(key);
+  $("days").innerHTML = days.map((k) =>
+    `<button class="cb-day" data-day="${k}" aria-pressed="${k === state.date}" aria-label="${fmtKey(k, { weekday: "long", day: "numeric", month: "long" })}">` +
+    `<span class="cb-day__dow">${fmtKey(k, { weekday: "short" })}</span><span class="cb-day__num">${fmtKey(k, { day: "numeric" })}</span><span class="cb-day__mon">${fmtKey(k, { month: "short" })}</span></button>`).join("");
+  $("date").value = state.date;
+  $("date").min = todayKey();
+  $("date").max = addDays(todayKey(), 60);
+}
+function setDate(key) { state.date = key; renderDays(); loadSlots(); }
+$("days").addEventListener("click", (e) => { const b = e.target.closest(".cb-day"); if (b) setDate(b.dataset.day); });
+$("date").addEventListener("change", () => { if ($("date").value) setDate($("date").value); });
+document.querySelectorAll('input[name="len"]').forEach((r) => r.addEventListener("change", () => { state.len = +r.value; loadSlots(); }));
+
+let slotSeq = 0;
 async function loadSlots() {
-  state.slot = null; updateConfirm();
-  const doctorId = $("doctor").value, date = $("date").value;
-  if (!doctorId || !date) return;
+  state.slot = null; renderSummary();
+  const seq = ++slotSeq, date = state.date;
+  if (!state.doctorId) { $("slots").innerHTML = empty("Pick a doctor", "Free slots for the chosen day show here."); return; }
+  if (date < $("date").min || date > $("date").max) {
+    $("slots").innerHTML = empty("Pick a date in the next 60 days", `Bookings are open from ${fmtKey($("date").min, { weekday: "short", day: "numeric", month: "short" })} to ${fmtKey($("date").max, { weekday: "short", day: "numeric", month: "short" })}.`);
+    return;
+  }
+  $("slots").innerHTML = skeleton(3);
   try {
-    const slots = withOwnSlots((await api(`/doctors/${doctorId}/slots?date=${date}`)).slots, state.resched, date);
-    $("slots").innerHTML = slots.length
-      ? slots.map((s) => `<button class="slot" aria-pressed="false" data-start="${esc(s)}">${esc(fmtTime(s))}</button>`).join("")
-      : `<span class="muted">No free slots on this day.</span>`;
-  } catch (e) { $("slots").innerHTML = ""; toast(e.message, "err"); }
+    let slots = withOwnSlots((await api(`/doctors/${state.doctorId}/slots?date=${date}`)).slots, state.resched, date);
+    if (seq !== slotSeq) return;
+    // A 60-min visit needs the next half hour free too (this also keeps it clear of lunch and closing).
+    const free = new Set(slots.map(Date.parse));
+    if (state.len === 60) slots = slots.filter((s) => free.has(Date.parse(s) + 18e5));
+    renderSlots(slots, date);
+  } catch (e) {
+    if (seq !== slotSeq) return;
+    $("slots").innerHTML = empty("Could not load free slots", esc(e.message));
+    fail("Could not load free slots", e);
+  }
+}
+
+function renderSlots(slots, date) {
+  if (!slots.length) {
+    const next = nextClinicDay(date);
+    const label = fmtKey(next, { weekday: "short", day: "numeric", month: "short" });
+    $("slots").innerHTML = empty(`No free slots on ${esc(fmtKey(date, { weekday: "short", day: "numeric", month: "short" }))}`,
+      isWeekend(date) ? "The clinic is closed at weekends." : `${esc(nameOf(state.doctors, state.doctorId))} has no ${state.len}-minute opening this day.`,
+      next <= $("date").max ? `<button class="cb-btn" id="next-day" data-day="${next}">Next open day: ${esc(label)} ${svg("chevron")}</button>` : "");
+    $("next-day")?.addEventListener("click", (e) => setDate(e.currentTarget.dataset.day));
+    return;
+  }
+  const own = state.resched && Date.parse(state.resched.start);
+  const group = (title, list) => list.length ? `<div class="cb-slots__group"><h3 class="cb-caption">${title} · ${list.length} free</h3><div class="cb-slots__grid">${list.map((s) =>
+    `<button class="cb-slot${Date.parse(s) === own ? " cb-slot--current" : ""}" aria-pressed="false" data-start="${esc(s)}" aria-label="${esc(fmtWhen(s))}">${esc(shortTime(s))}</button>`).join("")}</div></div>` : "";
+  $("slots").innerHTML = group("Morning", slots.filter((s) => clinicMinutes(s) < LUNCH)) + group("Afternoon", slots.filter((s) => clinicMinutes(s) >= LUNCH));
 }
 
 $("slots").addEventListener("click", (e) => {
-  const b = e.target.closest(".slot");
+  const b = e.target.closest(".cb-slot");
   if (!b) return;
-  document.querySelectorAll(".slot").forEach((x) => x.setAttribute("aria-pressed", x === b));
+  document.querySelectorAll(".cb-slot").forEach((x) => x.setAttribute("aria-pressed", x === b));
   state.slot = b.dataset.start;
-  updateConfirm();
+  renderSummary();
 });
 
-function updateConfirm() {
-  $("confirm").disabled = !state.slot;
-  $("confirm").textContent = state.resched ? `Reschedule #${state.resched.id}` : "Confirm booking";
-  $("selected").textContent = state.slot ? `Selected: ${fmtWhen(state.slot)}` : "";
+function renderSummary() {
+  const d = state.doctors.find((x) => x.id === state.doctorId), p = state.patients.find((x) => x.id === state.patientId);
+  const r = state.resched, dash = '<span class="cb-muted">—</span>';
+  const row = (k, v) => `<div><dt>${k}</dt><dd>${v}</dd></div>`;
+  $("summary").innerHTML =
+    row("Patient", p ? `${esc(p.name)}${p.insured ? ' <span class="cb-tag cb-tag--brand">Insured</span>' : ""}` : dash) +
+    row("Doctor", d ? `${esc(d.name)}<span class="cb-sub">${esc(d.specialty)}</span>` : dash) +
+    row("When", (r ? `<span class="cb-summary__old cb-num">${esc(fmtWhen(r.start))}</span><br>` : "") +
+      (state.slot ? `<span class="cb-num">${esc(fmtWhen(state.slot))}</span><span class="cb-sub">Clinic time, ${CLINIC_TZ}</span>` : dash)) +
+    row("Length", `${state.len} min`);
+  $("confirm").disabled = !(state.doctorId && state.patientId && state.slot);
+  $("confirm").textContent = r ? (state.slot ? `Move to ${fmtTime(state.slot)}` : `Reschedule #${r.id}`) : "Confirm booking";
 }
 
 $("confirm").addEventListener("click", async () => {
@@ -210,18 +718,15 @@ $("confirm").addEventListener("click", async () => {
   try {
     const a = await api("/appointments", {
       method: "POST",
-      body: JSON.stringify({
-        doctor_id: +$("doctor").value, patient_id: +$("patient").value,
-        start: state.slot, duration_minutes: +$("duration").value,
-      }),
+      body: JSON.stringify({ doctor_id: state.doctorId, patient_id: state.patientId, start: state.slot, duration_minutes: state.len }),
     });
-    toast(`Booked #${a.id} for ${fmtWhen(a.start)}. Fee ${money(a.fee_cents)}`);
-  } catch (e) { toast(e.message, "err"); }
+    toast(`Booked #${a.id}, ${fmtWhen(a.start)}`, `Fee ${money(a.fee_cents)}`);
+    $("patient").value = ""; pick("patient"); // doctor and day stay (AC-1.3); the patient is picked fresh each time
+  } catch (e) { fail("Could not book this slot", e); }
   await loadSlots();
 });
-["doctor", "date"].forEach((id) => $(id).addEventListener("change", loadSlots));
 
-// ---------- reschedule (reuses the Book tab's slot picker) ----------
+// ---------- reschedule (reuses the Book screen's slot picker) ----------
 // The slots API counts the appointment being moved as busy, but the reschedule endpoint ignores it,
 // so add its own 30-min starts back. Nothing else can sit there: the doctor can't be double-booked.
 function withOwnSlots(slots, appt, day) {
@@ -236,13 +741,15 @@ function setReschedule(a) {
   state.resched = a;
   $("resched-bar").hidden = !a;
   $("doctor").disabled = $("patient").disabled = !!a;
+  $("book-title").textContent = a ? "Reschedule" : "Book a visit";
   if (a) {
-    $("resched-label").textContent = `Rescheduling #${a.id} (now ${fmtWhen(a.start)})`;
-    $("doctor").value = a.doctor_id;
-    $("patient").value = a.patient_id;
-    $("duration").value = a.duration_minutes;
-    $("date").value = new Date(a.start).toLocaleDateString("en-CA", { timeZone: CLINIC_TZ });
-    document.querySelector('nav button[data-tab="book"]').click();
+    $("resched-label").innerHTML = `<strong>Rescheduling #${esc(a.id)}</strong>, now ${esc(fmtWhen(a.start))}. Doctor and patient stay the same.`;
+    $("doctor").value = nameOf(state.doctors, a.doctor_id); pick("doctor");
+    $("patient").value = nameOf(state.patients, a.patient_id); pick("patient");
+    state.len = a.duration_minutes;
+    document.querySelector(`input[name="len"][value="${a.duration_minutes}"]`).checked = true;
+    state.date = clinicDay(a.start);
+    renderDays();
   }
   loadSlots();
 }
@@ -251,91 +758,184 @@ async function reschedule() {
   try {
     const a = await api(`/appointments/${state.resched.id}/reschedule`, {
       method: "POST",
-      body: JSON.stringify({ start: state.slot, duration_minutes: +$("duration").value }),
+      body: JSON.stringify({ start: state.slot, duration_minutes: state.len }),
     });
-    toast(`Moved #${a.id} to ${fmtWhen(a.start)}. Fee ${money(a.fee_cents)}`);
+    toast(`Moved #${a.id} to ${fmtWhen(a.start)}`, `Fee ${money(a.fee_cents)}`);
     setReschedule(null);
-  } catch (e) { toast(e.message, "err"); await loadSlots(); }
+  } catch (e) { fail("Could not reschedule", e); await loadSlots(); }
 }
 $("resched-exit").addEventListener("click", () => setReschedule(null));
 
-// ---------- tables ----------
+// ---------- appointments ----------
+$("chips").innerHTML = [["", "All"], ...Object.entries(STATUS)].map(([s, label]) =>
+  `<button class="cb-chip" ${s ? `data-status="${s}"` : ""} data-filter="${s}" aria-pressed="${s === state.status}">${label}</button>`).join("");
+$("chips").addEventListener("click", (e) => {
+  const b = e.target.closest(".cb-chip");
+  if (!b) return;
+  state.status = b.dataset.filter; state.page = 1;
+  document.querySelectorAll(".cb-chip").forEach((x) => x.setAttribute("aria-pressed", x === b));
+  loadList();
+});
+
 function actionsFor(a) {
-  const btn = (act, label, cls = "") => `<button class="btn sm ${cls}" data-act="${act}" data-id="${a.id}">${label}</button>`;
-  if (a.status === "scheduled") return btn("check-in", "Check in") + btn("reschedule", "Reschedule") + btn("no-show", "No-show") + btn("cancel", "Cancel", "danger");
-  if (a.status === "checked_in") return btn("complete", "Complete") + btn("left-unseen", "Left unseen");
+  const btn = (act, label, cls = "") => `<button class="${cls}" data-act="${act}" data-id="${a.id}">${label}</button>`;
+  const more = (items) => `<details class="cb-more"><summary aria-label="More actions for #${a.id}">⋯</summary><div class="cb-menu">${items}</div></details>`;
+  if (a.status === "scheduled") return btn("check-in", "Check in", "cb-btn cb-btn--sm") +
+    more(btn("reschedule", "Reschedule") + btn("no-show", "Mark no-show") + "<hr>" + btn("cancel", "Cancel appointment", "cb-menu__danger"));
+  if (a.status === "checked_in") return btn("complete", "Complete", "cb-btn cb-btn--sm") + more(btn("left-unseen", "Left unseen"));
   return "";
 }
 
-function table(rows, withActions = true) {
-  if (!rows.length) return `<div class="empty">Nothing to show.</div>`;
-  const body = rows.map((a) => `
+function feeCell(a) {
+  const extra = a.cancellation_fee_cents ? `<span class="cb-sub">+ ${money(a.cancellation_fee_cents)} ${a.status === "no_show" ? "no-show fee" : "late cancel"}</span>` : "";
+  return money(a.fee_cents) + extra;
+}
+
+function table(rows) {
+  return `<table class="cb-table"><thead><tr><th>#</th><th>When</th><th>Patient · Doctor</th><th>Length</th><th>Status</th><th>Fee</th><th><span class="cb-sr">Actions</span></th></tr></thead><tbody>${rows.map((a) => `
     <tr>
-      <td class="num">${esc(a.id)}</td>
-      <td class="num">${esc(fmtWhen(a.start))}</td>
-      <td>${esc(nameOf(state.doctors, a.doctor_id))}</td>
-      <td>${esc(nameOf(state.patients, a.patient_id))}</td>
-      <td class="num">${esc(a.duration_minutes)} min</td>
-      <td><span class="badge ${esc(a.status)}">${esc(a.status.replace("_", " "))}</span></td>
-      <td class="num">${money(a.fee_cents)}${a.cancellation_fee_cents ? ` <span class="muted">(+${money(a.cancellation_fee_cents)} fee)</span>` : ""}</td>
-      ${withActions ? `<td class="actions">${actionsFor(a)}</td>` : ""}
-    </tr>`).join("");
-  return `<table><thead><tr><th>#</th><th>When</th><th>Doctor</th><th>Patient</th><th>Length</th><th>Status</th><th>Fee</th>${withActions ? "<th></th>" : ""}</tr></thead><tbody>${body}</tbody></table>`;
+      <td data-col="id" class="cb-num cb-muted">#${esc(a.id)}</td>
+      <td data-col="when" class="cb-num"><strong>${esc(fmtTime(a.start))}</strong><span class="cb-sub">${esc(fmtDay(a.start))}</span></td>
+      <td data-col="who">${esc(nameOf(state.patients, a.patient_id))}<span class="cb-sub">${esc(nameOf(state.doctors, a.doctor_id))}</span></td>
+      <td data-col="length" class="cb-num">${esc(a.duration_minutes)} min</td>
+      <td data-col="status">${badge(a.status)}</td>
+      <td data-col="fee" class="cb-num">${feeCell(a)}</td>
+      <td data-col="actions"><div class="cb-actions">${actionsFor(a)}</div></td>
+    </tr>`).join("")}</tbody></table>`;
 }
 
 async function loadList() {
+  $("list").innerHTML = skeleton();
   try {
     const q = new URLSearchParams({ page: state.page, page_size: $("f-size").value });
-    if ($("f-status").value) q.set("status", $("f-status").value);
+    if (state.status) q.set("status", state.status);
     const data = await api("/appointments?" + q);
-    state.total = data.total;
-    $("list").innerHTML = table(data.items);
+    state.rows = data.items;
+    $("list").innerHTML = data.items.length ? table(data.items)
+      : empty(state.status ? `No ${STATUS[state.status].toLowerCase()} appointments` : "No appointments yet", "Bookings show up here.");
     const pages = Math.max(1, Math.ceil(data.total / data.page_size));
-    $("pageinfo").textContent = `Page ${data.page} of ${pages} (${data.total} total)`;
+    $("pageinfo").textContent = `Page ${data.page} of ${pages} · ${data.total} total`;
     $("prev").disabled = data.page <= 1;
     $("next").disabled = data.page >= pages;
-  } catch (e) { toast(e.message, "err"); }
-}
-
-async function loadToday() {
-  $("todaylabel").textContent = "Today, " + new Date().toLocaleDateString("en-US", { timeZone: CLINIC_TZ, weekday: "long", month: "long", day: "numeric" });
-  try { $("today").innerHTML = table(await api("/appointments/today"), false); }
-  catch (e) { toast(e.message, "err"); }
+  } catch (e) {
+    $("list").innerHTML = empty("Could not load appointments", "Check the server, then press Refresh.");
+    $("pageinfo").textContent = "";
+    $("prev").disabled = $("next").disabled = true;
+    fail("Could not load appointments", e);
+  }
 }
 
 $("prev").addEventListener("click", () => { state.page--; loadList(); });
 $("next").addEventListener("click", () => { state.page++; loadList(); });
-["f-status", "f-size"].forEach((id) => $(id).addEventListener("change", () => { state.page = 1; loadList(); }));
+$("f-size").addEventListener("change", () => { state.page = 1; loadList(); });
 $("refresh").addEventListener("click", loadList);
-$("refresh-today").addEventListener("click", loadToday);
+
+// Cancel and No-show go through a dialog that names the appointment (AC-3.3).
+function confirmDialog(a, act) {
+  const cancel = act === "cancel";
+  $("dlg-title").textContent = cancel ? `Cancel appointment #${a.id}?` : `Mark #${a.id} as no-show?`;
+  $("dlg-rule").textContent = cancel
+    ? "This frees the slot. Cancelling less than 24 hours before the start costs 50% of the consultation fee."
+    : "A no-show costs 100% of the consultation fee. It can only be marked once the start time has passed.";
+  $("dlg-facts").innerHTML = `<strong>${esc(nameOf(state.patients, a.patient_id))} with ${esc(nameOf(state.doctors, a.doctor_id))}</strong>` +
+    `<span class="cb-sub cb-num">${esc(fmtWhen(a.start))} · ${esc(a.duration_minutes)} min</span>`;
+  $("dlg-ok").textContent = cancel ? "Cancel appointment" : "Mark no-show";
+  $("dlg").returnValue = "";
+  $("dlg").showModal();
+  return new Promise((resolve) => $("dlg").addEventListener("close", () => resolve($("dlg").returnValue === "ok"), { once: true }));
+}
 
 $("list").addEventListener("click", async (e) => {
   const b = e.target.closest("button[data-act]");
   if (!b) return;
+  b.closest("details")?.removeAttribute("open");
   const { act, id } = b.dataset;
   if (act === "reschedule") {
-    try { setReschedule(await api(`/appointments/${id}`)); } catch (err) { toast(err.message, "err"); }
+    try { setReschedule(await api(`/appointments/${id}`)); location.hash = "#book"; } catch (err) { fail("Could not open the appointment", err); }
     return;
   }
-  if (act === "cancel" && !confirm(`Cancel appointment #${id}?`)) return;
+  if ((act === "cancel" || act === "no-show") && !(await confirmDialog(state.rows.find((r) => r.id === +id), act))) return;
   try {
     const a = await api(`/appointments/${id}/${act}`, { method: "POST" });
-    const fee = a.cancellation_fee_cents ? ` Fee charged: ${money(a.cancellation_fee_cents)}.` : "";
-    toast(`#${a.id} is now ${a.status.replace("_", " ")}.${fee}`);
-  } catch (err) { toast(err.message, "err"); }
+    const fee = a.cancellation_fee_cents ? `Fee charged: ${money(a.cancellation_fee_cents)}` : a.status === "cancelled" ? "No fee charged" : "";
+    toast(`#${a.id} is now ${STATUS[a.status].toLowerCase()}`, fee);
+  } catch (err) { fail(`Could not update #${id}`, err); }
   loadList();
 });
 
+// Row menus: close on Esc or a click elsewhere.
+document.addEventListener("click", (e) => document.querySelectorAll(".cb-more[open]").forEach((d) => d.contains(e.target) || d.removeAttribute("open")));
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  document.querySelectorAll(".cb-more[open]").forEach((d) => { d.removeAttribute("open"); d.querySelector("summary").focus(); });
+});
+
+// ---------- today (read-only, T-011 Q1) ----------
+document.querySelectorAll('input[name="view"]').forEach((r) => {
+  r.checked = r.value === state.todayView;
+  r.addEventListener("change", () => { state.todayView = r.value; renderToday(); });
+});
+$("refresh-today").addEventListener("click", loadToday);
+
+async function loadToday() {
+  $("todaylabel").textContent = new Date().toLocaleDateString("en-US", { timeZone: CLINIC_TZ, weekday: "long", month: "long", day: "numeric" });
+  $("today").innerHTML = `<div class="cb-card">${skeleton()}</div>`;
+  try { state.today = await api("/appointments/today"); renderToday(); }
+  catch (e) {
+    $("stats").innerHTML = "";
+    $("today").innerHTML = `<div class="cb-card">${empty("Could not load today's appointments", "Check the server, then press Refresh.")}</div>`;
+    fail("Could not load today", e);
+  }
+}
+
+function renderToday() {
+  const rows = state.today, now = Date.now(), nowMin = clinicMinutes(now);
+  $("stats").innerHTML = Object.keys(STATUS).map((s) =>
+    `<div class="cb-stat"><span class="cb-stat__n">${rows.filter((a) => a.status === s).length}</span>${badge(s)}</div>`).join("");
+  if (!rows.length) { $("today").innerHTML = `<div class="cb-card">${empty("No appointments today", "Booked visits for today show up here.")}</div>`; return; }
+  const late = (a) => a.status === "scheduled" && Date.parse(a.start) < now ? Math.floor((now - Date.parse(a.start)) / 6e4) : 0;
+  const byDoctor = state.doctors.map((d) => ({ d, visits: rows.filter((a) => a.doctor_id === d.id) }));
+
+  if (state.todayView === "list") {
+    $("today").innerHTML = `<div class="cb-daylist">${byDoctor.filter((g) => g.visits.length).map(({ d, visits }) => {
+      const next = visits.find((a) => a.status === "scheduled");
+      return `<section><h3>${esc(d.name)} <small>${esc(d.specialty)}</small></h3><ol>${visits.map((a) => `
+        <li${a === next ? " data-next" : ""}><time>${esc(fmtTime(a.start))}</time>
+          <span class="cb-who">${esc(nameOf(state.patients, a.patient_id))}${a === next ? ' <span class="cb-tag cb-tag--brand">Next</span>' : ""}${late(a) ? ` <span class="cb-tag cb-tag--warn">Late ${late(a)} min</span>` : ""}<span class="cb-sub">${esc(a.duration_minutes)} min</span></span>
+          ${badge(a.status)}</li>`).join("")}</ol></section>`;
+    }).join("")}</div>`;
+    return;
+  }
+
+  const open = clinicDay(now) === todayKey() && nowMin >= OPEN && nowMin < CLOSE && !isWeekend(todayKey());
+  const hours = Array.from({ length: (CLOSE - OPEN) / 60 }, (_, h) => `<span class="cb-tl__hour" style="--h:${h}">${((OPEN / 60 + h - 1) % 12) + 1} ${OPEN / 60 + h < 12 ? "AM" : "PM"}</span>`).join("");
+  const block = (a) => {
+    const status = STATUS[a.status] + (late(a) ? ` · Late ${late(a)} min` : ""), who = nameOf(state.patients, a.patient_id);
+    return `<div class="cb-tl__block" data-status="${esc(a.status)}" style="--start:${clinicMinutes(a.start) - OPEN};--len:${+a.duration_minutes}" tabindex="0"
+      aria-label="${esc(`${fmtTime(a.start)}, ${who}, ${a.duration_minutes} minutes, ${status}`)}"><b>${esc(shortTime(a.start))} ${esc(who)}</b><i>${esc(status)}</i></div>`;
+  };
+  $("today").innerHTML = `<div class="cb-tl" role="region" aria-label="Today's timeline" tabindex="0"><div class="cb-tl__grid" style="--cols:${byDoctor.length}">
+    <div class="cb-tl__corner"></div>${byDoctor.map(({ d, visits }) => `<div class="cb-tl__doc"><strong>${esc(d.name)}</strong><span class="cb-sub">${esc(d.specialty)} · ${visits.length} visit${visits.length === 1 ? "" : "s"}</span></div>`).join("")}
+    <div class="cb-tl__body"><div class="cb-tl__axis">${hours}${open ? `<span class="cb-tl__nowlabel" style="--now:${nowMin - OPEN}">${esc(shortTime(now))}</span>` : ""}</div>
+    ${byDoctor.map(({ visits }) => `<div class="cb-tl__col">${visits.map(block).join("")}</div>`).join("")}
+    <div class="cb-tl__lunch" aria-hidden="true"><span>Lunch</span></div>
+    ${open ? `<div class="cb-tl__now" style="--now:${nowMin - OPEN}" aria-hidden="true"></div>` : ""}</div></div></div>`;
+}
+
 // ---------- init ----------
 (async function init() {
+  state.date = nextClinicDay(todayKey());
+  renderDays();
+  renderSummary();
   try {
     [state.doctors, state.patients] = await Promise.all([api("/doctors"), api("/patients")]);
-    $("doctor").innerHTML = state.doctors.map((d) => `<option value="${esc(d.id)}">${esc(d.name)} (${esc(d.specialty)})</option>`).join("");
-    $("patient").innerHTML = state.patients.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}${p.insured ? " (insured)" : ""}</option>`).join("");
-    $("date").value = clinicDate(1);
-    $("date").min = clinicDate(0);
+    route();
     await loadSlots();
-  } catch (e) { toast("Could not reach the API: " + e.message, "err"); }
+  } catch (e) {
+    route();
+    $("slots").innerHTML = empty("Could not reach the clinic server", "Check that it is running, then reload the page.");
+    fail("Could not reach the API", e);
+  }
 })();
 </script>
 </body>
