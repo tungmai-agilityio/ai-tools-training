@@ -8,7 +8,5 @@ Never open, read, or grep `.instructor/`. This skill writes no code.
 2. Run the **ticket-analyst** subagent on it.
 3. **Stop gate:** if it returns questions the ticket, the reporter or `docs/business-rules.md` does not answer, or any OPEN QUESTION, show them to the user and stop. Never pick an answer yourself.
 4. Run the **solution-architect** subagent with the ticket and the analysis. For a feature that adds an endpoint, changes the data model or spans backend and frontend, have it write a spec with `/spec` instead.
-5. Write the result into the ticket (keep the reporter's text): Analysis, Approach (`path:line`), Given/When/Then acceptance criteria, Test plan (failing tests named after the behaviour), Out of scope. Use the section names in `docs/templates/ticket-feature.md` or `ticket-bug.md`.
+5. Write the result into the ticket (keep the reporter's text): Analysis, Approach (`path:line`), Given/When/Then acceptance criteria, Test plan (only the names of the failing tests to write first; the full case list goes in `/test-plan`), Out of scope. Use the section names in `docs/templates/ticket-feature.md` or `ticket-bug.md`.
 6. Say which skills come next: `/test-plan`, then `/fix` (bug) or `/implement` (feature, chore), and which agents it will use (backend-dev, frontend-dev, or both).
-
-If a subagent type is not registered (Claude Code was not opened in `practice/clinic-booking/`), spawn a general-purpose agent whose prompt starts with "Read `.claude/agents/<name>.md` and follow it exactly".

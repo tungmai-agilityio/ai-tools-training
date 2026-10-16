@@ -18,6 +18,8 @@ pytest                              # full suite; single test: pytest tests/test
 - References: `docs/references/` (code, git, testing conventions). Templates: `docs/templates/` (tickets, PRD, spec, ADR, test plan, MR, reports).
   Skills: `/triage` → `/plan` → `/test-plan` → `/implement` (feature) or `/fix` (bug) → `/review` → `/mr` → `/merge`;
   docs: `/ticket`, `/prd`, `/spec`, `/rules`, `/adr`, `/report`.
+- Skills name subagents from `.claude/agents/`. If one is not registered (Claude Code was not opened in this folder),
+  spawn a general-purpose agent whose prompt starts with "Read `.claude/agents/<name>.md` and follow it exactly".
 - One ticket gets one branch (`fix/T-00N`), one commit (`fix: <what> (T-00N)`), and one GitLab merge request into `develop`.
 - Every bug fix comes with a test that fails before the fix and passes after it. Run `pytest` before you call anything done.
 - When a ticket is vague or contradicts `docs/business-rules.md`, ask before coding. If an item there is marked OPEN QUESTION, don't decide it in code.

@@ -13,5 +13,3 @@ Never open, read, or grep `.instructor/`. This skill never edits files.
 4. **Git hygiene** (`git-conventions.md`): branch name, one commit, commit format, rebased on `develop`, no `.env` or `*.db`, ticket status `In Review`.
 5. **Verdict:** **approve**, **approve with nits**, or **changes needed**, followed by the pytest line and an AC table (pass, fail or manual).
 6. Post nothing to GitLab unless the user asks.
-
-If a subagent type is not registered (Claude Code was not opened in `practice/clinic-booking/`), spawn a general-purpose agent whose prompt starts with "Read `.claude/agents/<name>.md` and follow it exactly".

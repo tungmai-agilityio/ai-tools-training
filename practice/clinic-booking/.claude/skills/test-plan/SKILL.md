@@ -12,5 +12,3 @@ Never open, read, or grep `.instructor/`. This skill writes no app or test code.
    - Name each new automated test after the behaviour, and say which ones must fail before the change.
 3. Link the plan from the ticket's Test plan section.
 4. When the code is ready, the **qa-tester** subagent runs the plan, and `/report` turns the results into a test report.
-
-If a subagent type is not registered (Claude Code was not opened in `practice/clinic-booking/`), spawn a general-purpose agent whose prompt starts with "Read `.claude/agents/<name>.md` and follow it exactly".
