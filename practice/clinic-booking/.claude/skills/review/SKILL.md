@@ -10,6 +10,6 @@ Never open, read, or grep `.instructor/`. This skill never edits files.
    - **security-auditor**: when the diff touches `routes.py` auth, `store.py` SQL, `index.html` rendering, `models.py`, config or `.env*`. Scope it to the diff.
    - **qa-tester**: when the ticket has acceptance criteria and `app/` changed.
 3. **Merge.** Drop duplicates. Check every remaining finding against the code yourself and drop any you cannot back up. Rank them blocker → major → minor → nit, as `path:line — problem — failure case — fix`.
-4. **Git hygiene** (`git-conventions.md`): branch name, one commit, commit format, rebased on `develop`, no `.env` or `*.db`, ticket status `In Review`.
+4. **Git hygiene** (`git-conventions.md`): branch name, one commit, commit format, rebased on `develop`, no `.env` or `*.db`, ticket status `In Progress` (or `In Review` once the MR is open).
 5. **Verdict:** **approve**, **approve with nits**, or **changes needed**, followed by the pytest line and an AC table (pass, fail or manual).
 6. Post nothing to GitLab unless the user asks.

@@ -7,7 +7,7 @@ GitLab flow with one long-lived branch, `develop`. Everything reaches it through
 |---|---|---|
 | Feature ticket | `feat/T-0NN` | `feat/T-012` |
 | Bug ticket | `fix/T-0NN` | `fix/T-004` |
-| No ticket (tooling, docs, config) | `chore/<kebab-slug>` | `chore/ignore-worktrees` |
+| Chore, with or without a ticket (tooling, config) | `chore/<kebab-slug>` | `chore/ignore-worktrees` |
 | Docs only | `docs/<kebab-slug>` | `docs/conventions` |
 
 - Branch from an up-to-date `develop`. One ticket = one branch = one MR.

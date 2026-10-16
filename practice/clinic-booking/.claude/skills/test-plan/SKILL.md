@@ -10,5 +10,5 @@ Never open, read, or grep `.instructor/`. This skill writes no app or test code.
    - Go through the edge-case checklist. Mark each item N/A with a reason, never just skip it.
    - Mark a case as already covered when an existing test covers it, citing `path::test_name`.
    - Name each new automated test after the behaviour, and say which ones must fail before the change.
-3. Link the plan from the ticket's Test plan section.
+3. Link the plan from the ticket's Test plan section (§8 Fix and test for a bug).
 4. When the code is ready, the **qa-tester** subagent runs the plan, and `/report` turns the results into a test report.
