@@ -1,0 +1,3 @@
+# Dev-only: the optional browser smoke test (tests/test_ui_browser.py). T-011 Q4.
+-r requirements.txt
+playwright>=1.45
