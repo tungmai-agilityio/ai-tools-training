@@ -15,8 +15,9 @@ pytest                              # full suite; single test: pytest tests/test
 
 ## Workflow
 
-- References: `docs/references/` (code, git, testing conventions). Templates: `docs/templates/` (tickets, PRD, spec, MR, reports).
-  Skills: `/plan` → `/implement` (feature) or `/fix` (bug) → `/review` → `/mr`; docs: `/ticket`, `/prd`, `/spec`, `/report`.
+- References: `docs/references/` (code, git, testing conventions). Templates: `docs/templates/` (tickets, PRD, spec, ADR, test plan, MR, reports).
+  Skills: `/triage` → `/plan` → `/test-plan` → `/implement` (feature) or `/fix` (bug) → `/review` → `/mr` → `/merge`;
+  docs: `/ticket`, `/prd`, `/spec`, `/rules`, `/adr`, `/report`.
 - One ticket gets one branch (`fix/T-00N`), one commit (`fix: <what> (T-00N)`), and one GitLab merge request into `develop`.
 - Every bug fix comes with a test that fails before the fix and passes after it. Run `pytest` before you call anything done.
 - When a ticket is vague or contradicts `docs/business-rules.md`, ask before coding. If an item there is marked OPEN QUESTION, don't decide it in code.
