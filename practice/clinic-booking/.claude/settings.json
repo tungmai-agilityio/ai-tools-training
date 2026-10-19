@@ -5,5 +5,9 @@
       "Read(/.instructor/**)",
       "Edit(/.instructor/**)"
     ]
+  },
+  "enabledPlugins": {
+    "frontend-design@anthropic-plugin-directory": true,
+    "pyright-lsp@claude-plugins-official": true
   }
 }
