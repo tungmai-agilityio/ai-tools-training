@@ -5,6 +5,7 @@ description: Cut a Clinic Booking release — check develop is green and has no 
 Never open, read, or grep `.instructor/`. Reference: `docs/references/git-conventions.md` (Releases). Pushing, merging and tagging change shared state, so **ask before each one**.
 
 **Check** (stop and report on the first failure)
+
 1. `git switch develop && git fetch origin && git pull`. The working tree is clean.
 2. `pytest` is green on `develop`.
 3. No ticket in `tickets/` is `In Progress` or `In Review` with its branch already merged (a half-moved status). List any `Done` ticket whose branch is not in `develop`.
@@ -12,11 +13,13 @@ Never open, read, or grep `.instructor/`. Reference: `docs/references/git-conven
 5. `.env.example` lists every env var read in `app/` (`grep -rnE "getenv|environ" app/`). A new var means a deploy note.
 
 **Notes**
+
 6. Last tag: `git describe --tags --abbrev=0 origin/main` (none → first release is `v0.1.0`, range is all of `develop`).
 7. Version: any `feat` → bump minor, only `fix`/`chore`/`docs` → bump patch. Before `v1.0.0`, never bump major.
 8. Collect `git log <last-tag>..develop --merges --format=%s` and the matching ticket titles. Write `docs/releases/vX.Y.Z.md`: **Features**, **Fixes**, **Deploy notes** (new env vars, data changes to `data/seed.json`, anything that needs `data/clinic.db` reset). One line per ticket, `T-0NN title`. Copy each merged ticket's `## Deploy note` section verbatim into **Deploy notes** (e.g. a `/db-migration` script to run first). Skip `docs`/`chore` unless they change deploy.
 
 **Ship**
+
 9. Branch `docs/release-vX.Y.Z` from `develop`, commit the notes as `docs: release notes vX.Y.Z`, and run `/mr` for it into `develop` (no ticket: skip `/mr`'s ticket-status steps).
 10. After it merges: **go-ahead →** `glab mr create --source-branch develop --target-branch main --title "release: vX.Y.Z" --description "$(cat docs/releases/vX.Y.Z.md)"`. Never pass `--remove-source-branch`: `develop` must stay.
 11. After approval and merge: **go-ahead →** `git fetch && git tag -a vX.Y.Z origin/main -m "vX.Y.Z" && git push origin vX.Y.Z`.
