@@ -31,6 +31,9 @@
 ## 8. Open questions
 1. <question> — <who answers>
 
+## Deploy note
+<Optional. Only if deploying this needs a manual step (a `/db-migration` script to run, a new env var, a data reset). `/release` copies it verbatim into the release notes.>
+
 ## 9. Definition of Done
 - [ ] AC-1 to AC-N pass.
 - [ ] Docs updated (`README.md`, `CLAUDE.md`, `docs/business-rules.md`) if behaviour or rules changed.

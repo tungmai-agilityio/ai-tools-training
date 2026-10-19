@@ -14,7 +14,7 @@ Never open, read, or grep `.instructor/`. Reference: `docs/references/git-conven
 **Notes**
 6. Last tag: `git describe --tags --abbrev=0 origin/main` (none → first release is `v0.1.0`, range is all of `develop`).
 7. Version: any `feat` → bump minor, only `fix`/`chore`/`docs` → bump patch. Before `v1.0.0`, never bump major.
-8. Collect `git log <last-tag>..develop --merges --format=%s` and the matching ticket titles. Write `docs/releases/vX.Y.Z.md`: **Features**, **Fixes**, **Deploy notes** (new env vars, data changes to `data/seed.json`, anything that needs `data/clinic.db` reset). One line per ticket, `T-0NN title`. Copy each merged ticket's **Deploy note** verbatim into **Deploy notes** (e.g. a `/db-migration` script to run first). Skip `docs`/`chore` unless they change deploy.
+8. Collect `git log <last-tag>..develop --merges --format=%s` and the matching ticket titles. Write `docs/releases/vX.Y.Z.md`: **Features**, **Fixes**, **Deploy notes** (new env vars, data changes to `data/seed.json`, anything that needs `data/clinic.db` reset). One line per ticket, `T-0NN title`. Copy each merged ticket's `## Deploy note` section verbatim into **Deploy notes** (e.g. a `/db-migration` script to run first). Skip `docs`/`chore` unless they change deploy.
 
 **Ship**
 9. Branch `docs/release-vX.Y.Z` from `develop`, commit the notes as `docs: release notes vX.Y.Z`, and run `/mr` for it into `develop` (no ticket: skip `/mr`'s ticket-status steps).
