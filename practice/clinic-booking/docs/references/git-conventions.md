@@ -1,6 +1,6 @@
 # Git conventions
 
-GitLab flow with one long-lived branch, `develop`. Everything reaches it through a merge request (MR).
+GitLab flow: day-to-day work goes to `develop`, releases go to `main` (see Releases). Everything reaches either through a merge request (MR).
 
 ## Branches
 | Kind | Name | Example |
@@ -44,6 +44,11 @@ Conventional Commits, one line, imperative, lower case, no period, ticket id in 
 ## Conflicts
 - Rebase your branch on `develop` (`git fetch && git rebase origin/develop`), resolve, re-run `pytest`, then push with `--force-with-lease`.
 - When both sides changed behaviour, keep both and ask the other author. Never drop someone's test to make it merge.
+
+## Releases
+- `main` holds released code only. It moves through one MR from `develop` (`release: vX.Y.Z`), merged **without** deleting `develop`.
+- Release notes live in `docs/releases/vX.Y.Z.md`, merged into `develop` first on a `docs/release-vX.Y.Z` branch.
+- After the merge, tag `main` with an annotated `vX.Y.Z` tag. First release is `v0.1.0`; `feat` bumps minor, otherwise patch. Steps: `/release`.
 
 ## Never commit
 `.env`, `data/*.db`, `.venv/`, `__pycache__/`, real tokens, real patient data, anything under `.instructor/`.
