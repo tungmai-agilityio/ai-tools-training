@@ -1,11 +1,16 @@
 ---
 name: mr
-description: Write the GitLab merge request title and description for a reviewed Clinic Booking branch, from the template, and open the MR on go-ahead. Use when the user says "open an MR", "write the MR description", "ready for review", or "prepare PR".
+description: Open and finish a Clinic Booking GitLab merge request — check the review gate, rebase on develop and resolve conflicts, write the description from the template, push and open the MR, then merge after approval and set the ticket Done. Use when the user says "open an MR", "ready for review", "write the MR description", "rebase on develop", "resolve the conflict", or "merge T-0NN".
 ---
-Never open, read, or grep `.instructor/`.
+Never open, read, or grep `.instructor/`. Reference: `docs/references/git-conventions.md`. Pushing and merging change shared state, so **ask before each push and each merge**.
 
-1. **Gate.** `/review` has run on the current HEAD with the verdict **approve** or **approve with nits**. If it has not run, or HEAD has changed since, run it now. If the verdict is **changes needed**, stop. `/review` owns the git, scope and pytest checks, so do not repeat them here.
-2. Read the ticket and `git diff develop...HEAD`.
-3. Fill `docs/templates/merge-request.md`: title = commit subject, every AC mapped to a test or manual step, checklist ticked only for what `/review` verified, with its pytest line as evidence.
-4. Write it to the scratchpad or print it.
-5. After the user's go-ahead: set the ticket status to `In Review` and amend it into the one commit. Then `git push -u origin <branch>` and `glab mr create --target-branch develop --title "<commit subject>" --description "$(cat <file>)"`. Report the MR link.
+**Open**
+1. **Gate.** `/review` has run on the current HEAD with the verdict **approve** or **approve with nits**. If not, or HEAD changed since, run it. **changes needed** means stop.
+2. **Sync.** `git fetch origin && git rebase origin/develop`. For each conflict, read both sides and the tickets behind them. Keep both behaviours when both are intended, and never drop the other side's test. If business rules contradict each other, or the right answer is unclear, stop and show the user. Run full `pytest` after any rebase.
+3. **Describe.** Fill `docs/templates/merge-request.md`: title = commit subject, every AC mapped to a test or manual step, checklist ticked only for what `/review` verified.
+4. **Go-ahead → open.** Set the ticket status to `In Review` and amend it into the one commit. `git push -u origin <branch>` (`--force-with-lease` after a rebase), then `glab mr create --target-branch develop --title "<subject>" --description "$(cat <file>)"`. Report the link.
+
+**Finish** (once the MR is approved on GitLab)
+5. Rebase again if `develop` moved (step 2). Set the ticket status to `Done` as the last change, amend, and `git push --force-with-lease`. Re-request approval if the push reset it.
+6. **Go-ahead → merge:** `glab mr merge <branch> --remove-source-branch`, or the Merge button. Never merge or commit into `develop` locally.
+7. `git switch develop && git pull`, check the merge commit, and report it with any follow-up tickets.

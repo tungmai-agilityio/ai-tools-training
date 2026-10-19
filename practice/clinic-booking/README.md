@@ -60,7 +60,7 @@ cover behaviour that already works.
 | `docs/business-rules.md` | What the clinic says the system should do |
 | `docs/references/` | Code, git and testing conventions |
 | `docs/templates/` | Ticket (feature/bug/chore), PRD, spec, ADR, test plan, MR, test and status report templates |
-| `.claude/skills/` | Workflow `/triage` → `/plan` → `/test-plan` → `/implement` or `/fix` → `/review` → `/mr` → `/merge`; docs `/ticket`, `/prd`, `/spec`, `/rules`, `/adr`, `/report` |
+| `.claude/skills/` | `/ticket` → `/plan` → `/implement` or `/fix` → `/review` → `/mr` |
 | `tickets/` | Your backlog. Each ticket is imperfect on purpose |
 | `PRACTICE.md` | How to use this repo with the role-play drills |
 

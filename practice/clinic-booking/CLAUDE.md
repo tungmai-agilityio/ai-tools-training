@@ -16,8 +16,7 @@ pytest                              # full suite; single test: pytest tests/test
 ## Workflow
 
 - References: `docs/references/` (code, git, testing conventions). Templates: `docs/templates/` (tickets, PRD, spec, ADR, test plan, MR, reports).
-  Skills: `/triage` → `/plan` → `/test-plan` → `/implement` (feature) or `/fix` (bug) → `/review` → `/mr` → `/merge`;
-  docs: `/ticket`, `/prd`, `/spec`, `/rules`, `/adr`, `/report`.
+  Skills: `/ticket` → `/plan` → `/implement` (feature) or `/fix` (bug) → `/review` → `/mr`.
 - Skills name subagents from `.claude/agents/`. If one is not registered (Claude Code was not opened in this folder),
   spawn a general-purpose agent whose prompt starts with "Read `.claude/agents/<name>.md` and follow it exactly".
 - One ticket gets one branch (`fix/T-00N`), one commit (`fix: <what> (T-00N)`), and one GitLab merge request into `develop`.
