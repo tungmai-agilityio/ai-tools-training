@@ -36,6 +36,9 @@
 - Config or data bug: no red-to-green test. Give the exact setting or record to change, and how to verify it (for example `GET /health`).
 - Fix: <one line>
 
+## Deploy note
+<Optional. Only if deploying this needs a manual step (a `/db-migration` script to run, a new env var, a data reset). `/release` copies it verbatim into the release notes.>
+
 ## 9. Definition of Done
 - [ ] Code bug: failing test written first, now green, and `pytest` green. Config or data bug: change applied and verified on the server.
 - [ ] Code bug: branch `fix/T-0NN`, one commit `fix: <what> (T-0NN)`, MR into `develop`. Status → In Review.

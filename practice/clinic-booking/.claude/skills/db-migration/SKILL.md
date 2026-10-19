@@ -26,4 +26,4 @@ Never open, read, or grep `.instructor/`. References: `docs/references/code-conv
 
 4. **Try it on real data.** `cp data/clinic.db data/clinic.db.bak`, run the script (C) or start the app (A/B) against `data/clinic.db`, open `/` and check that the old appointments are listed. If something breaks, `mv data/clinic.db.bak data/clinic.db`. Never commit `data/*.db`.
 
-5. **Hand off.** Fill in the ticket's approach with the path you chose (A/B/C) and why. For C, add a **Deploy note** to the ticket ("back up `data/clinic.db`, run `python scripts/migrate_T-0NN_<slug>.py` before starting the new version"); `/release` copies it into the release notes. Then continue with `/implement` or `/fix`.
+5. **Hand off.** Fill in the ticket's approach with the path you chose (A/B/C) and why. For C, add a `## Deploy note` section to the ticket ("back up `data/clinic.db`, run `python scripts/migrate_T-0NN_<slug>.py` before starting the new version"); `/release` copies it into the release notes. Then continue with `/implement` or `/fix`.

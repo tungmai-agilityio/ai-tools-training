@@ -3,7 +3,22 @@ description: Summarize what the team did from N days ago (or "yesterday", "monda
 allowed-tools: Bash(git log:*), Bash(git fetch:*), Bash(git diff:*), Bash(git show:*), Bash(grep:*), Bash(echo:*), Bash(sort:*), Bash(uniq:*), Bash(head:*), Bash(true)
 argument-hint: "[N days | yesterday | 2026-10-12, default: 1]"
 ---
-!`S='$ARGUMENTS'; S="${S:-1}"; case "$S" in *[!0-9A-Za-z:\ -]*) echo "bad argument"; exit 0;; *[!0-9]*) ;; *) S="$S days ago";; esac; git fetch -q origin develop 2>/dev/null || true; echo "Window starts: $S"; echo; echo "Commits on all branches, oldest first:"; git log --all --reverse --since="$S" --format='%h %ad %an | %s' --date=format:'%a %H:%M'; echo; echo "Merged into develop (origin, just fetched):"; git log origin/develop --merges --first-parent --since="$S" --format='%h %s'; echo; echo "Files touched:"; git log --all --since="$S" --name-only --format= | sort | uniq -c | sort -rn | head -15`
+```!
+S=$(cat <<'ARGS_END'
+$ARGUMENTS
+ARGS_END
+)
+S="${S:-1}"
+case "$S" in *[!0-9A-Za-z:\ -]*) echo "bad argument"; exit 0;; *[!0-9]*) ;; *) S="$S days ago";; esac
+GIT_SSH_COMMAND='ssh -o BatchMode=yes' GIT_TERMINAL_PROMPT=0 git fetch -q origin develop 2>/dev/null || true
+echo "Window starts: $S"; echo
+echo "Commits on all branches, oldest first:"
+git log --all --reverse --since="$S" --format='%h %ad %an | %s' --date=format:'%a %H:%M'; echo
+echo "Merged into develop (origin, just fetched):"
+git log origin/develop --merges --first-parent --since="$S" --format='%h %s'; echo
+echo "Files touched:"
+git log --all --since="$S" --name-only --format= | sort | uniq -c | sort -rn | head -15
+```
 
 Explain what happened in that window, for someone who missed it:
 1. **One-line headline** of the window.

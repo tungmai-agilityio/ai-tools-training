@@ -9,6 +9,9 @@
 - <concrete change 1>
 - <concrete change 2>
 
+## Deploy note
+<Optional. Only if deploying this needs a manual step (a `/db-migration` script to run, a new env var, a data reset). `/release` copies it verbatim into the release notes.>
+
 ## Done when
 - [ ] <checkable result>  (spike: a written answer + recommendation in this ticket, timebox <N h>)
 - [ ] No behaviour change; `pytest` green.
