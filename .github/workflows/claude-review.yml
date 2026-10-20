@@ -1,0 +1,32 @@
+name: Claude PR review
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened] # add `synchronize` to re-review on every push
+
+jobs:
+  review:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # review only: it cannot push to the PR branch
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          track_progress: true
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Review this pull request. Check it against the CLAUDE.md, docs/references/ and
+            docs/business-rules.md of the project it touches (e.g. practice/clinic-booking/).
+            Look for correctness bugs, missing tests, broken business rules, and the money/time
+            conventions (integer cents, timezone-aware UTC). Use inline comments for specific
+            lines and one summary comment for the rest. Skip style nits a linter would catch.
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
