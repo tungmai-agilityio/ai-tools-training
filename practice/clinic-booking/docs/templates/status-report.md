@@ -8,7 +8,7 @@
 ## In progress
 | Ticket | Owner | Status | ETA | Note |
 |---|---|---|---|---|
-| T-0NN | <name> | In Review | <date> | <MR link> |
+| T-0NN | <name> | In Review | <date> | <PR link> |
 
 ## Blocked / needs a decision
 - <what> — <who must decide> — <by when>

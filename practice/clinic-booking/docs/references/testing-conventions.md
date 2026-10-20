@@ -1,9 +1,9 @@
 # Testing conventions
 
 ## Rules
-- `pytest` must be green before any commit or MR.
+- `pytest` must be green before any commit or PR.
 - Every bug fix ships a test that **fails before the fix and passes after it**. Run it on the old code to prove it.
-- Never weaken, skip or delete an existing test to get green. If a test is wrong, say so in the MR.
+- Never weaken, skip or delete an existing test to get green. If a test is wrong, say so in the PR.
 - Name tests after the behaviour, not the function: `test_insured_gets_20_percent_off`, not `test_fees_2`.
 - One behaviour per test. Arrange, act, assert, with a blank line between.
 

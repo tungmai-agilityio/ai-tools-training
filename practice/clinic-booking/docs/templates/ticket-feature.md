@@ -37,4 +37,4 @@
 ## 9. Definition of Done
 - [ ] AC-1 to AC-N pass.
 - [ ] Docs updated (`README.md`, `CLAUDE.md`, `docs/business-rules.md`) if behaviour or rules changed.
-- [ ] Branch `feat/T-0NN`, one commit `feat: <what> (T-0NN)`, MR into `develop`. Status → In Review.
+- [ ] Branch `feat/T-0NN`, one commit `feat: <what> (T-0NN)`, PR into `develop`. Status → In Review.

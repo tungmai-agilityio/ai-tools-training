@@ -1,7 +1,7 @@
 <!-- Title: <type>: <what changed> (T-0NN)   — same as the commit subject -->
 
 ## What
-<1–3 sentences: what this MR changes.>
+<1–3 sentences: what this PR changes.>
 
 Closes T-0NN (`tickets/T-0NN.md`).
 

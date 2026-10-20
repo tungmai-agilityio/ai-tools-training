@@ -15,4 +15,4 @@
 ## Done when
 - [ ] <checkable result>  (spike: a written answer + recommendation in this ticket, timebox <N h>)
 - [ ] No behaviour change; `pytest` green.
-- [ ] Branch `chore/<slug>`, commit `chore: <what> (T-0NN)`, MR into `develop`.
+- [ ] Branch `chore/<slug>`, commit `chore: <what> (T-0NN)`, PR into `develop`.
