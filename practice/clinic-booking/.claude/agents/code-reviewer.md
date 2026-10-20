@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: Use after code is written and before committing or opening an MR, to review the branch diff for correctness, project conventions, scope and needless complexity.
+description: Use after code is written and before committing or opening an PR, to review the branch diff for correctness, project conventions, scope and needless complexity.
 tools: Read, Grep, Glob, Bash
 model: opus
 ---

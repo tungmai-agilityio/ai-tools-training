@@ -59,8 +59,8 @@ cover behaviour that already works.
 | `data/seed.json` | Doctors and patients loaded at startup |
 | `docs/business-rules.md` | What the clinic says the system should do |
 | `docs/references/` | Code, git and testing conventions |
-| `docs/templates/` | Ticket (feature/bug/chore), PRD, spec, ADR, test plan, MR, test and status report templates |
-| `.claude/skills/` | `/ticket` → `/plan` → `/implement` or `/fix` → `/review` → `/mr` |
+| `docs/templates/` | Ticket (feature/bug/chore), PRD, spec, ADR, test plan, PR, test and status report templates |
+| `.claude/skills/` | `/ticket` → `/plan` → `/implement` or `/fix` → `/review` → `/pr` |
 | `tickets/` | Your backlog. Each ticket is imperfect on purpose |
 | `PRACTICE.md` | How to use this repo with the role-play drills |
 

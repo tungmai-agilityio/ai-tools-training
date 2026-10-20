@@ -1,6 +1,6 @@
 # Git conventions
 
-GitLab flow: day-to-day work goes to `develop`, releases go to `main` (see Releases). Everything reaches either through a merge request (MR).
+GitHub flow: day-to-day work goes to `develop`, releases go to `main` (see Releases). Everything reaches either through a pull request (PR).
 
 ## Branches
 | Kind | Name | Example |
@@ -10,7 +10,7 @@ GitLab flow: day-to-day work goes to `develop`, releases go to `main` (see Relea
 | Chore, with or without a ticket (tooling, config) | `chore/<kebab-slug>` | `chore/ignore-worktrees` |
 | Docs only | `docs/<kebab-slug>` | `docs/conventions` |
 
-- Branch from an up-to-date `develop`. One ticket = one branch = one MR.
+- Branch from an up-to-date `develop`. One ticket = one branch = one PR.
 - Never commit straight to `develop`. Never force-push a branch someone else is reviewing.
 
 ## Commits
@@ -35,20 +35,24 @@ Conventional Commits, one line, imperative, lower case, no period, ticket id in 
 - Aim for **one commit per ticket**. Squash fixups before asking for review (`git commit --fixup <sha>` + `git rebase -i --autosquash develop`; agents: `GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash develop`).
 - Add a body (blank line, then wrapped text) only when the *why* is not obvious from the ticket.
 
-## Merge requests
-- Title = the commit subject. Description = `docs/templates/merge-request.md`, filled in.
+## Pull requests
+- Title = the commit subject. Description = `.github/pull_request_template.md`, filled in.
 - Before opening: `pytest` is green, the diff is only the ticket, the ticket's status is `In Review`.
 - At least one approval. The author resolves every thread or answers it.
-- Merge with a merge commit (`Merge branch 'fix/T-0NN' into 'develop'`), delete the source branch, set the ticket to `Done`.
+- Merge with a merge commit (`Merge pull request #N from <user>/fix/T-0NN`), delete the source branch, set the ticket to `Done`.
 
 ## Conflicts
 - Rebase your branch on `develop` (`git fetch && git rebase origin/develop`), resolve, re-run `pytest`, then push with `--force-with-lease`.
 - When both sides changed behaviour, keep both and ask the other author. Never drop someone's test to make it merge.
 
 ## Releases
-- `main` holds released code only. It moves through one MR from `develop` (`release: vX.Y.Z`), merged **without** deleting `develop`.
+- `main` holds released code only. It moves through one PR from `develop` (`release: vX.Y.Z`), merged **without** deleting `develop`.
 - Release notes live in `docs/releases/vX.Y.Z.md`, merged into `develop` first on a `docs/release-vX.Y.Z` branch.
 - After the merge, tag `main` with an annotated `vX.Y.Z` tag. First release is `v0.1.0`; `feat` bumps minor, otherwise patch. Steps: `/release`.
+
+## Remotes
+- `origin` = GitHub: branches, PRs, review, releases. Every command above uses it.
+- `gitlab` = mirror, no MRs there. After a PR merges or a release is tagged, ask first, then `git push gitlab develop main --tags`.
 
 ## Never commit
 `.env`, `data/*.db`, `.venv/`, `__pycache__/`, real tokens, real patient data, anything under `.instructor/`.

@@ -1,6 +1,6 @@
 ---
 name: release
-description: Cut a Clinic Booking release — check develop is green and has no open tickets in review, write release notes from the merge commits since the last tag, open the develop → main MR, and tag main after merge. Use when the user says "cut a release", "release checklist", "ship develop to main", "write release notes", or "tag v0.N.0".
+description: Cut a Clinic Booking release — check develop is green and has no open tickets in review, write release notes from the merge commits since the last tag, open the develop → main PR, and tag main after merge. Use when the user says "cut a release", "release checklist", "ship develop to main", "write release notes", or "tag v0.N.0".
 ---
 Never open, read, or grep `.instructor/`. Reference: `docs/references/git-conventions.md` (Releases). Pushing, merging and tagging change shared state, so **ask before each one**.
 
@@ -20,7 +20,7 @@ Never open, read, or grep `.instructor/`. Reference: `docs/references/git-conven
 
 **Ship**
 
-9. Branch `docs/release-vX.Y.Z` from `develop`, commit the notes as `docs: release notes vX.Y.Z`, and run `/mr` for it into `develop` (no ticket: skip `/mr`'s ticket-status steps).
-10. After it merges: **go-ahead →** `glab mr create --source-branch develop --target-branch main --title "release: vX.Y.Z" --description "$(cat docs/releases/vX.Y.Z.md)"`. Never pass `--remove-source-branch`: `develop` must stay.
-11. After approval and merge: **go-ahead →** `git fetch && git tag -a vX.Y.Z origin/main -m "vX.Y.Z" && git push origin vX.Y.Z`.
-12. Report: version, MR link, tag, deploy notes. Any problem found in the checks that is not a blocker → offer `/ticket`.
+9. Branch `docs/release-vX.Y.Z` from `develop`, commit the notes as `docs: release notes vX.Y.Z`, and run `/pr` for it into `develop` (no ticket: skip `/pr`'s ticket-status steps).
+10. After it merges: **go-ahead →** `gh pr create --head develop --base main --title "release: vX.Y.Z" --body-file docs/releases/vX.Y.Z.md`. Never pass `--delete-branch` when merging: `develop` must stay.
+11. After approval and merge: **go-ahead →** `git fetch && git tag -a vX.Y.Z origin/main -m "vX.Y.Z" && git push origin vX.Y.Z`. Then **go-ahead →** mirror to GitLab: `git push gitlab main vX.Y.Z`.
+12. Report: version, PR link, tag, deploy notes. Any problem found in the checks that is not a blocker → offer `/ticket`.

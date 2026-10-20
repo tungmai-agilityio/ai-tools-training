@@ -41,4 +41,4 @@
 
 ## 9. Definition of Done
 - [ ] Code bug: failing test written first, now green, and `pytest` green. Config or data bug: change applied and verified on the server.
-- [ ] Code bug: branch `fix/T-0NN`, one commit `fix: <what> (T-0NN)`, MR into `develop`. Status → In Review.
+- [ ] Code bug: branch `fix/T-0NN`, one commit `fix: <what> (T-0NN)`, PR into `develop`. Status → In Review.
