@@ -60,8 +60,7 @@ cover behaviour that already works.
 | `docs/business-rules.md` | What the clinic says the system should do |
 | `docs/references/` | Code, git and testing conventions |
 | `docs/templates/` | Ticket (feature/bug/chore), PRD, spec, ADR, test plan, PR, test and status report templates |
-| `.claude/skills/` | `/ticket` → `/plan` → `/implement` or `/fix` → `/review` → `/pr` |
-| `.claude/hooks/` | Block forbidden Bash commands, ruff-fix edited `.py` files; a `Stop` hook notifies on finish (see `.claude/settings.json`) |
+| `../../.claude/` | Repo-root Claude Code config. Skills: `/ticket` → `/plan` → `/implement` or `/fix` → `/review` → `/pr`; agents; commands; hooks that block forbidden Bash commands, ruff-fix edited `.py` files and notify on finish (`settings.json`). With the root `.mcp.json` (Playwright MCP), it loads when Claude Code is opened at the repo root |
 | `tickets/` | Your backlog. Each ticket is imperfect on purpose |
 | `PRACTICE.md` | How to use this repo with the role-play drills |
 
