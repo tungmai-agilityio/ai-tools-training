@@ -1,7 +1,7 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Literal
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 Status = Literal["scheduled", "checked_in", "completed", "cancelled", "no_show", "left_unseen"]
 
@@ -38,3 +38,23 @@ class Appointment(BaseModel):
     fee_cents: int
     cancellation_fee_cents: int = 0
     created_at: datetime
+
+
+class Holiday(BaseModel):
+    """A clinic-local day the whole clinic is closed."""
+
+    date: date
+    name: str = Field(min_length=1, max_length=100)
+
+
+class TimeOffIn(BaseModel):
+    """Whole clinic-local days, both ends inclusive."""
+
+    start_date: date
+    end_date: date
+    reason: str = Field(default="", max_length=200)
+
+
+class TimeOff(TimeOffIn):
+    id: int
+    doctor_id: int
