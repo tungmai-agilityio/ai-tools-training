@@ -9,6 +9,12 @@ Last updated by the clinic manager. Some points are still open. Those are marked
 - Appointments start on the half hour and last 30 or 60 minutes.
 - Booking must be in the future and no more than 60 days ahead.
 
+## Holidays and time off (T-014, defaults chosen by dev, pending clinic manager confirmation)
+- On a clinic holiday the whole clinic is closed: no doctor can be booked that day.
+- A doctor's time off blocks whole days (start and end date included) for that doctor only.
+- Both are whole clinic-time days. Only an administrator (admin token) can add or remove them.
+- A day that still has active appointments (scheduled or checked in) cannot be made a holiday or time off. Reschedule or cancel those appointments first.
+
 ## Booking
 - A doctor cannot have two appointments that overlap in time.
 - A patient cannot have two appointments that overlap in time, even with different doctors.

@@ -41,10 +41,32 @@ def validate_start(start: datetime, duration_minutes: int, now: datetime) -> Non
         raise DomainError("Overlaps the lunch break (12:00-13:00)", 422)
 
 
+DOCTOR_OFF = "Doctor is on time off that day"
+
+
+def closed_reason(doctor_id: int, day: date) -> str | None:
+    """Why the doctor takes no bookings on this clinic-local day, or None if the day is open."""
+    if day.weekday() >= 5:
+        return "Clinic is closed on weekends"
+    holiday = store.holidays.get(day)
+    if holiday:
+        return f"Clinic is closed for {holiday.name}"
+    if any(t.doctor_id == doctor_id and t.start_date <= day <= t.end_date for t in store.time_off.values()):
+        return DOCTOR_OFF
+    return None
+
+
+def check_day_open(doctor_id: int, start: datetime) -> None:
+    """Reject a start on a closed day: clinic closures are 422 like weekends, the doctor's time off is 409 like a clash."""
+    reason = closed_reason(doctor_id, to_local(start).date())
+    if reason:
+        raise DomainError(reason, 409 if reason == DOCTOR_OFF else 422)
+
+
 def free_slots(doctor_id: int, day: date) -> list[datetime]:
     """Free 30-minute slot starts (UTC) for a doctor on a clinic-local day."""
     tz = clinic_tz()
-    if day.weekday() >= 5:
+    if closed_reason(doctor_id, day):
         return []
     busy = [a for a in store.active_appointments() if a.doctor_id == doctor_id]
     slots: list[datetime] = []

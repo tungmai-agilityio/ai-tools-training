@@ -38,5 +38,5 @@ pytest                              # full suite; single test: pytest tests/test
 - **NEVER open, read, or grep `.instructor/`.** It holds the answer key.
 - Don't add real patient or client data, and don't commit `.env` or a real `ADMIN_TOKEN`.
 - Don't weaken or delete an existing test to get the suite green.
-- Don't add a dependency or an ORM. Appointments persist in SQLite (`DB_PATH`) via stdlib `sqlite3`, written through `store.save()`/`store.delete()`; doctors and patients stay seed-only.
+- Don't add a dependency or an ORM. Appointments persist in SQLite (`DB_PATH`) via stdlib `sqlite3`, written through `store.save()`/`store.delete()`; holidays and doctor time off persist the same way (T-014); doctors and patients stay seed-only.
 - Don't fix more than the current ticket. Note anything else you find for a separate ticket.

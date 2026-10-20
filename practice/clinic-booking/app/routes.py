@@ -8,14 +8,14 @@ business logic to the scheduling, fees, and clock modules.
 """
 
 import hmac
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Header, Query
 from fastapi.responses import Response
 
 from app import clock, config, fees, scheduling
 from app.errors import DomainError
-from app.models import Appointment, AppointmentIn, RescheduleIn, Status
+from app.models import Appointment, AppointmentIn, Holiday, RescheduleIn, Status, TimeOff, TimeOffIn
 from app.store import store
 
 router = APIRouter()
@@ -117,7 +117,83 @@ def doctor_slots(doctor_id: int, day: date = Query(alias="date")):
         "doctor_id": doctor_id,
         "date": day.isoformat(),
         "slots": [s.isoformat() for s in scheduling.free_slots(doctor_id, day)],
+        "closed": scheduling.closed_reason(doctor_id, day),  # None on an open day
     }
+
+
+# ---------------------------------------------------------------------------
+# Clinic holidays and doctor time off (whole clinic-local days)
+# ---------------------------------------------------------------------------
+
+def _reject_if_booked(days: set[date], doctor_id: int | None = None) -> None:
+    """Refuse to close days that still hold active appointments (for one doctor, or for anyone)."""
+    clash = [
+        a.id for a in store.active_appointments()
+        if scheduling.to_local(a.start).date() in days and doctor_id in (None, a.doctor_id)
+    ]
+    if clash:
+        raise DomainError(f"Reschedule or cancel appointments {sorted(clash)} first", 409)
+
+
+@router.get("/holidays")
+def list_holidays() -> list[Holiday]:
+    """Return clinic holidays, earliest first."""
+    return sorted(store.holidays.values(), key=lambda h: h.date)
+
+
+@router.post("/holidays", status_code=201)
+def add_holiday(body: Holiday, x_admin_token: str | None = Header(default=None)) -> Holiday:
+    """Close the whole clinic on one day (admin-only)."""
+    require_admin(x_admin_token)
+    if body.date in store.holidays:
+        raise DomainError("That day is already a holiday", 409)
+    _reject_if_booked({body.date})
+    store.save_holiday(body)
+    return body
+
+
+@router.delete("/holidays/{day}", status_code=204)
+def remove_holiday(day: date, x_admin_token: str | None = Header(default=None)):
+    """Reopen a holiday (admin-only)."""
+    require_admin(x_admin_token)
+    if day not in store.holidays:
+        raise DomainError("Holiday not found", 404)
+    store.delete_holiday(day)
+    return Response(status_code=204)
+
+
+@router.get("/doctors/{doctor_id}/time-off")
+def list_time_off(doctor_id: int) -> list[TimeOff]:
+    """Return a doctor's time off, earliest first."""
+    if doctor_id not in store.doctors:
+        raise DomainError("Doctor not found", 404)
+    return sorted((t for t in store.time_off.values() if t.doctor_id == doctor_id), key=lambda t: (t.start_date, t.id))
+
+
+@router.post("/doctors/{doctor_id}/time-off", status_code=201)
+def add_time_off(doctor_id: int, body: TimeOffIn, x_admin_token: str | None = Header(default=None)) -> TimeOff:
+    """Block whole days for one doctor, both ends inclusive (admin-only)."""
+    require_admin(x_admin_token)
+    if doctor_id not in store.doctors:
+        raise DomainError("Doctor not found", 404)
+    if body.end_date < body.start_date:
+        raise DomainError("end_date must be on or after start_date", 422)
+    if (body.end_date - body.start_date).days >= 366:
+        raise DomainError("Time off cannot be longer than a year", 422)
+    days = {body.start_date + timedelta(days=i) for i in range((body.end_date - body.start_date).days + 1)}
+    _reject_if_booked(days, doctor_id)
+    return store.add_time_off(doctor_id, body)
+
+
+@router.delete("/doctors/{doctor_id}/time-off/{time_off_id}", status_code=204)
+def remove_time_off(doctor_id: int, time_off_id: int, x_admin_token: str | None = Header(default=None)):
+    """Cancel a doctor's time off (admin-only)."""
+    require_admin(x_admin_token)
+    entry = store.time_off.get(time_off_id)
+    if entry is None or entry.doctor_id != doctor_id:
+        raise DomainError("Time off not found", 404)
+    store.delete_time_off(time_off_id)
+    return Response(status_code=204)
 
 
 # ---------------------------------------------------------------------------
@@ -147,6 +223,7 @@ def create_appointment(body: AppointmentIn) -> Appointment:
 
     now = clock.now_utc()
     scheduling.validate_start(body.start, body.duration_minutes, now)
+    scheduling.check_day_open(body.doctor_id, body.start)
 
     _check_conflicts(body.doctor_id, body.patient_id, body.start, body.duration_minutes)
 
@@ -319,6 +396,7 @@ def reschedule(appointment_id: int, body: RescheduleIn) -> Appointment:
         raise DomainError("Cannot reschedule after the start time", 409)
     duration = body.duration_minutes or appt.duration_minutes
     scheduling.validate_start(body.start, duration, now)
+    scheduling.check_day_open(appt.doctor_id, body.start)
     _check_conflicts(appt.doctor_id, appt.patient_id, body.start, duration, ignore_id=appt.id)
 
     if duration != appt.duration_minutes:

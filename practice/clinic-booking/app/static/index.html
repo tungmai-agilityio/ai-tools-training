@@ -661,12 +661,13 @@ async function loadSlots() {
   }
   $("slots").innerHTML = skeleton(3);
   try {
-    let slots = withOwnSlots((await api(`/doctors/${state.doctorId}/slots?date=${date}`)).slots, state.resched, date);
+    const res = await api(`/doctors/${state.doctorId}/slots?date=${date}`);
+    let slots = withOwnSlots(res.slots, state.resched, date);
     if (seq !== slotSeq) return;
     // A 60-min visit needs the next half hour free too (this also keeps it clear of lunch and closing).
     const free = new Set(slots.map(Date.parse));
     if (state.len === 60) slots = slots.filter((s) => free.has(Date.parse(s) + 18e5));
-    renderSlots(slots, date);
+    renderSlots(slots, date, res.closed);
   } catch (e) {
     if (seq !== slotSeq) return;
     $("slots").innerHTML = empty("Could not load free slots", esc(e.message));
@@ -674,12 +675,12 @@ async function loadSlots() {
   }
 }
 
-function renderSlots(slots, date) {
+function renderSlots(slots, date, closed) {
   if (!slots.length) {
     const next = nextClinicDay(date);
     const label = fmtKey(next, { weekday: "short", day: "numeric", month: "short" });
     $("slots").innerHTML = empty(`No free slots on ${esc(fmtKey(date, { weekday: "short", day: "numeric", month: "short" }))}`,
-      isWeekend(date) ? "The clinic is closed at weekends." : `${esc(nameOf(state.doctors, state.doctorId))} has no ${state.len}-minute opening this day.`,
+      closed ? `${esc(closed)}.` : `${esc(nameOf(state.doctors, state.doctorId))} has no ${state.len}-minute opening this day.`,
       next <= $("date").max ? `<button class="cb-btn" id="next-day" data-day="${next}">Next open day: ${esc(label)} ${svg("chevron")}</button>` : "");
     $("next-day")?.addEventListener("click", (e) => setDate(e.currentTarget.dataset.day));
     return;
