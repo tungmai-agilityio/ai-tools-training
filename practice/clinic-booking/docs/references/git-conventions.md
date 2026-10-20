@@ -36,7 +36,7 @@ Conventional Commits, one line, imperative, lower case, no period, ticket id in 
 - Add a body (blank line, then wrapped text) only when the *why* is not obvious from the ticket.
 
 ## Pull requests
-- Title = the commit subject. Description = `.github/pull_request_template.md`, filled in.
+- Title = the commit subject. Description = `.github/pull_request_template.md` (repo root), filled in.
 - Before opening: `pytest` is green, the diff is only the ticket, the ticket's status is `In Review`.
 - At least one approval. The author resolves every thread or answers it.
 - Merge with a merge commit (`Merge pull request #N from <user>/fix/T-0NN`), delete the source branch, set the ticket to `Done`.
