@@ -11,7 +11,7 @@ import subprocess
 import sys
 
 PROTECTED = {"develop", "main"}
-SHELLS = {"sh", "bash", "zsh", "dash", "eval"}
+SHELLS = {"sh", "bash", "zsh", "dash", "ksh", "mksh", "ash", "fish", "busybox", "eval"}
 # git-push options that take a separate value argument
 PUSH_VALUE_OPTS = {"-o", "--push-option", "--repo", "--receive-pack", "--exec"}
 # git global options that take a separate value argument

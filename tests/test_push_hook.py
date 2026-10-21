@@ -52,6 +52,7 @@ BLOCKED_ANYWHERE = [
     "git status && git push --force-with-lease origin develop",
     "git push --mirror origin",
     'eval "git push --force origin feat/T-015"',
+    'ksh -c "git push --force origin feat/T-015"',
     'bash -e -c "git push --force origin feat/T-015"',
     "bash -c -- 'git push --force origin feat/T-015'",
     "echo hi\ngit push --force origin 'feat/T-015\nmore",
