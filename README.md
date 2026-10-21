@@ -24,6 +24,7 @@ Then open:
 Clinic holidays (`/holidays`) and doctor time off (`/doctors/{id}/time-off`) are managed in Swagger.
 Adding or removing them needs `ADMIN_TOKEN` set in `.env` and sent as the `X-Admin-Token` header.
 Admin-only `GET /reports/revenue?from=YYYY-MM-DD&to=YYYY-MM-DD` returns consultation and penalty revenue per doctor and per day.
+The web app shows it on the Revenue screen (`#revenue`): enter the admin token (kept in memory only) and a date range.
 
 Appointments persist in SQLite (`DB_PATH`, default `data/clinic.db`) via stdlib `sqlite3`.
 No ORM, no new dependency. Delete the file to start fresh. To fill the list with demo data
