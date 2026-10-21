@@ -6,7 +6,8 @@ import sys
 
 RULES = [
     (r"git\s+add\s+.*(?<![\w.])\.env(?!\.example)\b", "don't commit `.env`"),
-    (r"git\s+push\b.*(--force|-f\b)", "no force pushes"),
+    (r"git\s+push\b.*(--force(?!-with-lease)|\s-f\b)", "use --force-with-lease, never --force"),
+    (r"git\s+push\b.*(--force|\s-f\b).*\bdevelop\b", "never force-push develop"),
     (r"git\s+push\b.*\bgitlab\b", "GitLab is a mirror: push only when asked"),
     (r"pip\s+install\s+(?!-r\b)", "no new dependencies; edit requirements.txt only if the ticket says so"),
 ]
