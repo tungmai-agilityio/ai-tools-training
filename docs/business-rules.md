@@ -36,3 +36,9 @@ Last updated by the clinic manager. Some points are still open. Those are marked
 
 ## Admin
 - Deleting an appointment is for administrators only and needs the admin token.
+
+## Revenue report (T-015, defaults chosen by dev, pending clinic manager confirmation)
+- Only an administrator (admin token) can read the revenue report.
+- Consultation revenue is the fee of `completed` visits. Penalty revenue is the fee charged on `no_show` and late-cancelled appointments. They are reported separately.
+- Each appointment counts on the clinic-local day of its scheduled start, whatever day it was completed or cancelled.
+- Amounts are gross: there are no refunds, and a deleted appointment drops out of the totals.
