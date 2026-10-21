@@ -11,6 +11,7 @@ import subprocess
 import sys
 
 PROTECTED = {"develop", "main"}
+SHELLS = {"sh", "bash", "zsh", "dash", "eval"}
 # git-push options that take a separate value argument
 PUSH_VALUE_OPTS = {"-o", "--push-option", "--repo", "--receive-pack", "--exec"}
 # git global options that take a separate value argument
@@ -32,8 +33,8 @@ def segments(cmd):
         if set(tok) <= set("();<>|&"):
             segs.append([])
         else:
-            if segs[-1] and re.fullmatch(r"-[a-z]*c", segs[-1][-1]) and re.search(r"\s", tok):
-                inner += segments(tok)  # sh -c "git push ...": read the script too
+            if re.search(r"\s", tok) and any(os.path.basename(t) in SHELLS for t in segs[-1]):
+                inner += segments(tok)  # sh -c "git push ..." / eval "...": read the script too
             segs[-1].append(tok)
     return segs + inner
 
@@ -94,8 +95,8 @@ def main():
         for seg in segments(cmd):
             args = push_args(seg)
             why = why or (check_push(args) if args is not None else None)
-    except ValueError:  # unparseable (e.g. unbalanced quote): fail closed for anything that looks like a push
-        if re.search(r"\bgit\b.*\bpush\b", cmd):
+    except Exception:  # unparseable or a hook bug: only exit code 2 blocks, so fail closed for anything push-like
+        if re.search(r"\bgit\b.*\bpush\b", cmd, re.S):
             why = "could not parse this git push; simplify the command"
     for pattern, rule in RULES:
         why = why or (rule if re.search(pattern, cmd) else None)
