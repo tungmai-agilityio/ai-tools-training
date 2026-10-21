@@ -55,4 +55,4 @@ Conventional Commits, one line, imperative, lower case, no period, ticket id in 
 - `gitlab` = mirror, no MRs there. After a PR merges or a release is tagged, ask first, then `git push gitlab develop main --tags`.
 
 ## Never commit
-`.env`, `data/*.db`, `.venv/`, `__pycache__/`, real tokens, real patient data, anything under `.instructor/`.
+`.env`, `data/*.db`, `.venv/`, `__pycache__/`, real tokens, real patient data.

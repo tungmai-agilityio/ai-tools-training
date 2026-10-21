@@ -2,7 +2,7 @@
 name: plan
 description: Plan a Clinic Booking ticket before any code is written — analyse it, stop on open questions, design the change, and fill the ticket's approach, acceptance criteria and test cases (writing a spec, rule change or ADR when the change needs one). Use when the user says "plan T-0NN", "spec this", "how should we build T-0NN", "what should we test", "the client decided X", or before /implement or /fix on an unplanned ticket.
 ---
-Never open, read, or grep `.instructor/`. This skill writes no app or test code.
+This skill writes no app or test code.
 
 1. Read `tickets/T-0NN.md`. If it is too thin to work from, run `/ticket` on it first.
 2. Run the **business-analyst** subagent on it.

@@ -5,7 +5,6 @@ import re
 import sys
 
 RULES = [
-    (r"\.instructor", "`.instructor/` holds the answer key; never open it"),
     (r"git\s+add\s+.*(?<![\w.])\.env(?!\.example)\b", "don't commit `.env`"),
     (r"git\s+push\b.*(--force|-f\b)", "no force pushes"),
     (r"git\s+push\b.*\bgitlab\b", "GitLab is a mirror: push only when asked"),

@@ -39,8 +39,6 @@ List what I missed first.
 - Day 2: T-003, T-004 (fix, test, PR, self-review with Claude)
 - Day 3: T-005, T-006, T-009 (BA/review drills), then the conflict drill and one full end-to-end ticket
 
-Grade yourself with `.instructor/ANSWER_KEY.md` only after you finish a drill.
-
 ## Done checklist
 
 - [ ] Wrote a repro in a ticket

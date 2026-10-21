@@ -51,7 +51,6 @@ Follow this review order: **Correctness → Tests → Readability → Security b
 
 ## Always skip
 
-- **Generated code.** Don't comment on files under `.instructor/` — it holds the answer key and must never be opened or reviewed.
 - **Style nits a linter catches.** Ruff handles formatting and import order. Don't flag whitespace, trailing commas, or import sorting — the `lint-on-edit` hook covers these.
 - **The default GitLab README boilerplate.** The root `README.md` still has GitLab template text. Don't flag it unless the PR explicitly touches it.
 - **Virtual environment and cache directories.** Ignore `.venv/`, `__pycache__/`, `.pytest_cache/`, `.ruff_cache/`.

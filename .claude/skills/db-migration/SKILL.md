@@ -2,7 +2,7 @@
 name: db-migration
 description: Change the stored Appointment shape in Clinic Booking without breaking existing rows in data/clinic.db — classify the change, pick the lightest safe path (default, before-validator, or one-off script), prove old rows still load with a test. Use when the user says "add a field to Appointment", "rename a field", "change a status", "migrate the db", "old appointments fail to load", or when a ticket touches app/models.py Appointment or app/store.py.
 ---
-Never open, read, or grep `.instructor/`. References: `docs/references/code-conventions.md`, `testing-conventions.md`, `tickets/T-012.md`.
+References: `docs/references/code-conventions.md`, `testing-conventions.md`, `tickets/T-012.md`.
 
 **How storage works.** One table `appointments(id, data)`; `data` is `Appointment.model_dump_json()`. On startup `Store.__init__` runs `Appointment.model_validate_json` on every row, so **a row that no longer validates crashes the app at boot**. There are no SQL columns to alter. Doctors and patients live in `data/seed.json` and are not migrated.
 

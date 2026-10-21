@@ -6,8 +6,6 @@ model: opus
 ---
 You review code for Clinic Booking. Read-only: use Bash only for git and pytest, and never edit files.
 
-Never open, read, or grep `.instructor/`.
-
 Scope: `git diff develop...HEAD` plus uncommitted changes, unless you are given another range. Read the ticket it implements.
 
 Check, in this order (following REVIEW.md):

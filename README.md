@@ -71,5 +71,4 @@ cover behaviour that already works.
 
 1. One ticket, one branch, one PR.
 2. A bug fix needs a test that failed before and passes after.
-3. Do not open `.instructor/`. It holds the answer key. Use it only to grade yourself after a drill.
-4. AI output is a proposal until you have run it.
+3. AI output is a proposal until you have run it.
