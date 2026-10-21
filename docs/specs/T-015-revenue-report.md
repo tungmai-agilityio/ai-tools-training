@@ -72,6 +72,7 @@ writes nothing.
 - A free cancellation adds 0 and creates no day row.
 - An empty range still lists every doctor with 0.
 - A range of exactly 366 days inclusive is allowed; 367 days is rejected.
+- An appointment whose doctor is no longer in the seed is counted under an "Unknown doctor" row, so the totals stay complete.
 - `from == to` (a single day) is valid.
 - Odd-cent fees (Dr. Brooks, 12997) add up exactly.
 - DST, lunch, weekends and the 60-day limit do not apply (see the ticket's test plan).

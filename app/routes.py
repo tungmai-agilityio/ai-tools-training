@@ -15,10 +15,7 @@ from fastapi.responses import Response
 
 from app import clock, config, fees, scheduling
 from app.errors import DomainError
-from app.models import (
-    Appointment, AppointmentIn, DayRevenue, DoctorRevenue, Holiday, RescheduleIn,
-    RevenueReport, RevenueTotals, Status, TimeOff, TimeOffIn,
-)
+from app.models import Appointment, AppointmentIn, Holiday, RescheduleIn, RevenueReport, Status, TimeOff, TimeOffIn
 from app.store import store
 
 router = APIRouter()
@@ -173,16 +170,21 @@ def list_time_off(doctor_id: int) -> list[TimeOff]:
     return sorted((t for t in store.time_off.values() if t.doctor_id == doctor_id), key=lambda t: (t.start_date, t.id))
 
 
+def _check_range(start: date, end: date, order_msg: str, length_msg: str) -> None:
+    """Reject a date range that is backwards or longer than 366 days (both ends inclusive)."""
+    if end < start:
+        raise DomainError(order_msg, 422)
+    if (end - start).days >= 366:
+        raise DomainError(length_msg, 422)
+
+
 @router.post("/doctors/{doctor_id}/time-off", status_code=201)
 def add_time_off(doctor_id: int, body: TimeOffIn, x_admin_token: str | None = Header(default=None)) -> TimeOff:
     """Block whole days for one doctor, both ends inclusive (admin-only)."""
     require_admin(x_admin_token)
     if doctor_id not in store.doctors:
         raise DomainError("Doctor not found", 404)
-    if body.end_date < body.start_date:
-        raise DomainError("end_date must be on or after start_date", 422)
-    if (body.end_date - body.start_date).days >= 366:
-        raise DomainError("Time off cannot be longer than a year", 422)
+    _check_range(body.start_date, body.end_date, "end_date must be on or after start_date", "Time off cannot be longer than a year")
     days = {body.start_date + timedelta(days=i) for i in range((body.end_date - body.start_date).days + 1)}
     _reject_if_booked(days, doctor_id)
     return store.add_time_off(doctor_id, body)
@@ -431,40 +433,14 @@ def delete_appointment(appointment_id: int, x_admin_token: str | None = Header(d
 # ---------------------------------------------------------------------------
 
 @router.get("/reports/revenue", dependencies=[Depends(require_admin)])
-def revenue_report(from_date: date = Query(alias="from"), to_date: date = Query(alias="to")) -> RevenueReport:
+def revenue_report(
+    response: Response, from_date: date = Query(alias="from"), to_date: date = Query(alias="to")
+) -> RevenueReport:
     """Consultation and penalty revenue per doctor and per clinic day, both ends inclusive (admin-only).
 
     Completed visits add ``fee_cents``; no-shows and cancellations add ``cancellation_fee_cents``.
     Each appointment counts on the clinic-local date of its scheduled start.
     """
-    if to_date < from_date:
-        raise DomainError("from must be on or before to", 422)
-    if (to_date - from_date).days >= 366:
-        raise DomainError("Range cannot be longer than a year", 422)
-    by_doctor = {d["id"]: DoctorRevenue(doctor_id=d["id"], doctor_name=d["name"]) for d in store.doctors.values()}
-    by_day: dict[date, DayRevenue] = {}
-    for a in store.appointments.values():
-        day = scheduling.to_local(a.start).date()
-        if not from_date <= day <= to_date:
-            continue
-        if a.status == "completed":
-            field, cents = "consultation_cents", a.fee_cents
-        elif a.status in ("no_show", "cancelled"):
-            field, cents = "penalty_cents", a.cancellation_fee_cents
-        else:
-            continue
-        if not cents:
-            continue
-        row = by_day.setdefault(day, DayRevenue(date=day))
-        for target in (row, by_doctor[a.doctor_id]):
-            setattr(target, field, getattr(target, field) + cents)
-    return RevenueReport(
-        from_date=from_date,
-        to_date=to_date,
-        totals=RevenueTotals(
-            consultation_cents=sum(d.consultation_cents for d in by_doctor.values()),
-            penalty_cents=sum(d.penalty_cents for d in by_doctor.values()),
-        ),
-        by_doctor=list(by_doctor.values()),
-        by_day=[by_day[d] for d in sorted(by_day)],
-    )
+    _check_range(from_date, to_date, "from must be on or before to", "Range cannot be longer than a year")
+    response.headers["Cache-Control"] = "no-store"
+    return scheduling.build_revenue(list(store.appointments.values()), store.doctors, from_date, to_date)

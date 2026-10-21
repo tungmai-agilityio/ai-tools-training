@@ -113,6 +113,17 @@ def test_late_evening_visit_is_not_on_the_next_utc_day(client):
     assert body["by_day"] == []
 
 
+def test_visit_for_a_doctor_missing_from_the_seed_is_reported_as_unknown(client):
+    _direct(datetime(2026, 10, 14, 13, 0, tzinfo=timezone.utc))
+    store.appointments[1].doctor_id = 99
+    r = _report(client, "2026-10-14", "2026-10-14")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["totals"]["consultation_cents"] == 15000
+    assert _doctor(body, 99)["consultation_cents"] == 15000
+    assert body["by_day"][0]["consultation_cents"] == 15000
+
+
 # --- fee variants ---------------------------------------------------------
 
 def test_insured_visit_counts_discounted_fee(client):
