@@ -4,6 +4,7 @@
 A guardrail, not a control: real enforcement is branch protection on GitHub.
 """
 import json
+import os
 import re
 import shlex
 import subprocess
@@ -26,20 +27,23 @@ def segments(cmd):
     """Split a shell command into token lists, one per simple command."""
     lex = shlex.shlex(cmd, posix=True, punctuation_chars=True)
     lex.whitespace_split = True
-    segs = [[]]
+    segs, inner = [[]], []
     for tok in lex:
         if set(tok) <= set("();<>|&"):
             segs.append([])
         else:
+            if segs[-1] and re.fullmatch(r"-[a-z]*c", segs[-1][-1]) and re.search(r"\s", tok):
+                inner += segments(tok)  # sh -c "git push ...": read the script too
             segs[-1].append(tok)
-    return segs
+    return segs + inner
 
 
 def push_args(seg):
     """Arguments after `git [global opts] push`, or None if this is not a push."""
-    if "git" not in seg:
+    git = [k for k, t in enumerate(seg) if os.path.basename(t) == "git"]
+    if not git:
         return None
-    i = seg.index("git") + 1
+    i = git[0] + 1
     while i < len(seg) and seg[i].startswith("-"):
         i += 2 if seg[i] in GIT_VALUE_OPTS else 1
     return seg[i + 1:] if i < len(seg) and seg[i] == "push" else None
@@ -75,7 +79,7 @@ def check_push(args):
     if not lease:
         return None
     # a lease push is fine on a feature branch; it must never reach a protected one
-    targets = {r.split(":")[-1].removeprefix("refs/heads/") for r in refspecs}
+    targets = {r.split(":")[-1].removeprefix("refs/").removeprefix("heads/") for r in refspecs}
     if not refspecs or "HEAD" in targets:
         targets = (targets - {"HEAD"}) | {current_branch() or "unknown"}  # implicit target: fail closed
     if targets & (PROTECTED | {"unknown"}):
@@ -90,8 +94,9 @@ def main():
         for seg in segments(cmd):
             args = push_args(seg)
             why = why or (check_push(args) if args is not None else None)
-    except ValueError:  # unbalanced quotes etc.: not a command we can reason about
-        pass
+    except ValueError:  # unparseable (e.g. unbalanced quote): fail closed for anything that looks like a push
+        if re.search(r"\bgit\b.*\bpush\b", cmd):
+            why = "could not parse this git push; simplify the command"
     for pattern, rule in RULES:
         why = why or (rule if re.search(pattern, cmd) else None)
     if why:
