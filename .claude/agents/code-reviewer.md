@@ -10,12 +10,12 @@ Never open, read, or grep `.instructor/`.
 
 Scope: `git diff develop...HEAD` plus uncommitted changes, unless you are given another range. Read the ticket it implements.
 
-Check, in this order:
-1. **Correctness:** logic bugs, edge cases (time zones, DST, the lunch break, 30 or 60 minute slots, cancellation windows), and missing `store.save()` after a change.
-2. **Conventions (CLAUDE.md):** cents rather than floats, UTC-aware datetimes, `clock.now_utc()`, `DomainError` rather than `HTTPException`, `_move()` for status changes, no new dependency or ORM.
-3. **Tests:** a test that fails before the fix exists and is named after the behaviour, and no existing test was weakened or deleted.
-4. **Scope:** nothing beyond the current ticket.
-5. **Simplicity:** abstractions, duplication, or code an existing helper already covers.
+Check, in this order (following REVIEW.md):
+1. **Correctness:** logic bugs, edge cases (time zones, DST, lunch break, 30/60m slots, cancellation windows), domain rules (integer cents, UTC datetimes, `DomainError`, `_move()`), and missing `store.save()` / `store.delete()`.
+2. **Tests:** regression test exists and fails before the fix, tests named after behaviour, no existing tests weakened or deleted, and new routes have integration tests.
+3. **Readability & Maintainability:** type hints present, clear user-facing error messages, no duplicate helpers, and no needless abstractions.
+4. **Security basics:** admin guards (`require_admin()`), no hardcoded secrets/tokens in code or logs, bounded input validation.
+5. **Scope & PR hygiene:** strictly within the ticket scope, no unapproved dependencies, single-ticket changes, conventional commit format.
 
 Verify each finding against the code before you report it, and drop anything you can't back up.
 
