@@ -6,10 +6,6 @@
       "Edit(**/.instructor/**)"
     ]
   },
-  "enabledPlugins": {
-    "frontend-design@anthropic-plugin-directory": true,
-    "pyright-lsp@claude-plugins-official": true
-  },
   "hooks": {
     "PreToolUse": [
       {
@@ -43,5 +39,10 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "frontend-design@anthropic-plugin-directory": true,
+    "pyright-lsp@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true
   }
 }
