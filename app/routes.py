@@ -10,12 +10,12 @@ business logic to the scheduling, fees, and clock modules.
 import hmac
 from datetime import date, datetime, timedelta
 
-from fastapi import APIRouter, Header, Query
+from fastapi import APIRouter, Depends, Header, Query
 from fastapi.responses import Response
 
 from app import clock, config, fees, scheduling
 from app.errors import DomainError
-from app.models import Appointment, AppointmentIn, Holiday, RescheduleIn, Status, TimeOff, TimeOffIn
+from app.models import Appointment, AppointmentIn, Holiday, RescheduleIn, RevenueReport, Status, TimeOff, TimeOffIn
 from app.store import store
 
 router = APIRouter()
@@ -170,16 +170,21 @@ def list_time_off(doctor_id: int) -> list[TimeOff]:
     return sorted((t for t in store.time_off.values() if t.doctor_id == doctor_id), key=lambda t: (t.start_date, t.id))
 
 
+def _check_range(start: date, end: date, order_msg: str, length_msg: str) -> None:
+    """Reject a date range that is backwards or longer than 366 days (both ends inclusive)."""
+    if end < start:
+        raise DomainError(order_msg, 422)
+    if (end - start).days >= 366:
+        raise DomainError(length_msg, 422)
+
+
 @router.post("/doctors/{doctor_id}/time-off", status_code=201)
 def add_time_off(doctor_id: int, body: TimeOffIn, x_admin_token: str | None = Header(default=None)) -> TimeOff:
     """Block whole days for one doctor, both ends inclusive (admin-only)."""
     require_admin(x_admin_token)
     if doctor_id not in store.doctors:
         raise DomainError("Doctor not found", 404)
-    if body.end_date < body.start_date:
-        raise DomainError("end_date must be on or after start_date", 422)
-    if (body.end_date - body.start_date).days >= 366:
-        raise DomainError("Time off cannot be longer than a year", 422)
+    _check_range(body.start_date, body.end_date, "end_date must be on or after start_date", "Time off cannot be longer than a year")
     days = {body.start_date + timedelta(days=i) for i in range((body.end_date - body.start_date).days + 1)}
     _reject_if_booked(days, doctor_id)
     return store.add_time_off(doctor_id, body)
@@ -421,3 +426,21 @@ def delete_appointment(appointment_id: int, x_admin_token: str | None = Header(d
     _get(appointment_id)
     store.delete(appointment_id)
     return Response(status_code=204)
+
+
+# ---------------------------------------------------------------------------
+# Reports
+# ---------------------------------------------------------------------------
+
+@router.get("/reports/revenue", dependencies=[Depends(require_admin)])
+def revenue_report(
+    response: Response, from_date: date = Query(alias="from"), to_date: date = Query(alias="to")
+) -> RevenueReport:
+    """Consultation and penalty revenue per doctor and per clinic day, both ends inclusive (admin-only).
+
+    Completed visits add ``fee_cents``; no-shows and cancellations add ``cancellation_fee_cents``.
+    Each appointment counts on the clinic-local date of its scheduled start.
+    """
+    _check_range(from_date, to_date, "from must be on or before to", "Range cannot be longer than a year")
+    response.headers["Cache-Control"] = "no-store"
+    return scheduling.build_revenue(list(store.appointments.values()), store.doctors, from_date, to_date)

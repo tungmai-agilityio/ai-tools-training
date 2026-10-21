@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 
 from app import config
 from app.errors import DomainError
+from app.models import DayRevenue, DoctorRevenue, RevenueReport, RevenueTotals
 from app.store import store
 
 
@@ -80,3 +81,32 @@ def free_slots(doctor_id: int, day: date) -> list[datetime]:
                 slots.append(slot)
         minute += config.SLOT_MINUTES
     return slots
+
+
+def build_revenue(appointments, doctors, from_date: date, to_date: date) -> RevenueReport:
+    """Sum fees per doctor and per clinic day. Completed visits are consultation revenue; no-show and
+    cancellation fees are penalty revenue. Each appointment counts on the clinic-local day of its start."""
+    by_doctor = {d["id"]: DoctorRevenue(doctor_id=d["id"], doctor_name=d["name"]) for d in doctors.values()}
+    by_day: dict[date, DayRevenue] = {}
+    for a in appointments:
+        day = to_local(a.start).date()
+        if not from_date <= day <= to_date or a.status not in ("completed", "no_show", "cancelled"):
+            continue
+        consultation, penalty = (a.fee_cents, 0) if a.status == "completed" else (0, a.cancellation_fee_cents)
+        if not consultation + penalty:
+            continue
+        # a stored appointment can outlive its doctor in the seed: keep its money under an 'Unknown' row
+        doctor = by_doctor.setdefault(a.doctor_id, DoctorRevenue(doctor_id=a.doctor_id, doctor_name="Unknown doctor"))
+        for row in (doctor, by_day.setdefault(day, DayRevenue(date=day))):
+            row.consultation_cents += consultation
+            row.penalty_cents += penalty
+    return RevenueReport(
+        from_date=from_date,
+        to_date=to_date,
+        totals=RevenueTotals(
+            consultation_cents=sum(d.consultation_cents for d in by_doctor.values()),
+            penalty_cents=sum(d.penalty_cents for d in by_doctor.values()),
+        ),
+        by_doctor=list(by_doctor.values()),
+        by_day=[by_day[d] for d in sorted(by_day)],
+    )

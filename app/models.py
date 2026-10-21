@@ -1,7 +1,7 @@
 from datetime import date, datetime, timezone
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, computed_field, field_validator
 
 Status = Literal["scheduled", "checked_in", "completed", "cancelled", "no_show", "left_unseen"]
 
@@ -58,3 +58,30 @@ class TimeOffIn(BaseModel):
 class TimeOff(TimeOffIn):
     id: int
     doctor_id: int
+
+
+class RevenueTotals(BaseModel):
+    consultation_cents: int = 0
+    penalty_cents: int = 0
+
+    @computed_field
+    @property
+    def total_cents(self) -> int:
+        return self.consultation_cents + self.penalty_cents
+
+
+class DoctorRevenue(RevenueTotals):
+    doctor_id: int
+    doctor_name: str
+
+
+class DayRevenue(RevenueTotals):
+    date: date
+
+
+class RevenueReport(BaseModel):
+    from_date: date
+    to_date: date
+    totals: RevenueTotals
+    by_doctor: list[DoctorRevenue]
+    by_day: list[DayRevenue]
