@@ -2,3 +2,9 @@
 !.env.example
 .claude/worktrees/
 .playwright-mcp/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+data/*.db

@@ -2,7 +2,7 @@
 name: fix
 description: Fix a Clinic Booking bug ticket — reproduce, prove the root cause with a failing test, smallest fix via bug-fixer, review, one commit. Use when the user says "fix T-0NN", "debug this ticket", "this is broken", or hands over a bug report. Not for features (/implement).
 ---
-Never open, read, or grep `.instructor/`. References: `docs/references/testing-conventions.md`, `git-conventions.md`.
+References: `docs/references/testing-conventions.md`, `git-conventions.md`.
 
 1. **Understand.** Read the ticket and `docs/business-rules.md`. If the expected behaviour is unclear or touches an OPEN QUESTION, run `/plan` and stop at its gate.
 2. **Branch.** `git switch develop && git pull`, then `git switch -c fix/T-0NN`. Set the ticket's status to `In Progress`.

@@ -2,7 +2,7 @@
 name: pr
 description: Open and finish a Clinic Booking GitHub pull request — check the review gate, rebase on develop and resolve conflicts, write the description from the template, push and open the PR, then merge after approval and set the ticket Done. Use when the user says "open a PR", "ready for review", "write the PR description", "rebase on develop", "resolve the conflict", or "merge T-0NN".
 ---
-Never open, read, or grep `.instructor/`. Reference: `docs/references/git-conventions.md`. Pushing and merging change shared state, so **ask before each push and each merge**.
+Reference: `docs/references/git-conventions.md`. Pushing and merging change shared state, so **ask before each push and each merge**.
 
 **Open**
 1. **Gate.** `/review` has run on the current HEAD with the verdict **approve** or **approve with nits**. If not, or HEAD changed since, run it. **changes needed** means stop.

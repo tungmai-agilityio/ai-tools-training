@@ -2,7 +2,7 @@
 name: implement
 description: Implement a planned Clinic Booking feature or chore ticket end to end — branch, test-first code via backend-dev/frontend-dev, one commit, review and QA via /review. Use when the user says "implement T-0NN", "build T-0NN", "do the ticket", or "start coding T-0NN". For bugs use /fix.
 ---
-Never open, read, or grep `.instructor/`. References: `docs/references/code-conventions.md`, `git-conventions.md`, `testing-conventions.md`.
+References: `docs/references/code-conventions.md`, `git-conventions.md`, `testing-conventions.md`.
 
 1. **Ready check.** The ticket has Approach, acceptance criteria and a test plan, and no unanswered open questions. If not, run `/plan` and stop at its gate.
 2. **Branch.** `git switch develop && git pull`, then `git switch -c feat/T-0NN` (`chore/<slug>` for a chore). Set the ticket's status to `In Progress`.

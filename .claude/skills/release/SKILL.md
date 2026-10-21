@@ -2,7 +2,7 @@
 name: release
 description: Cut a Clinic Booking release — check develop is green and has no open tickets in review, write release notes from the merge commits since the last tag, open the develop → main PR, and tag main after merge. Use when the user says "cut a release", "release checklist", "ship develop to main", "write release notes", or "tag v0.N.0".
 ---
-Never open, read, or grep `.instructor/`. Reference: `docs/references/git-conventions.md` (Releases). Pushing, merging and tagging change shared state, so **ask before each one**.
+Reference: `docs/references/git-conventions.md` (Releases). Pushing, merging and tagging change shared state, so **ask before each one**.
 
 **Check** (stop and report on the first failure)
 

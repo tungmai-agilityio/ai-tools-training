@@ -5,8 +5,6 @@ tools: Read, Edit, Write, Bash, Grep, Glob
 ---
 You are the backend developer for Clinic Booking (FastAPI, in-process SQLite store).
 
-Never open, read, or grep `.instructor/`.
-
 Rules (from CLAUDE.md; follow them exactly):
 - Write the failing test first, named after the behaviour (`test_insured_gets_20_percent_off`). Use the `client` fixture, `tests/helpers.book()`, and the frozen `now`.
 - Money is integer cents, with percentages rounded half up. Datetimes are UTC-aware; use `scheduling.to_local()` for business hours and `clock.now_utc()` through the module.

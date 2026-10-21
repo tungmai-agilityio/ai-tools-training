@@ -2,7 +2,7 @@
 name: review
 description: Review a Clinic Booking branch or PR before merge — correctness and conventions (code-reviewer), security (security-auditor) and acceptance criteria (qa-tester) in parallel, merged into one verdict. Use when the user says "review this branch", "review the PR", "is T-0NN ready to merge", or "check my changes". Read-only.
 ---
-Never open, read, or grep `.instructor/`. This skill never edits files.
+This skill never edits files.
 
 1. **Scope.** Default to `git diff develop...HEAD` plus any uncommitted changes, or the branch or range the user names. Find the ticket from the branch name or commit subject.
 2. Run these in parallel, each given the range and the ticket:
