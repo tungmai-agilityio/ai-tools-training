@@ -1,4 +1,4 @@
-# Test report: <T-0NN / release / sprint>
+# Test report: <#N / release / sprint>
 
 **Tester:** <name>  **Date:** <YYYY-MM-DD>  **Build:** <branch @ short sha>  **Environment:** <local | staging; OS, browser>
 
@@ -10,7 +10,7 @@
 | <n> | <n> | <n> | <n> | <n> |
 
 ## 2. Scope
-- In scope: <tickets, screens, endpoints>
+- In scope: <issues, screens, endpoints>
 - Out of scope: <what was not tested and why>
 
 ## 3. Automated tests
@@ -27,7 +27,7 @@ New tests added: <list>
 ## 5. Defects found
 | Ticket | Title | Severity | Status |
 |---|---|---|---|
-| T-0NN | <title> | S1–S4 | Open |
+| #N | <title> | S1–S4 | Open |
 
 ## 6. Risks and notes
 - <untested area, flaky test, UI vs API difference, assumption made>

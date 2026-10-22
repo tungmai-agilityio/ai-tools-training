@@ -1,6 +1,6 @@
-# Test plan: T-0NN <title>
+# Test plan: #N <title>
 
-**Author:** <name>  **Date:** <YYYY-MM-DD>  **Ticket:** `tickets/T-0NN.md`  **Status:** <Draft|Agreed>
+**Author:** <name>  **Date:** <YYYY-MM-DD>  **Issue:** #N  **Status:** <Draft|Agreed>
 
 ## 1. Scope
 - In scope: <ACs, endpoints, screens>

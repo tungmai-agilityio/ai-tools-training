@@ -1,11 +1,11 @@
-# Spec: <Feature name> (<T-0NN>)
+# Spec: <Feature name> (<#N>)
 
 **Author:** <name>  **Status:** <Draft|In review|Approved>  **PRD:** <link>  **Last updated:** <YYYY-MM-DD>
 
 > A Spec says **how**. It must be reviewable before any code is written.
 
 ## 1. Context
-<One paragraph: the problem from the PRD/ticket and the current behaviour, with `path:line` refs.>
+<One paragraph: the problem from the PRD/issue and the current behaviour, with `path:line` refs.>
 
 ## 2. Proposed design
 <The change in prose, then per file:>

@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Clinic Booking: a FastAPI training project with fake data only. The spec is `docs/business-rules.md`, the backlog is in `tickets/`, and the file layout is in `README.md`.
+Clinic Booking: a FastAPI training project with fake data only. The spec is `docs/business-rules.md`, work is tracked as GitHub issues (`tickets/` is a read-only archive of T-001 to T-017), and the file layout is in `README.md`.
 
 ## Commands
 
@@ -15,13 +15,14 @@ pytest                              # full suite; single test: pytest tests/test
 
 ## Workflow
 
-- References: `docs/references/` (code, git, testing conventions). Templates: `docs/templates/` (tickets, PRD, spec, ADR, test plan, PR, reports).
-- Features: `/ticket` (**business-analyst** drafts; no ticket while a blocking question is open) → `/plan` (**planner**; user approves the plan) → `/implement` (**developer**; pauses on new requirements or decisions) → `/review` → `/pr`.
+- References: `docs/references/` (code, git, testing conventions). Templates: `.github/ISSUE_TEMPLATE/` (feature, bug, chore issues) and `docs/templates/` (PRD, spec, ADR, test plan, reports).
+- Features: `/ticket` (**business-analyst** drafts; no issue while a blocking question is open) → `/plan` (**planner**; user approves the plan) → `/implement` (**developer**; pauses on new requirements or decisions) → `/review` → `/pr`.
   Bugs: `/ticket` triage → `/fix` (`/plan` first if it needs design). Chores: `/ticket` → `/plan` if it spans modules → `/implement`.
-- Skills, agents, commands and hooks live in the repo-root `.claude/`, so always open Claude Code at the repo root. Subagents live in `.claude/agents/`: **business-analyst** (requirements and ticket draft), **planner** (implementation plan and testing strategy), **developer** (test-first implementation and fixes), and **code-reviewer** (independent correctness, security, and quality gate). If one is not registered, spawn a general-purpose agent whose prompt starts with "Read `.claude/agents/<name>.md` (repo root) and follow it exactly".
-- One ticket gets one branch (`feat/T-0NN`, `fix/T-0NN`, `chore/<slug>` or `docs/<slug>`), one commit (`<type>: <what> (T-0NN)`), and one GitHub pull request into `develop`. GitLab (`gitlab` remote) is a mirror only: no MRs there, push only when asked.
+- Skills, agents, commands and hooks live in the repo-root `.claude/`, so always open Claude Code at the repo root. Subagents live in `.claude/agents/`: **business-analyst** (requirements and issue draft), **planner** (implementation plan and testing strategy), **developer** (test-first implementation and fixes), and **code-reviewer** (independent correctness, security, and quality gate). If one is not registered, spawn a general-purpose agent whose prompt starts with "Read `.claude/agents/<name>.md` (repo root) and follow it exactly".
+- One issue gets one branch (`feat/<N>-<slug>`, `fix/<N>-<slug>`, `chore/<slug>` or `docs/<slug>`), one commit (`<type>: <what> (#N)`), and one pull request into `develop` whose body says `Closes #N`. Status: open issue, `in-progress` label while worked on (`blocked` while waiting on a decision), closed by the merge.
+- Ask before creating, editing or commenting on a GitHub issue, and before each push and merge.
 - Every bug fix comes with a test that fails before the fix and passes after it. Run `pytest` before you call anything done.
-- When a ticket is vague or contradicts `docs/business-rules.md`, ask before coding. If an item there is marked OPEN QUESTION, don't decide it in code.
+- When an issue is vague or contradicts `docs/business-rules.md`, ask before coding. If an item there is marked OPEN QUESTION, don't decide it in code.
 
 ## Conventions
 

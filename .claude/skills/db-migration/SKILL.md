@@ -15,8 +15,8 @@ description: Change the stored Appointment shape without breaking existing rows 
 2. **Apply the lightest path:**
    - **A. Default** that is true for old rows. If no honest default exists, it's an OPEN QUESTION: ask.
    - **B. Before-validator** on `Appointment` that rewrites the old shape. Add a `ponytail:` comment saying when it can go.
-   - **C. One-off script** `scripts/migrate_T-0NN_<slug>.py` with stdlib `sqlite3`. It validates each row, writes in one transaction, is idempotent and prints the count of changed rows. It must not import `app.store`, which would crash on the very rows being fixed.
+   - **C. One-off script** `scripts/migrate_<N>_<slug>.py` with stdlib `sqlite3`. It validates each row, writes in one transaction, is idempotent and prints the count of changed rows. It must not import `app.store`, which would crash on the very rows being fixed.
 
 3. **Test red first** in `tests/test_migration_<slug>.py`: write an old-shape row to a `tmp_path` DB and assert it loads (for C, assert a second run changes 0 rows). A change that touches money or datetimes also tests that values stay integer cents and UTC-aware. Then run full `pytest`.
 4. **Try it on a backup:** copy `data/clinic.db` first and restore it if anything breaks. Never commit `data/*.db`.
-5. **Hand off:** record the path and why in the ticket. For C, add a `## Deploy note` (back up, run the script before starting) for `/release`. Then `/implement` or `/fix`.
+5. **Hand off:** record the path and why in the issue. For C, add a `## Deploy note` (back up, run the script before starting) for `/release`. Then `/implement` or `/fix`.

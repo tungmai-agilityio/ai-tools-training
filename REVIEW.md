@@ -46,11 +46,11 @@ Apply `.claude/claude-security-guidance.md` (rules and review procedure) and fla
 
 ### 5. Scope & PR Hygiene
 
-- **Scope creep.** Each PR should address only its ticket. Flag changes outside the ticket scope — note them for a separate ticket instead.
-- **New dependency without a ticket.** No new pip dependency or ORM. The project uses stdlib `sqlite3` only. Flag any added dependency.
-- **Multi-ticket PRs.** One ticket = one branch = one PR. Flag PRs that bundle unrelated changes.
-- **Branch and history.** Branch is `feat/T-0NN`, `fix/T-0NN`, `chore/<slug>`, or `docs/<slug>`, rebased on `develop`, with exactly one commit.
-- **Non-conventional commit messages.** Commits must follow `<type>: <what changed> (T-0NN)` format. Types: `feat`, `fix`, `test`, `refactor`, `docs`, `chore`. Flag deviations.
+- **Scope creep.** Each PR should address only its issue. Flag changes outside the issue's scope — note them for a separate issue instead.
+- **New dependency without an issue.** No new pip dependency or ORM. The project uses stdlib `sqlite3` only. Flag any added dependency.
+- **Multi-issue PRs.** One issue = one branch = one PR. Flag PRs that bundle unrelated changes.
+- **Branch and history.** Branch is `feat/<N>-<slug>`, `fix/<N>-<slug>`, `chore/<slug>`, or `docs/<slug>`; the PR body says `Closes #N`, rebased on `develop`, with exactly one commit.
+- **Non-conventional commit messages.** Commits must follow `<type>: <what changed> (#N)` format. Types: `feat`, `fix`, `test`, `refactor`, `docs`, `chore`. Flag deviations.
 
 ---
 
@@ -59,7 +59,7 @@ Apply `.claude/claude-security-guidance.md` (rules and review procedure) and fla
 - **Style nits a linter catches.** Ruff handles formatting and import order. Don't flag whitespace, trailing commas, or import sorting — the `lint-on-edit` hook covers these.
 - **The default GitLab README boilerplate.** The root `README.md` still has GitLab template text. Don't flag it unless the PR explicitly touches it.
 - **Virtual environment and cache directories.** Ignore `.venv/`, `__pycache__/`, `.pytest_cache/`, `.ruff_cache/`.
-- **Existing code outside the PR's ticket scope.** If pre-existing code violates conventions but isn't part of this ticket, don't flag it. Note it for a future ticket at most.
+- **Existing code outside the PR's issue scope.** If pre-existing code violates conventions but isn't part of this issue, don't flag it. Note it for a future issue at most.
 
 ---
 

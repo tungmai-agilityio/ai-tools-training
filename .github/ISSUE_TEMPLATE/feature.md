@@ -1,12 +1,17 @@
-# T-0NN: <Outcome in the user's words>
+---
+name: Feature
+about: A development-ready user story, written once no blocking question is open
+title: "<Outcome in the user's words>"
+labels: enhancement
+---
 
-**Status:** Open  **Type:** Feature  **Priority:** <Low|Medium|High>  **Reporter:** <Name (role)>  **Estimate:** <XS|S|M|L|TBD>
+**Priority:** <Low|Medium|High>  **Reporter:** <Name (role)>  **Estimate:** <XS|S|M|L|TBD>
 
 ## 1. Description
 <2–3 sentences: what changes for whom, and why now.>
 
 ## 2. Business rules
-<The lines of `docs/business-rules.md` that apply, quoted, and any approved change as `(T-0NN, approved by <role>)`. "None" if none.>
+<The lines of `docs/business-rules.md` that apply, quoted, and any approved change as `(#N, approved by <role>)`. "None" if none.>
 
 ## 3. Constraints
 - <hard limits: no new dependency, frontend only, must keep existing API, performance, ...>
@@ -26,10 +31,10 @@ Type: happy, error, edge. At least one happy and one error case per AC. Edge cas
 `docs/templates/test-plan.md` §3 that apply (others: N/A with a reason).
 
 ## 6. Out of scope
-- <what we will not do in this ticket>
+- <what we will not do in this issue>
 
 ## 7. Open questions
-<Non-blocking only; the ticket is not written while a blocking question is open.>
+<Non-blocking only; the issue is not created while a blocking question is open.>
 1. <question> — <who answers>
 
 ## 8. Implementation plan
@@ -41,4 +46,4 @@ Type: happy, error, edge. At least one happy and one error case per AC. Edge cas
 ## 9. Definition of Done
 - [ ] AC-1 to AC-N pass; every test case has a test or a manual step.
 - [ ] Docs updated (`README.md`, `CLAUDE.md`, `docs/business-rules.md`) if behaviour or rules changed.
-- [ ] Branch `feat/T-0NN`, one commit `feat: <what> (T-0NN)`, PR into `develop`. Status → Done in that commit.
+- [ ] Branch `feat/<N>-<slug>`, one commit `feat: <what> (#N)`, PR into `develop` with `Closes #N`.
