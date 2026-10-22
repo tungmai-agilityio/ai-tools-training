@@ -221,6 +221,7 @@
     .cb-table td[data-col="actions"] .cb-actions { justify-content: flex-start; }
     .cb-table td[data-col="actions"] .cb-more > summary { width: var(--touch-min); height: 32px; }
     .cb-table td[data-col="actions"] .cb-menu { left: 0; right: auto; }
+    .cb-table td[data-label]::before { content: attr(data-label); display: block; }
   }
   
   /* Dialog */
@@ -354,6 +355,7 @@
       <a href="#book"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18M12 13v5M9.5 15.5h5"/></svg><span>Book</span></a>
       <a href="#appointments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg><span>Appointments</span></a>
       <a href="#today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Today</span></a>
+      <a href="#revenue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6.5v11M14.8 9.3c-.4-.9-1.4-1.3-2.8-1.3-1.6 0-2.8.8-2.8 2s1.2 1.7 2.8 2 2.8.8 2.8 2-1.2 2-2.8 2c-1.4 0-2.4-.5-2.8-1.4"/></svg><span>Revenue</span></a>
     </nav>
     <div class="cb-theme">
       <span class="cb-field__label" id="theme-label">Theme</span>
@@ -457,6 +459,32 @@
         <div id="today"></div>
       </div>
     </section>
+
+    <!-- REVENUE -->
+    <section id="screen-revenue" hidden>
+      <header class="cb-pagehead"><div><h1>Revenue</h1><p>Days in <span class="tzname"></span></p></div></header>
+      <div class="cb-stack">
+        <form class="cb-card" id="rev-form" novalidate>
+          <div class="cb-fields">
+            <div class="cb-field">
+              <label class="cb-field__label" for="rev-token">Admin token</label>
+              <input class="cb-input" id="rev-token" type="password" autocomplete="new-password" aria-describedby="rev-msg">
+            </div>
+            <div class="cb-field">
+              <label class="cb-field__label" for="rev-from">From</label>
+              <input class="cb-input" id="rev-from" type="date" aria-describedby="rev-msg">
+            </div>
+            <div class="cb-field">
+              <label class="cb-field__label" for="rev-to">To</label>
+              <input class="cb-input" id="rev-to" type="date" aria-describedby="rev-msg">
+            </div>
+          </div>
+          <p class="cb-field__hint" id="rev-msg" role="alert" style="margin:var(--space-3) 0"></p>
+          <button class="cb-btn cb-btn--primary" type="submit">Run report</button>
+        </form>
+        <div id="rev-results" aria-live="polite"></div>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -522,6 +550,7 @@ const fmtKey = (key, opts) => keyDate(key).toLocaleDateString("en-GB", { timeZon
 const todayKey = () => clinicDay(Date.now());
 const nameOf = (list, id) => (list.find((x) => x.id === id) || {}).name || `#${id}`;
 const badge = (s) => `<span class="cb-badge" data-status="${esc(s)}">${esc(STATUS[s] || s)}</span>`;
+// title, hint and action are inserted as raw HTML: callers must esc() anything that comes from the API.
 const empty = (title, hint = "", action = "") =>
   `<div class="cb-empty">${svg("empty")}<p class="cb-empty__title">${title}</p>${hint ? `<p>${hint}</p>` : ""}${action}</div>`;
 const skeleton = (n = 5) =>
@@ -543,14 +572,15 @@ const fail = (title, e) => toast(title, e.message, "err");
 async function api(path, opts = {}) {
   let res;
   try {
-    res = await fetch(path, { headers: opts.body ? { "Content-Type": "application/json" } : {}, ...opts });
+    const { headers, ...rest } = opts; // caller headers add to the JSON Content-Type default instead of replacing it
+    res = await fetch(path, { ...rest, headers: { ...(opts.body ? { "Content-Type": "application/json" } : {}), ...headers } });
   } catch { throw new Error("Could not reach the server"); }
   if (res.status === 204) return null;
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     let msg = data.detail ?? res.statusText;
     if (Array.isArray(msg)) msg = msg.map((e) => `${(e.loc || []).slice(1).join(".")}: ${e.msg}`).join("; ");
-    throw new Error(`${res.status} · ${msg}`);
+    throw Object.assign(new Error(`${res.status} · ${msg}`), { status: res.status });
   }
   return data;
 }
@@ -566,7 +596,7 @@ document.querySelectorAll('input[name="theme"]').forEach((r) => {
 });
 
 // ---------- routing (FR-2) ----------
-const SCREENS = ["book", "appointments", "today"];
+const SCREENS = ["book", "appointments", "today", "revenue"];
 function route() {
   const screen = SCREENS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "book"; // T-011 Q2: Book by default
   for (const s of SCREENS) $("screen-" + s).hidden = s !== screen;
@@ -923,9 +953,64 @@ function renderToday() {
     ${open ? `<div class="cb-tl__now" style="--now:${nowMin - OPEN}" aria-hidden="true"></div>` : ""}</div></div></div>`;
 }
 
+// ---------- revenue (T-016, admin-only; the token is only ever in the password field and the request header) ----------
+let revSeq = 0;
+// Same rule as the server: both ends inclusive, at most 366 days.
+function revenueRangeError(from, to) {
+  const iso = /^\d{4}-\d{2}-\d{2}$/; // an empty or 5-digit-year value must not reach the date maths
+  if (!iso.test(from) || !iso.test(to)) return "Pick both a From and a To date.";
+  if (from > to) return "From must be on or before To.";
+  if ((keyDate(to) - keyDate(from)) / 864e5 >= 366) return "The range can be at most 366 days.";
+  return "";
+}
+
+function renderRevenue(r) {
+  const m = (c) => esc(money(c)), day = (k) => esc(fmtKey(k, { weekday: "short", day: "numeric", month: "short", year: "numeric" }));
+  const stat = (label, c) => `<div class="cb-stat"><span class="cb-stat__n">${m(c)}</span><span class="cb-muted">${label}</span></div>`;
+  const rows = (list, name) => list.map((x) => `<tr><td data-col="who"><strong>${name(x)}</strong></td>` +
+    [["consultation_cents", "Consultation"], ["penalty_cents", "Penalty"], ["total_cents", "Total"]].map(([k, label]) =>
+      `<td data-col="fee" data-label="${label}" class="cb-num cb-right">${m(x[k])}</td>`).join("") + "</tr>");
+  const tbl = (title, first, list, name) => `<section class="cb-card"><h2 class="cb-h2">${title}</h2><table class="cb-table"><thead><tr><th>${first}</th>` +
+    `<th class="cb-right">Consultation</th><th class="cb-right">Penalty</th><th class="cb-right">Total</th></tr></thead><tbody>${rows(list, name).join("")}</tbody></table></section>`;
+  $("rev-results").innerHTML = `<div class="cb-stack">
+    <p class="cb-muted">${day(r.from)} to ${day(r.to)} · run ${esc(fmtWhen(r.at))}.
+      Amounts are gross, counted on the scheduled day in clinic time; a deleted visit drops out.</p>
+    <div class="cb-stats">${stat("Consultation", r.data.totals.consultation_cents)}${stat("Penalty", r.data.totals.penalty_cents)}${stat("Total", r.data.totals.total_cents)}</div>
+    ${tbl("By doctor", "Doctor", r.data.by_doctor, (d) => esc(d.doctor_name))}
+    ${r.data.by_day.length ? tbl("By day", "Day", r.data.by_day, (d) => day(d.date))
+      : `<section class="cb-card">${empty("No revenue in this range", "No completed visits or fees fall on these days.")}</section>`}</div>`;
+}
+
+async function runRevenue() {
+  const from = $("rev-from").value, to = $("rev-to").value;
+  const sent = $("rev-token").value;
+  const err = !sent ? "Enter the admin token." : revenueRangeError(from, to);
+  $("rev-msg").textContent = err;
+  const seq = ++revSeq; // bumped even when invalid, so an in-flight run cannot render under the new range
+  if (err) { $("rev-results").innerHTML = ""; if (!sent) $("rev-token").focus(); return; }
+  $("rev-results").innerHTML = skeleton(4);
+  try {
+    const data = await api(`/reports/revenue?${new URLSearchParams({ from, to })}`, { headers: { "X-Admin-Token": sent } });
+    if (seq === revSeq) renderRevenue({ from, to, at: Date.now(), data });
+  } catch (e) {
+    if (seq !== revSeq) return;
+    if (e.status === 403) {
+      if ($("rev-token").value === sent) $("rev-token").value = ""; // not a token typed since this run
+      $("rev-results").innerHTML = empty("Admin token not accepted", "Enter the admin token again.");
+      $("rev-token").focus();
+      return;
+    }
+    $("rev-results").innerHTML = empty("Could not load the revenue report", esc(e.message), '<button class="cb-btn" type="button" id="rev-retry">Retry</button>');
+  }
+}
+$("rev-form").addEventListener("submit", (e) => { e.preventDefault(); runRevenue(); });
+$("rev-results").addEventListener("click", (e) => { if (e.target.closest("#rev-retry")) runRevenue(); });
+
 // ---------- init ----------
 (async function init() {
   state.date = nextClinicDay(todayKey());
+  $("rev-from").value = todayKey().slice(0, 8) + "01"; // filled once, so route() never overwrites what the user typed
+  $("rev-to").value = todayKey();
   renderDays();
   renderSummary();
   try {
