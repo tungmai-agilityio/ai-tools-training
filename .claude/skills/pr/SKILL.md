@@ -1,6 +1,6 @@
 ---
 name: pr
-description: Open and finish a Clinic Booking GitHub pull request — check the review gate, rebase on develop and resolve conflicts, write the description from the template, push and open the PR, then merge after approval and set the ticket Done. Use when the user says "open a PR", "ready for review", "write the PR description", "rebase on develop", "resolve the conflict", or "merge T-0NN".
+description: Git workflow to open and finish a Clinic Booking GitHub pull request — check the review gate, rebase on develop and resolve conflicts, write the description from the template, push and open the PR, then merge after approval and set the ticket Done. Use when the user says "open a PR", "git workflow", "ready for review", "write the PR description", "rebase on develop", "resolve the conflict", or "merge T-0NN".
 ---
 Reference: `docs/references/git-conventions.md`. Pushing and merging change shared state, so **ask before each push and each merge**.
 

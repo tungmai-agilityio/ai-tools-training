@@ -14,7 +14,7 @@ References: `docs/references/code-conventions.md`, `testing-conventions.md`, `ti
    | Field removed | load (pydantic ignores extras; the value stays in the blob until the next save) | **A** |
    | New `Status` value | load | **A** — also check `TRANSITIONS` in `routes.py` |
    | New required field, rename, type change, `Status` value removed or renamed, units change (e.g. dollars → cents) | **crash** | **B**, or **C** if B can't express it |
-   | Need to query or index by a field in SQL | — | Not a migration. Stop and run the **solution-architect** subagent, then write an ADR. No ORM, no new dependency. |
+   | Need to query or index by a field in SQL | — | Not a migration. Stop and run the **planner** subagent, then write an ADR. No ORM, no new dependency. |
 
 2. **Pick the lightest path that holds.**
    - **A. Default.** Give the field a default that is true for old appointments. If no default is honest (for example, the right value depends on the business rules), that's an OPEN QUESTION: ask, don't invent one.

@@ -65,7 +65,7 @@ cover behaviour that already works.
 | `docs/business-rules.md` | What the clinic says the system should do |
 | `docs/references/` | Code, git and testing conventions |
 | `docs/templates/` | Ticket (feature/bug/chore), PRD, spec, ADR, test plan, PR, test and status report templates |
-| `.claude/` | Claude Code config for this repo. Skills: `/ticket` → `/plan` → `/implement` or `/fix` → `/review` → `/pr`; agents; commands; hooks that block forbidden Bash commands, ruff-fix edited `.py` files and notify on finish (`settings.json`). With `.mcp.json` (Playwright MCP), it loads when Claude Code is opened at the repo root |
+| `.claude/` | Claude Code config for this repo. Skills: `/ticket` → `/plan` → `/implement` or `/fix` → `/review` → `/pr`; 4 subagents; commands; hooks that block forbidden Bash commands, ruff-fix edited `.py` files and notify on finish (`settings.json`). With `.mcp.json` (Playwright MCP), it loads when Claude Code is opened at the repo root |
 | `tickets/` | Your backlog. Each ticket is imperfect on purpose |
 | `PRACTICE.md` | How to use this repo with the role-play drills |
 
