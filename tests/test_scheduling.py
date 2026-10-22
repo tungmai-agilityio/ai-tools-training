@@ -79,3 +79,17 @@ def test_clinic_timezone_defaults_to_new_york():
             assert config.CLINIC_TIMEZONE == "America/New_York"
     finally:
         importlib.reload(config)  # env is restored by now; reload so other tests see it
+
+
+def test_slots_skip_times_that_have_already_passed(client, now):
+    now["value"] = datetime(2026, 10, 14, 18, 0, tzinfo=timezone.utc)  # Wed 14:00 clinic time
+
+    hours = local_hours(client.get("/doctors/1/slots", params={"date": WED}).json()["slots"])
+
+    assert hours == ["14:30", "15:00", "15:30", "16:00", "16:30"]  # 14:00 is "now", so it is already refused
+
+
+def test_a_day_that_is_over_has_no_slots(client, now):
+    now["value"] = datetime(2026, 10, 15, 2, 38, tzinfo=timezone.utc)  # Wed 22:38 clinic time
+
+    assert client.get("/doctors/1/slots", params={"date": WED}).json()["slots"] == []
