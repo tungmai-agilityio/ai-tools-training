@@ -1,6 +1,6 @@
 # ADR-NNNN: <Decision, as a short statement>
 
-**Status:** <Proposed|Accepted|Superseded by ADR-NNNN>  **Date:** <YYYY-MM-DD>  **Deciders:** <names>  **Ticket:** <T-0NN>
+**Status:** <Proposed|Accepted|Superseded by ADR-NNNN>  **Date:** <YYYY-MM-DD>  **Deciders:** <names>  **Issue:** <#N>
 
 ## Context
 <The forces at play: problem, constraints (no new dependency, fake data only, ...), what is true today with `path:line`.>
@@ -17,4 +17,4 @@
 ## Consequences
 - Good: <...>
 - Bad / ceiling: <... and the signal that tells us to revisit>
-- Follow-up: <tickets, docs to update>
+- Follow-up: <issues, docs to update>

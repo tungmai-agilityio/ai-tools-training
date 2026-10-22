@@ -1,13 +1,12 @@
 ---
 name: implement
-description: Implement a planned Clinic Booking feature or chore ticket using test-driven development — branch, red-to-green code via developer, one commit, review via /review. Use when the user says "implement T-0NN", "build T-0NN", "do the ticket", "test-driven development", or "start coding T-0NN". For bugs use /fix.
+description: Implement a Clinic Booking feature or chore issue from its approved plan — branch, test-first code via developer, one commit, /review. Use for "implement issue N" or "build issue N". Bugs use /fix.
 ---
-References: `docs/references/code-conventions.md`, `git-conventions.md`, `testing-conventions.md`.
-
-1. **Ready check.** The ticket has Approach, acceptance criteria and a test plan, and no unanswered open questions. If not, run `/plan` and stop at its gate.
-2. **Branch.** `git switch develop && git pull`, then `git switch -c feat/T-0NN` (`chore/<slug>` for a chore). Set the ticket's status to `In Progress`.
-3. **Build.** Run the **developer** subagent with the ticket path and the acceptance criteria it owns. It follows test-driven development (failing tests first in `tests/`, then implementation in `app/` and `app/static/index.html`).
-4. **Verify.** Run `pytest` yourself. Do not trust an agent's summary line. Each new test must be one that failed before the change.
-5. **Commit.** Update the docs if behaviour or rules changed, then squash everything into one commit: `feat: <what> (T-0NN)`, or `chore: <what> (T-0NN)` for a chore ticket. The status stays `In Progress`; `/pr` moves it. Do not push.
-6. **Review.** Run `/review`. If the verdict is **changes needed**, send each finding back to the developer agent, amend the commit, and run `/review` again. Ask the user before acting on a finding that changes scope.
-7. Report: ACs and their evidence, the pytest line, review verdict, out-of-scope notes (offer `/ticket` for each). Next step: `/pr`.
+1. **Ready check** (`gh issue view N`). A feature needs its approved plan (§8 filled); a simple chore needs its What list. If not, run `/plan` and stop at its gate.
+2. **Branch** from an up-to-date `develop`: `feat/<N>-<slug>` or `chore/<N>-<slug>`. **Go-ahead →** add the `in-progress` label (`gh issue edit N --add-label in-progress`).
+3. **Build.** Run the **developer** subagent with the issue text and its plan.
+4. **Needs decision?** If the developer pauses, ask the user and, with their go-ahead, add the `blocked` label (`gh issue edit N --add-label blocked`). Once answered, remove it (`--remove-label blocked`) and continue the same developer (SendMessage) with the answer. A changed requirement goes back to `/ticket`; a changed design goes back to `/plan`.
+5. **Verify.** Run `pytest` yourself; don't trust an agent's summary. Every new test must have failed before the change.
+6. **Commit.** Update docs if behaviour or rules changed, then make one commit `<type>: <what> (#N)`. Don't push.
+7. **Review.** Run `/review`. On **changes needed**, send the findings to the developer, amend, and review again. Ask the user before acting on a finding that changes scope.
+8. **Report:** ACs and test cases with evidence, the pytest line, the verdict, outstanding issues (offer `/ticket`). Next: `/pr`.

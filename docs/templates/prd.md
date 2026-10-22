@@ -1,6 +1,6 @@
 # PRD: <Product / feature name>
 
-**Owner:** <name>  **Status:** <Draft|In review|Approved>  **Last updated:** <YYYY-MM-DD>  **Tickets:** <T-0NN, ...>
+**Owner:** <name>  **Status:** <Draft|In review|Approved>  **Last updated:** <YYYY-MM-DD>  **Issues:** <#N, ...>
 
 > A PRD says **what** and **why**. The **how** goes in a Spec (`docs/templates/spec.md`).
 
@@ -32,7 +32,7 @@
 - <fake data only, no new dependency, clinic time = America/New_York, ...>
 
 ## 9. Release plan
-<Phases / MVP cut, and which tickets belong to each.>
+<Phases / MVP cut, and which issues belong to each.>
 
 ## 10. Risks
 | Risk | Likelihood | Impact | Mitigation |

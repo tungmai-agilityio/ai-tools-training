@@ -2,7 +2,7 @@
 
 A small appointment-booking API for a medical clinic. It is the shared practice
 project for the AI Tools training (Track 0: Shared Fundamentals). Use it to
-practice the full loop: read a ticket, reproduce, fix, open a PR, review, merge.
+practice the full loop: read an issue, reproduce, fix, open a PR, review, merge.
 
 Fake data only. Never put real client or patient data in this repo.
 
@@ -64,13 +64,14 @@ cover behaviour that already works.
 | `data/seed.json` | Doctors and patients loaded at startup |
 | `docs/business-rules.md` | What the clinic says the system should do |
 | `docs/references/` | Code, git and testing conventions |
-| `docs/templates/` | Ticket (feature/bug/chore), PRD, spec, ADR, test plan, PR, test and status report templates |
+| `docs/templates/` | PRD, spec, ADR, test plan, test and status report templates |
+| `.github/` | Issue templates (feature, bug, chore), PR template, workflows |
 | `.claude/` | Claude Code config for this repo. Skills: `/ticket` → `/plan` → `/implement` or `/fix` → `/review` → `/pr`; 4 subagents; commands; hooks that block forbidden Bash commands, ruff-fix edited `.py` files and notify on finish (`settings.json`). With `.mcp.json` (Playwright MCP), it loads when Claude Code is opened at the repo root |
-| `tickets/` | Your backlog. Each ticket is imperfect on purpose |
+| `tickets/` | Read-only archive of the original tickets T-001 to T-017; new work is GitHub issues |
 | `PRACTICE.md` | How to use this repo with the role-play drills |
 
 ## Rules of the practice
 
-1. One ticket, one branch, one PR.
+1. One issue, one branch, one PR.
 2. A bug fix needs a test that failed before and passes after.
 3. AI output is a proposal until you have run it.

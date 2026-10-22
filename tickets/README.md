@@ -1,11 +1,9 @@
-# Backlog
+# Ticket archive (read-only)
 
-These tickets are written the way real ones are: short, a little vague, sometimes
-wrong about the cause. That is on purpose. Part of the exercise is noticing what
-is missing and asking for it before you start.
+New work is tracked as **GitHub issues** (templates in `.github/ISSUE_TEMPLATE/`). This folder keeps
+T-001 to T-017 as history: don't edit them or add new files here. Specs, ADRs and commits that say
+`T-0NN` refer to these files.
 
-Before touching code, for each ticket, write three sentences: what it asks for,
-what is ambiguous, and your first step. Then reproduce it.
-
-Each ticket's `**Status:**` is one of `Open`, `In Progress`, `In Review` (PR open),
-or `Done` (merged into `develop`).
+These tickets were written the way real ones are: short, a little vague, sometimes wrong about the
+cause. That is on purpose. Part of the exercise is noticing what is missing and asking for it before
+you start.

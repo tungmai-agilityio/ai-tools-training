@@ -29,6 +29,14 @@ The rules every change in Clinic Booking follows. CLAUDE.md has the short versio
 | Persistence | Every endpoint that changes an appointment calls `store.save(appt)` (or `store.delete(id)`) before it returns. | mutate `store.appointments` only | `store.save(appt)` |
 | Open questions | An item marked OPEN QUESTION in `docs/business-rules.md` is not decided in code. | guess | ask, note it in the ticket |
 
+## Frontend (`app/static/index.html`)
+- One file of vanilla JS and CSS: no framework, CDN, build step or new dependency.
+- Colours come from the existing `:root` CSS variables (dark theme included), never hard-coded.
+- Every API value rendered into HTML goes through `esc()`. Times show in `CLINIC_TZ` (America/New_York). Money arrives
+  in cents and is only formatted, never calculated.
+- WCAG 2.1 AA: keyboard accessible, visible focus, AA contrast in both themes, correct ARIA roles, no status by colour
+  alone, no horizontal scroll from 375px to 1440px.
+
 ## API
 - REST, JSON, plural nouns: `/appointments`, `/appointments/{id}/cancel`.
 - Errors return `{"detail": "<human sentence>"}`. The message is shown to reception as-is, so write it for them.

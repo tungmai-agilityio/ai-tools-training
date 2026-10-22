@@ -1,6 +1,11 @@
-# T-0NN: <Symptom as the reporter sees it>
+---
+name: Bug
+about: Something that breaks a business rule or behaves wrongly
+title: "<Symptom as the reporter sees it>"
+labels: bug
+---
 
-**Status:** Open  **Type:** Bug  **Severity:** <S1 down|S2 wrong data/money|S3 workaround exists|S4 cosmetic>  **Priority:** <Low|Medium|High>  **Reporter:** <Name (role)>
+**Severity:** <S1 down|S2 wrong data/money|S3 workaround exists|S4 cosmetic>  **Priority:** <Low|Medium|High>  **Reporter:** <Name (role)>
 
 ## 1. Summary
 <One sentence: what is wrong, where, for whom.>
@@ -41,4 +46,4 @@
 
 ## 9. Definition of Done
 - [ ] Code bug: failing test written first, now green, and `pytest` green. Config or data bug: change applied and verified on the server.
-- [ ] Code bug: branch `fix/T-0NN`, one commit `fix: <what> (T-0NN)`, PR into `develop`. Status → In Review.
+- [ ] Code bug: branch `fix/<N>-<slug>`, one commit `fix: <what> (#N)`, PR into `develop` with `Closes #N`.

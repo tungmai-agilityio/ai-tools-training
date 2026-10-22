@@ -1,15 +1,13 @@
 ---
 name: plan
-description: Plan a Clinic Booking ticket before writing code — turn approved requirements into implementation steps, stop on open questions, design architecture via planner, and define task boundaries, ACs and test plan. Use when the user says "plan T-0NN", "feature planning", "spec this", "how should we build T-0NN", "what should we test", or before /implement or /fix on an unplanned ticket.
+description: Plan a ready Clinic Booking issue before coding — implementation plan and testing strategy via planner, approved by the user, written into the issue. Use for "plan issue N" or "how should we build issue N", or before /implement on an unplanned issue.
 ---
 This skill writes no app or test code.
 
-1. Read `tickets/T-0NN.md`. If it is too thin to work from, run `/ticket` on it first.
-2. Run the **business-analyst** subagent on it.
-3. **Stop gate:** if it returns questions that the ticket, the reporter or `docs/business-rules.md` does not answer, or any OPEN QUESTION, show them to the user and stop. Never pick an answer yourself.
-4. **Rule change.** If the user gives an approved answer (a named person and role), update `docs/business-rules.md` in its style: one testable sentence ending `(T-0NN, approved by <role>)`. Replace the line or OPEN QUESTION instead of adding a contradicting one.
-5. Run the **planner** subagent with the ticket and the analysis. If the feature adds an endpoint, changes the data model or spans backend and frontend, also have it write `docs/specs/T-0NN-<slug>.md` from `docs/templates/spec.md`.
-6. **Test cases.** At least one happy and one error case per AC (409/422/403/404). Go through the edge-case checklist in `docs/templates/test-plan.md` and mark items N/A with a reason. Name each new test after the behaviour and say which must fail first.
-7. **Write it into the ticket** (keep the reporter's text): Analysis, Approach (`path:line`), Given/When/Then ACs, Test plan, Out of scope. For a bug (`ticket-bug.md`): Approach → §6 Root cause, ACs → §5, test cases and out of scope → §8.
-8. **Lasting decision?** If the design picks something future devs will question (storage, dependency, time handling, auth), add `docs/adr/NNNN-<slug>.md` from `docs/templates/adr.md`.
-9. Next step: `/fix` (bug) or `/implement` (feature, chore).
+1. Read the issue (`gh issue view N`). **Ready check:** it has ACs and test cases, and no blocking question is open. If not, go back to `/ticket` and stop.
+2. Run the **planner** subagent with the issue text. For a new endpoint, a data-model change or backend-plus-frontend work, have it write `docs/specs/<N>-<slug>.md` from the spec template.
+3. If the planner reports a gap or a missing decision in the issue, show it to the user and stop. Requirement changes go back to `/ticket`.
+4. **Approval gate:** show the plan to the user and stop until they approve it, or revise it with them. Approving the plan also approves writing it to the issue.
+5. Write it into the issue body's §8 Implementation plan (`gh issue edit N --body-file <file>`; for a bug: §6 Analysis and §8 Fix and test). A filled §8 means the plan is approved.
+6. Add an ADR (`docs/templates/adr.md`) for a decision future developers will question (storage, dependency, time handling, auth).
+7. Next: `/implement` (feature, chore) or `/fix` (bug).
