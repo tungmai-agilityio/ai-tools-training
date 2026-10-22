@@ -3,7 +3,7 @@
 from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from app import config
+from app import clock, config
 from app.errors import DomainError
 from app.models import DayRevenue, DoctorRevenue, RevenueReport, RevenueTotals
 from app.store import store
@@ -65,8 +65,9 @@ def check_day_open(doctor_id: int, start: datetime) -> None:
 
 
 def free_slots(doctor_id: int, day: date) -> list[datetime]:
-    """Free 30-minute slot starts (UTC) for a doctor on a clinic-local day."""
+    """Free 30-minute slot starts (UTC) for a doctor on a clinic-local day. Slots that have started are not free."""
     tz = clinic_tz()
+    now = clock.now_utc()
     if closed_reason(doctor_id, day):
         return []
     busy = [a for a in store.active_appointments() if a.doctor_id == doctor_id]
@@ -77,7 +78,7 @@ def free_slots(doctor_id: int, day: date) -> list[datetime]:
         if not in_lunch:
             local = datetime.combine(day, time(minute // 60, minute % 60), tzinfo=tz)
             slot = local.astimezone(timezone.utc)
-            if not any(overlaps(slot, config.SLOT_MINUTES, a.start, a.duration_minutes) for a in busy):
+            if slot > now and not any(overlaps(slot, config.SLOT_MINUTES, a.start, a.duration_minutes) for a in busy):
                 slots.append(slot)
         minute += config.SLOT_MINUTES
     return slots
