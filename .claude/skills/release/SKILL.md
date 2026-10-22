@@ -1,26 +1,22 @@
 ---
 name: release
-description: Release management for Clinic Booking — run release checks (green develop, clean tree, no unmerged tickets), prepare release notes, open develop → main PR, and tag main after merge. Use when the user says "cut a release", "release management", "release checklist", "ship develop to main", "write release notes", or "tag v0.N.0".
+description: Cut a Clinic Booking release — checks, release notes, develop → main PR, and tag. Use for "cut a release" or "tag v0.N.0".
+disable-model-invocation: true
 ---
-Reference: `docs/references/git-conventions.md` (Releases). Pushing, merging and tagging change shared state, so **ask before each one**.
+Reference: `docs/references/git-conventions.md` (Releases). **Ask before each push, merge and tag.**
 
-**Check** (stop and report on the first failure)
-
-1. `git switch develop && git fetch origin && git pull`. The working tree is clean.
-2. `pytest` is green on `develop`.
-3. No ticket in `tickets/` is `In Progress` or `In Review` with its branch already merged (a half-moved status). List any `Done` ticket whose branch is not in `develop`.
-4. No OPEN QUESTION in `docs/business-rules.md` is decided in code since the last release: for each OPEN QUESTION, grep `git diff <last-tag>..develop -- app/` for its topic.
-5. `.env.example` lists every env var read in `app/` (`grep -rnE "getenv|environ" app/`). A new var means a deploy note.
+**Check** on an up-to-date `develop`, and stop at the first failure:
+- The tree is clean and `pytest` is green.
+- Every ticket merged into `develop` is `Done`, and no `Done` ticket's branch is missing from `develop`.
+- No OPEN QUESTION has been decided in `app/` since the last tag.
+- `.env.example` lists every env var read in `app/`; a new one needs a deploy note.
 
 **Notes**
-
-6. Last tag: `git describe --tags --abbrev=0 origin/main` (none → first release is `v0.1.0`, range is all of `develop`).
-7. Version: any `feat` → bump minor, only `fix`/`chore`/`docs` → bump patch. Before `v1.0.0`, never bump major.
-8. Collect `git log <last-tag>..develop --merges --format=%s` and the matching ticket titles. Write `docs/releases/vX.Y.Z.md`: **Features**, **Fixes**, **Deploy notes** (new env vars, data changes to `data/seed.json`, anything that needs `data/clinic.db` reset). One line per ticket, `T-0NN title`. Copy each merged ticket's `## Deploy note` section verbatim into **Deploy notes** (e.g. a `/db-migration` script to run first). Skip `docs`/`chore` unless they change deploy.
+1. Last tag: `git describe --tags --abbrev=0 origin/main` (none → `v0.1.0`). Any `feat` bumps the minor version, otherwise the patch. No major bump before `v1.0.0`.
+2. Write `docs/releases/vX.Y.Z.md` from the merges since the tag: **Features**, **Fixes**, **Deploy notes** (new env vars, seed or DB changes, and each ticket's `## Deploy note` copied verbatim), one line per ticket. Skip docs and chores unless they affect deploy.
 
 **Ship**
-
-9. Branch `docs/release-vX.Y.Z` from `develop`, commit the notes as `docs: release notes vX.Y.Z`, and run `/pr` for it into `develop` (no ticket: skip `/pr`'s ticket-status steps).
-10. After it merges: **go-ahead →** `gh pr create --head develop --base main --title "release: vX.Y.Z" --body-file docs/releases/vX.Y.Z.md`. Never pass `--delete-branch` when merging: `develop` must stay.
-11. After approval and merge: **go-ahead →** `git fetch && git tag -a vX.Y.Z origin/main -m "vX.Y.Z" && git push origin vX.Y.Z`. Then **go-ahead →** mirror to GitLab: `git push gitlab main vX.Y.Z`.
-12. Report: version, PR link, tag, deploy notes. Any problem found in the checks that is not a blocker → offer `/ticket`.
+3. Commit the notes on `docs/release-vX.Y.Z` and run `/pr` into `develop` (skip its ticket-status steps).
+4. **Go-ahead →** `gh pr create --head develop --base main --title "release: vX.Y.Z" --body-file docs/releases/vX.Y.Z.md`. Never delete `develop` on merge.
+5. After the merge, **go-ahead →** tag `vX.Y.Z` on `origin/main` and push the tag to `origin`. Then tell the user to mirror to GitLab themselves (`git push gitlab develop main --tags`); the hook blocks GitLab pushes from Claude.
+6. Report the version, PR link, tag and deploy notes; offer `/ticket` for any non-blocking problems.

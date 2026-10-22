@@ -2,6 +2,7 @@
 description: My standup — what I did since the last working day, what's in flight, what's blocked on Clinic Booking
 allowed-tools: Bash(git log:*), Bash(git config:*), Bash(git branch:*), Bash(git status:*), Bash(date:*), Bash(head:*), Bash(grep:*), Bash(echo:*), Bash(true)
 argument-hint: "[since, e.g. 2026-10-12 or monday; default: start of the last working day]"
+disable-model-invocation: true
 ---
 My commits (since: "$ARGUMENTS", empty = start of the last working day; Monday and Sunday → Friday):
 ```!
@@ -21,6 +22,6 @@ Uncommitted work:
 !`git status --short`
 
 Tickets in flight:
-!`grep -lE '^\*\*Status:\*\* (In Progress|In Review)' tickets/T-*.md || true`
+!`grep -lE '^\*\*Status:\*\* In Progress' tickets/T-*.md || true`
 
 Write my standup in three short bullet groups — **Yesterday**, **Today**, **Blockers** — max 3 bullets each, plain words, ticket ids where they exist. Today = in-flight branches and tickets. Blockers = only what the data shows (failing work, tickets waiting on review); otherwise "none". No preamble.

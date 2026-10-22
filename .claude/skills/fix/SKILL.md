@@ -1,14 +1,11 @@
 ---
 name: fix
-description: Systematic debugging for a Clinic Booking bug ticket — investigate root causes before changing code, prove with a failing test, smallest fix via developer, review, one commit. Use when the user says "fix T-0NN", "debug systematically", "debug this ticket", "this is broken", or hands over a bug report. Not for features (/implement).
+description: Fix a Clinic Booking bug ticket — find the root cause, prove it with a failing test, smallest fix via developer, one commit, /review. Use for "fix T-0NN" or a triaged bug. Features use /implement.
 ---
-References: `docs/references/testing-conventions.md`, `git-conventions.md`.
+Same flow as `/implement` (including its Needs-decision handling), with these differences:
 
-1. **Understand.** Read the ticket and `docs/business-rules.md`. If the expected behaviour is unclear or touches an OPEN QUESTION, run `/plan` and stop at its gate.
-2. **Branch.** `git switch develop && git pull`, then `git switch -c fix/T-0NN`. Set the ticket's status to `In Progress`.
-3. **Reproduce and fix.** Run the **developer** subagent with the ticket. It must show the new test failing before its fix.
-4. **Code, config or data?** If the root cause is config (`.env`, `CLINIC_TIMEZONE`) or data (`data/seed.json`, `data/clinic.db`), say so. Fix data or `.env.example` only when the ticket asks for it. Otherwise report the fix to the user instead of bending the code. A pure config fix has no red-to-green test: tell the user and let them decide.
-5. **Prove it.** Run the new test against the old code yourself (`git stash push -m fix-T-0NN -- app/`, run the test, then find that entry by its message in `git stash list` and `git stash apply` + `drop` it; never a bare `git stash pop`, because the stash is shared with other worktrees), then run full `pytest`. Red before and green after, or it is not done.
-6. **Commit.** Fill the ticket's Root cause and Fix sections first, then make one commit `fix: <what> (T-0NN)` that includes them. The status stays `In Progress`; `/pr` moves it. Do not push.
-7. **Review.** Run `/review`. If the verdict is **changes needed**, send each finding back to the developer agent, amend the commit, and run `/review` again.
-8. Report: cause (`path:line`), the fix, the test failing then passing, other bugs noticed (offer `/ticket`). Next step: `/pr`.
+1. **Understand.** Read the ticket and `docs/business-rules.md`. If the expected behaviour is unclear, needs design, or touches an OPEN QUESTION, run `/plan` and stop at its gate.
+2. **Branch** `fix/T-0NN`, then run the **developer** subagent with the ticket.
+3. **Code, config or data?** If the cause is config (`.env`) or data (`data/seed.json`, `data/clinic.db`), say so and report the fix instead of bending the code. Change data or `.env.example` only when the ticket asks. A config-only fix has no red-to-green test: let the user decide.
+4. **Prove it.** Run the new test against the old code yourself: stash only `app/` under a named stash, then `git stash apply` and `drop` that entry. Never a bare `git stash pop`, because the stash is shared across worktrees. Then run full `pytest`. Red before, green after, or it isn't done.
+5. **Commit** `fix: <what> (T-0NN)` after filling the ticket's Root cause and Fix sections. Review and report as in `/implement`, including the cause at `path:line`.

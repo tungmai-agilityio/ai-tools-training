@@ -36,15 +36,20 @@ Follow this review order: **Correctness → Tests → Readability → Security b
 
 ### 4. Security Basics
 
-- **Admin endpoint missing `require_admin()`.** Admin-only endpoints must call `require_admin(x_admin_token)` as the first check (fail closed when `ADMIN_TOKEN` is unset). Flag missing guards.
-- **Secrets in code or logs.** Flag any hardcoded token, password, or real PII. No `.env`, `data/*.db`, or real `ADMIN_TOKEN` may be committed. Never log or echo the admin token.
-- **Unbounded inputs & injection.** Flag missing validation on user input, parameters, or identifiers.
+Apply `.claude/claude-security-guidance.md` (rules and review procedure) and flag any violation. At minimum check:
+
+- **Admin guard.** Admin or destructive endpoints call `require_admin()` first.
+- **Injection and input.** SQL is parameter-bound; new inputs are validated and bounded.
+- **XSS.** API data is never rendered as raw HTML.
+- **Secrets.** No token, `.env` or database is committed, logged or echoed.
+- **Data exposure.** Fake data only; errors don't leak input, paths or tracebacks.
 
 ### 5. Scope & PR Hygiene
 
 - **Scope creep.** Each PR should address only its ticket. Flag changes outside the ticket scope — note them for a separate ticket instead.
 - **New dependency without a ticket.** No new pip dependency or ORM. The project uses stdlib `sqlite3` only. Flag any added dependency.
 - **Multi-ticket PRs.** One ticket = one branch = one PR. Flag PRs that bundle unrelated changes.
+- **Branch and history.** Branch is `feat/T-0NN`, `fix/T-0NN`, `chore/<slug>`, or `docs/<slug>`, rebased on `develop`, with exactly one commit.
 - **Non-conventional commit messages.** Commits must follow `<type>: <what changed> (T-0NN)` format. Types: `feat`, `fix`, `test`, `refactor`, `docs`, `chore`. Flag deviations.
 
 ---

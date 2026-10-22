@@ -33,7 +33,7 @@ Manual: <steps in the UI or `/docs`, with the expected result>
 - [ ] Only this ticket's scope; other findings noted as new tickets
 - [ ] No secrets, `.env`, `data/*.db` or real data
 - [ ] Docs / business rules updated if behaviour changed
-- [ ] Ticket status set to In Review
+- [ ] Ticket status set to Done in this commit
 
 ## Notes for the reviewer
 <Where to look first, what you are unsure about, follow-up tickets.>

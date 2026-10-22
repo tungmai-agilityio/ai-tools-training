@@ -7,5 +7,5 @@ is missing and asking for it before you start.
 Before touching code, for each ticket, write three sentences: what it asks for,
 what is ambiguous, and your first step. Then reproduce it.
 
-Each ticket's `**Status:**` is one of `Open`, `In Progress`, `In Review` (PR open),
-or `Done` (merged into `develop`).
+Each ticket's `**Status:**` is one of `Open`, `In Progress`, or `Done`. `Done` is set in the
+PR's commit, so it reaches `develop` exactly when the PR merges. Older tickets may still say `In Review`.

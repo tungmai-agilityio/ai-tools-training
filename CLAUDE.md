@@ -16,10 +16,10 @@ pytest                              # full suite; single test: pytest tests/test
 ## Workflow
 
 - References: `docs/references/` (code, git, testing conventions). Templates: `docs/templates/` (tickets, PRD, spec, ADR, test plan, PR, reports).
-  Skills: `/ticket` → `/plan` → `/implement` (feature) or `/fix` (bug) → `/review` → `/pr`.
-- Feature requests: **business-analyst** (requirements, acceptance criteria, questions) → resolve material ambiguities with the user → `/ticket` → `/plan` (with **planner**) → `/implement` (with **developer**). Bugs: `/ticket` triage directly → `/fix` (with **developer**). Never write a ticket while material business or scope decisions are open.
-- Skills, agents, commands and hooks live in the repo-root `.claude/`, so always open Claude Code at the repo root. Subagents live in `.claude/agents/`: **business-analyst** (requirements analysis), **planner** (technical design and boundaries), **developer** (test-first implementation and fixes), and **code-reviewer** (independent correctness, security, and quality gate). If one is not registered, spawn a general-purpose agent whose prompt starts with "Read `.claude/agents/<name>.md` (repo root) and follow it exactly".
-- One ticket gets one branch (`fix/T-00N`), one commit (`fix: <what> (T-00N)`), and one GitHub pull request into `develop`. GitLab (`gitlab` remote) is a mirror only: no MRs there, push only when asked.
+- Features: `/ticket` (**business-analyst** drafts; no ticket while a blocking question is open) → `/plan` (**planner**; user approves the plan) → `/implement` (**developer**; pauses on new requirements or decisions) → `/review` → `/pr`.
+  Bugs: `/ticket` triage → `/fix` (`/plan` first if it needs design). Chores: `/ticket` → `/plan` if it spans modules → `/implement`.
+- Skills, agents, commands and hooks live in the repo-root `.claude/`, so always open Claude Code at the repo root. Subagents live in `.claude/agents/`: **business-analyst** (requirements and ticket draft), **planner** (implementation plan and testing strategy), **developer** (test-first implementation and fixes), and **code-reviewer** (independent correctness, security, and quality gate). If one is not registered, spawn a general-purpose agent whose prompt starts with "Read `.claude/agents/<name>.md` (repo root) and follow it exactly".
+- One ticket gets one branch (`feat/T-0NN`, `fix/T-0NN`, `chore/<slug>` or `docs/<slug>`), one commit (`<type>: <what> (T-0NN)`), and one GitHub pull request into `develop`. GitLab (`gitlab` remote) is a mirror only: no MRs there, push only when asked.
 - Every bug fix comes with a test that fails before the fix and passes after it. Run `pytest` before you call anything done.
 - When a ticket is vague or contradicts `docs/business-rules.md`, ask before coding. If an item there is marked OPEN QUESTION, don't decide it in code.
 

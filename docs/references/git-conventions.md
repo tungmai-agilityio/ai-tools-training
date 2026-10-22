@@ -37,9 +37,9 @@ Conventional Commits, one line, imperative, lower case, no period, ticket id in 
 
 ## Pull requests
 - Title = the commit subject. Description = `.github/pull_request_template.md` (repo root), filled in.
-- Before opening: `pytest` is green, the diff is only the ticket, the ticket's status is `In Review`.
+- Before opening: `pytest` is green, the diff is only the ticket, the ticket's status is `Done` in the PR's commit (it lands in `develop` with the merge).
 - At least one approval. The author resolves every thread or answers it.
-- Merge with a merge commit (`Merge pull request #N from <user>/fix/T-0NN`), delete the source branch, set the ticket to `Done`.
+- Merge with a merge commit (`Merge pull request #N from <user>/fix/T-0NN`) and delete the source branch.
 
 ## Conflicts
 - Rebase your branch on `develop` (`git fetch && git rebase origin/develop`), resolve, re-run `pytest`, then push with `--force-with-lease`.

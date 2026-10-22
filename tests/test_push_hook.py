@@ -33,6 +33,9 @@ ALLOWED_ON_FEATURE = [
     "git push origin develop",
     "git status && git push -u origin feat/T-015",
     'gh pr create --body "never git push --force or git push -f"',
+    'gh pr create --body "mirror: git push gitlab main"',
+    'git commit -m "docs: never pip install requests"',
+    "git add .env.example",
 ]
 
 BLOCKED_ANYWHERE = [
@@ -66,6 +69,15 @@ BLOCKED_ANYWHERE = [
     "git push origin feat/T-015 gitlab",
     "git add .env",
     "pip install requests",
+    "python3 -m pip install requests",
+    'bash -c "pip install requests"',
+    "git -C . add .env",
+    "echo git\ngit push gitlab main",
+    "echo git\ngit add .env",
+    "`pip install requests`",
+    "echo `git push gitlab main`",
+    "git push --repo=gitlab main",
+    "git push --repo gitlab main",
 ]
 
 

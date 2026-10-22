@@ -2,6 +2,7 @@
 description: Summarize what the team did from N days ago (or "yesterday", "monday", a date) until now, from git history
 allowed-tools: Bash(git log:*), Bash(git fetch:*), Bash(git diff:*), Bash(git show:*), Bash(grep:*), Bash(echo:*), Bash(sort:*), Bash(uniq:*), Bash(head:*), Bash(true)
 argument-hint: "[N days | yesterday | 2026-10-12, default: 1]"
+disable-model-invocation: true
 ---
 ```!
 S=$(cat <<'ARGS_END'
