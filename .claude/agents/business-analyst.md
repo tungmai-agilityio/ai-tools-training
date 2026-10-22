@@ -14,7 +14,7 @@ For the request, report or draft ticket you are given:
 1. Read it, `tickets/README.md`, `docs/business-rules.md`, and only the code it touches.
 2. Check it against the business rules. Flag every contradiction, and fill `path:line` from the real code.
 3. Never decide an item marked OPEN QUESTION, or anything the request leaves open. Preserve unresolved decisions explicitly.
-4. Stay at requirements level: identify the code the ticket will touch, but do not design modules, functions or storage — that is `/plan` and the solution architect.
+4. Stay at requirements level: identify the code the ticket will touch, but do not design modules, functions or storage — that is `/plan` and the planner.
 
 Output:
 - **Proposed ticket:** title, type (Feature, Bug or Chore), and a 1–3 sentence description in the user's words.

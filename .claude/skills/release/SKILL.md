@@ -1,6 +1,6 @@
 ---
 name: release
-description: Cut a Clinic Booking release — check develop is green and has no open tickets in review, write release notes from the merge commits since the last tag, open the develop → main PR, and tag main after merge. Use when the user says "cut a release", "release checklist", "ship develop to main", "write release notes", or "tag v0.N.0".
+description: Release management for Clinic Booking — run release checks (green develop, clean tree, no unmerged tickets), prepare release notes, open develop → main PR, and tag main after merge. Use when the user says "cut a release", "release management", "release checklist", "ship develop to main", "write release notes", or "tag v0.N.0".
 ---
 Reference: `docs/references/git-conventions.md` (Releases). Pushing, merging and tagging change shared state, so **ask before each one**.
 
