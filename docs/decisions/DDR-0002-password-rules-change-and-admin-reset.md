@@ -2,7 +2,7 @@
 
 > Claude-assisted draft for Tung's edit. Decisions confirmed by Tung on 2026-10-27.
 
-**Status:** Proposed  **Date:** 2026-10-27  **Deciders:** Tung  **Ticket:** T-020, T-022, T-023
+**Status:** Accepted  **Date:** 2026-10-27  **Deciders:** Tung  **Ticket:** T-020, T-022, T-023
 
 ## Context
 Accounts are created by admins, and there is no email service. Staff share workstations, so rules that are too strict get written on sticky notes. Admins should not know anyone's real password.

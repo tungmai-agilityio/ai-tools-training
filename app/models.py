@@ -85,3 +85,36 @@ class RevenueReport(BaseModel):
     totals: RevenueTotals
     by_doctor: list[DoctorRevenue]
     by_day: list[DayRevenue]
+
+
+Role = Literal["staff", "admin"]
+
+
+class User(BaseModel):
+    id: int
+    username: str
+    role: Role
+    active: bool = True
+    must_change_password: bool = False
+    created_at: datetime
+
+
+class UserRecord(User):
+    """Stored user; never returned by the API (holds the password hash)."""
+
+    password_hash: str
+    failed_attempts: int = 0
+    locked_until: datetime | None = None
+    session_version: int = 0
+
+
+class LoginIn(BaseModel):
+    username: str = Field(max_length=100)
+    password: str = Field(max_length=200)
+
+
+class SessionOut(BaseModel):
+    username: str
+    role: Role
+    expires_at: datetime
+    must_change_password: bool

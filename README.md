@@ -21,6 +21,13 @@ Then open:
 - http://127.0.0.1:8000/ for the web app (book, appointment list, today's schedule)
 - http://127.0.0.1:8000/docs for the raw API (Swagger)
 
+### Login settings
+Set in `.env` before first start: `AUTH_SECRET` (random string that signs sessions; empty means login is refused),
+`ADMIN_USERNAME` and `ADMIN_PASSWORD` (12+ characters; seed the first admin only while no users exist, who must change the
+password at first sign-in). `COOKIE_SECURE=false` is for plain-http local demos only. `POST /auth/login` sets an 8-hour
+`HttpOnly`, `SameSite=Strict` cookie; `POST /auth/logout` clears it; `GET /auth/me` shows who is signed in.
+Five failed logins lock a username for 15 minutes.
+
 Clinic holidays (`/holidays`) and doctor time off (`/doctors/{id}/time-off`) are managed in Swagger.
 Adding or removing them needs `ADMIN_TOKEN` set in `.env` and sent as the `X-Admin-Token` header.
 Admin-only `GET /reports/revenue?from=YYYY-MM-DD&to=YYYY-MM-DD` returns consultation and penalty revenue per doctor and per day.

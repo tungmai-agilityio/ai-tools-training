@@ -5,7 +5,7 @@ import threading
 from pathlib import Path
 
 from app import config
-from app.models import Appointment, Holiday, TimeOff, TimeOffIn
+from app.models import Appointment, Holiday, TimeOff, TimeOffIn, UserRecord
 
 SEED_FILE = Path(__file__).resolve().parent.parent / "data" / "seed.json"
 
@@ -33,6 +33,8 @@ class Store:
         self._next_id = max(self.appointments, default=0) + 1
         self._db.execute("CREATE TABLE IF NOT EXISTS holidays (day TEXT PRIMARY KEY, data TEXT NOT NULL)")
         self._db.execute("CREATE TABLE IF NOT EXISTS time_off (id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT NOT NULL)")
+        self._db.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, data TEXT NOT NULL)")
+        self.users = {u.id: u for u in (UserRecord.model_validate_json(d) for (d,) in self._db.execute("SELECT data FROM users"))}
         self.holidays = {h.date: h for h in (Holiday.model_validate_json(d) for (d,) in self._db.execute("SELECT data FROM holidays"))}
         self.time_off = {t.id: t for t in (TimeOff.model_validate_json(d) for (d,) in self._db.execute("SELECT data FROM time_off"))}
 
@@ -41,9 +43,11 @@ class Store:
             self._db.execute("DELETE FROM appointments")
             self._db.execute("DELETE FROM holidays")
             self._db.execute("DELETE FROM time_off")
+            self._db.execute("DELETE FROM users")
         self.appointments.clear()
         self.holidays.clear()
         self.time_off.clear()
+        self.users.clear()
         self._next_id = 1
 
     def save(self, appt: Appointment) -> None:
@@ -79,6 +83,18 @@ class Store:
         with self._lock, self._db:
             self._db.execute("DELETE FROM time_off WHERE id = ?", (time_off_id,))
         self.time_off.pop(time_off_id, None)
+
+    def get_user_by_name(self, username: str) -> UserRecord | None:
+        key = username.strip().lower()
+        return next((u for u in self.users.values() if u.username.lower() == key), None)
+
+    def save_user(self, user: UserRecord) -> None:
+        with self._lock, self._db:
+            self._db.execute("INSERT OR REPLACE INTO users (id, data) VALUES (?, ?)", (user.id, user.model_dump_json()))
+        self.users[user.id] = user
+
+    def next_user_id(self) -> int:
+        return max(self.users, default=0) + 1
 
     def next_id(self) -> int:
         i = self._next_id
