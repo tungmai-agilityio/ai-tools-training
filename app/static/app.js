@@ -72,6 +72,7 @@ async function api(path, opts = {}) {
   } catch { throw new Error("Could not reach the server"); }
   if (res.status === 204) return null;
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && typeof onUnauthorized === "function") onUnauthorized(); // session ended: back to the login form
   if (!res.ok) {
     let msg = data.detail ?? res.statusText;
     if (Array.isArray(msg)) msg = msg.map((e) => `${(e.loc || []).slice(1).join(".")}: ${e.msg}`).join("; ");
@@ -91,14 +92,21 @@ document.querySelectorAll('input[name="theme"]').forEach((r) => {
 });
 
 // ---------- routing (FR-2) ----------
-const SCREENS = ["book", "appointments", "today", "revenue"];
+const SCREENS = ["book", "appointments", "today", "revenue", "users", "account"];
+const ADMIN_SCREENS = ["revenue", "users"];
 function route() {
-  const screen = SCREENS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "book"; // T-011 Q2: Book by default
+  if (!state.user) return;
+  let screen = SCREENS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "book"; // T-011 Q2: Book by default
+  if (state.user.must_change_password) screen = "account";
+  else if (ADMIN_SCREENS.includes(screen) && state.user.role !== "admin") screen = "book";
+  $("screen-login").hidden = true;
   for (const s of SCREENS) $("screen-" + s).hidden = s !== screen;
   document.querySelectorAll(".cb-nav a").forEach((a) =>
     a.getAttribute("href") === "#" + screen ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
   if (screen === "appointments") loadList();
   if (screen === "today") loadToday();
+  if (screen === "users") loadUsers();
+  if (screen === "account") $("account-who").textContent = `Signed in as ${state.user.username} (${state.user.role})`;
 }
 window.addEventListener("hashchange", route);
 
@@ -498,8 +506,122 @@ async function runRevenue() {
 $("rev-form").addEventListener("submit", (e) => { e.preventDefault(); runRevenue(); });
 $("rev-results").addEventListener("click", (e) => { if (e.target.closest("#rev-retry")) runRevenue(); });
 
+
+// ---------- sign in / out, account, users (T-019 to T-023) ----------
+// The session cookie is HttpOnly: the page never sees it and stores no credential anywhere.
+function showLogin() {
+  state.user = null;
+  document.querySelector(".cb-sidebar").hidden = true;
+  for (const s of SCREENS) $("screen-" + s).hidden = true;
+  $("screen-login").hidden = false;
+}
+function onUnauthorized() { if (state.user) { showLogin(); toast("Signed out", "Your session ended. Sign in again.", "err"); } }
+
+let appLoaded = false;
+async function enter(user) {
+  state.user = user;
+  document.querySelector(".cb-sidebar").hidden = false;
+  document.querySelectorAll("[data-admin]").forEach((a) => (a.hidden = user.role !== "admin"));
+  if (user.must_change_password) {
+    $("pw-forced").hidden = false;
+    document.querySelector(".cb-nav").hidden = true;
+    return route();
+  }
+  $("pw-forced").hidden = true;
+  document.querySelector(".cb-nav").hidden = false;
+  if (!appLoaded) { appLoaded = true; await loadApp(); } else route();
+}
+
+$("login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("login-msg").textContent = "";
+  try {
+    const user = await api("/auth/login", { method: "POST", body: JSON.stringify({ username: $("login-user").value, password: $("login-pass").value }) });
+    $("login-pass").value = "";
+    await enter(user);
+  } catch (err) {
+    $("login-pass").value = "";
+    $("login-msg").textContent = err.status === 423
+      ? "Too many failed attempts. Try again in 15 minutes or ask an administrator to unlock the account."
+      : err.status === 401 ? "Wrong username or password." : "Could not sign in. Try again.";
+  }
+});
+
+$("signout").addEventListener("click", async () => {
+  try { await api("/auth/logout", { method: "POST" }); } catch {}
+  appLoaded = false;
+  location.hash = "";
+  showLogin();
+});
+
+$("pw-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const current = $("pw-current").value, next = $("pw-new").value;
+  $("pw-msg").textContent = "";
+  if (next !== $("pw-confirm").value) { $("pw-msg").textContent = "The new passwords do not match."; return; }
+  try {
+    await api("/auth/change-password", { method: "POST", body: JSON.stringify({ current_password: current, new_password: next }) });
+    e.target.reset();
+    toast("Password changed", "Your other sessions were signed out.");
+    await enter({ ...state.user, must_change_password: false });
+  } catch (err) {
+    $("pw-msg").textContent = err.status === 403 ? "The current password is wrong."
+      : err.status === 422 ? "The new password needs at least 12 characters and must differ from the current one." : "Could not change the password.";
+  }
+});
+
+async function loadUsers() {
+  $("user-list").innerHTML = skeleton(3);
+  try {
+    const users = await api("/users");
+    $("user-list").innerHTML = `<section class="cb-card"><table class="cb-table"><thead><tr><th>User</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>` +
+      users.map((u) => `<tr><td><strong>${esc(u.username)}</strong></td><td>${esc(u.role)}</td><td>${u.active ? "Active" : "Disabled"}</td><td class="cb-right">` +
+        `<button class="cb-btn cb-btn--sm" data-user="${u.id}" data-do="${u.active ? "disable" : "enable"}">${u.active ? "Disable" : "Enable"}</button> ` +
+        `<button class="cb-btn cb-btn--sm" data-user="${u.id}" data-do="unlock">Unlock</button> ` +
+        `<button class="cb-btn cb-btn--sm" data-user="${u.id}" data-do="reset" data-name="${esc(u.username)}">Reset password</button></td></tr>`).join("") +
+      `</tbody></table></section>`;
+  } catch (err) { $("user-list").innerHTML = empty("Could not load users", esc(err.message)); }
+}
+
+$("user-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("user-msg").textContent = "";
+  try {
+    await api("/users", { method: "POST", body: JSON.stringify({ username: $("user-name").value, password: $("user-pass").value, role: $("user-role").value }) });
+    e.target.reset();
+    toast("User added");
+    loadUsers();
+  } catch (err) {
+    $("user-msg").textContent = err.status === 409 ? "That username is taken." : err.status === 422 ? "Enter a username and a password of at least 12 characters." : "Could not add the user.";
+  }
+});
+
+$("user-list").addEventListener("click", async (e) => {
+  const b = e.target.closest("button[data-do]");
+  if (!b) return;
+  const url = `/users/${b.dataset.user}`;
+  try {
+    if (b.dataset.do === "reset") {
+      const r = await api(`${url}/reset-password`, { method: "POST" });
+      $("temp-who").textContent = b.dataset.name;
+      $("temp-value").textContent = r.temporary_password;
+      $("dlg-temp").showModal();
+      return;
+    }
+    const body = b.dataset.do === "unlock" ? { active: true } : { active: b.dataset.do === "enable" };
+    await api(url, { method: "PATCH", body: JSON.stringify(body) });
+    loadUsers();
+  } catch (err) { fail("Could not update the user", err); }
+});
+$("temp-copy").addEventListener("click", () => navigator.clipboard?.writeText($("temp-value").textContent));
+$("dlg-temp").addEventListener("close", () => { $("temp-value").textContent = ""; });
+
+(async function start() {
+  try { await enter(await api("/auth/me")); } catch { showLogin(); }
+})();
+
 // ---------- init ----------
-(async function init() {
+async function loadApp() {
   state.date = nextClinicDay(todayKey());
   $("rev-from").value = todayKey().slice(0, 8) + "01"; // filled once, so route() never overwrites what the user typed
   $("rev-to").value = todayKey();
@@ -514,4 +636,4 @@ $("rev-results").addEventListener("click", (e) => { if (e.target.closest("#rev-r
     $("slots").innerHTML = empty("Could not reach the clinic server", "Check that it is running, then reload the page.");
     fail("Could not reach the API", e);
   }
-})();
+}

@@ -91,3 +91,45 @@ def test_staff_opening_revenue_sees_administrators_only(page):
     sync_api.expect(page.locator("#rev-from")).to_have_value("2026-10-01")
     storage = page.evaluate("[Object.keys(localStorage), Object.keys(sessionStorage)]")
     assert "clinic_session" not in str(storage)
+
+
+def _signed_out(page):
+    page.context.clear_cookies()
+    page.goto("/")
+
+
+def test_no_session_shows_only_the_login_form(page):  # T-022 TC-1
+    _signed_out(page)
+    sync_api.expect(page.get_by_role("heading", name="Sign in")).to_be_visible()
+    sync_api.expect(page.locator(".cb-sidebar")).to_be_hidden()
+
+
+def test_wrong_password_shows_a_generic_error_without_a_status_code(page):  # TC-2
+    _signed_out(page)
+    page.fill("#login-user", "nobody")
+    page.fill("#login-pass", "not a real password")
+    page.get_by_role("button", name="Sign in").click()
+    sync_api.expect(page.locator("#login-msg")).to_have_text("Wrong username or password.")
+    sync_api.expect(page.locator("#login-pass")).to_have_value("")
+
+
+def test_staff_sees_no_admin_items(client, page, base_url):  # TC-3
+    from tests.helpers import make_user
+
+    make_user(username="nurse1")
+    _signed_out(page)
+    page.fill("#login-user", "nurse1")
+    page.fill("#login-pass", "correct horse battery")
+    page.get_by_role("button", name="Sign in").click()
+    sync_api.expect(page.get_by_role("link", name="Book")).to_be_visible()
+    sync_api.expect(page.get_by_role("link", name="Revenue")).to_be_hidden()
+    sync_api.expect(page.get_by_role("link", name="Users")).to_be_hidden()
+
+
+def test_a_401_returns_to_the_login_form(page):  # TC-4
+    page.goto("/")
+    sync_api.expect(page.locator(".cb-sidebar")).to_be_visible()
+    page.context.clear_cookies()
+    page.goto("/#appointments")
+    page.get_by_role("button", name="Refresh").click()
+    sync_api.expect(page.get_by_role("heading", name="Sign in")).to_be_visible()

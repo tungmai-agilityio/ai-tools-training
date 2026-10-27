@@ -127,3 +127,17 @@ const html = out.innerHTML;
 if (!html.includes("$399.97")) throw new Error("total not shown");
 if (html.includes("<b>x</b>") || !html.includes("&lt;b&gt;x&lt;/b&gt;")) throw new Error("doctor name not escaped");
 """)
+
+
+def test_page_has_login_account_and_user_screens_and_hides_admin_links_by_default(client):
+    html = client.get("/").text
+    for marker in ('id="screen-login"', 'id="screen-account"', 'id="screen-users"', 'id="dlg-temp"'):
+        assert marker in html
+    assert '<a href="#revenue" data-admin>' in html and '<a href="#users" data-admin hidden>' in html
+
+
+def test_ui_stores_no_credential_and_signs_out_through_the_api(client):
+    js = client.get("/static/app.js").text
+    assert "/auth/logout" in js and "/auth/change-password" in js and "reset-password" in js
+    assert "sessionStorage" not in js
+    assert all("cb-theme" in line for line in js.splitlines() if "localStorage" in line)
