@@ -7,7 +7,7 @@
 ## One-time setup (done by a human)
 1. Sign in to Render with GitHub and create a New Web Service from this repo, free instance type.
 2. Build command: `pip install -r requirements.txt`
-3. Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+3. Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*'` (Render terminates TLS at a proxy; the auth code must set `Secure` unconditionally, not from the request scheme)
 4. Environment variables (dashboard only, never committed):
 
 | Name | Value |
