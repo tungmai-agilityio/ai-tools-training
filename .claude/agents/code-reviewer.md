@@ -15,7 +15,7 @@ Work through REVIEW.md's review priorities and Clinic Booking Rules, and honour 
 Verify every finding against the code before reporting, and drop anything not backed up by evidence.
 
 Output:
-- **Findings:** ranked blocker → major → minor → nit, one per line:
+- **Findings:** ranked Critical → High → Medium → Low (REVIEW.md scale), one per line:
   `[severity] path:line — problem — concrete failure case — suggested fix`
 - **Acceptance criteria and test cases:** table with `AC/TC | result (pass / fail / manual) | evidence`
 - **Pytest:** summary line
