@@ -14,3 +14,4 @@ A superseded record stays; set its `Status: Superseded by ...`. A ticket or spec
 | Record | Decision | Status |
 |---|---|---|
 | [ADR-0001](ADR-0001-keep-single-page-frontend.md) | Keep the same-origin vanilla frontend; React (Vite) when we outgrow it | Accepted |
+| [ADR-0004](ADR-0004-python-playwright-for-ui-tests-and-screenshots.md) | Python Playwright runs UI tests and captures screenshots, in CI on every PR | Accepted |
