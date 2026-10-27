@@ -329,7 +329,16 @@ def test_pipe_in_a_title_does_not_break_the_sprint_table(plans):
 
 
 def test_plan_status_is_validated(plans):
-    add(plans, "T-018", extra="**Plan:** Approved\n")
+    add(plans, "T-018", extra="**Plan:** Pending\n")
     assert tk.load_tickets()[0].errors == []
     add(plans, "T-018", extra="**Plan:** Maybe\n")
     assert any("Plan must be" in e for e in tk.load_tickets()[0].errors)
+    add(plans, "T-018", extra="**Plan:**\n")
+    assert any("Plan must be" in e for e in tk.load_tickets()[0].errors)
+
+
+def test_approved_plan_needs_a_non_empty_plan_section(plans):
+    path = add(plans, "T-018", extra="**Plan:** Approved\n")
+    assert any("non-empty" in e for e in tk.load_tickets()[0].errors)
+    path.write_text(path.read_text() + "\n## Plan\n1. Do the thing.\n")
+    assert tk.load_tickets()[0].errors == []

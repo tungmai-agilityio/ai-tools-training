@@ -9,5 +9,5 @@ This skill writes no app or test code. Ticket format: `docs/references/ticket-sy
 3. If the planner reports a gap or a missing decision in the ticket, show it to the user and stop. Requirement changes go back to `/create-ticket`.
 4. **Approval gate:** show the plan to the user and stop until they approve it, or revise it with them. Approving the plan also approves writing it into the ticket.
 5. Write it into the ticket's `## Plan` section (a bug: `## Analysis` and `## Fix and test`) and set `**Plan:** Approved`. Never change the requirement or acceptance-criteria text. If the issue already exists, the issue body is not edited; the Markdown stays the source of truth.
-6. Record a decision future developers will question (storage, dependency, time handling, auth) as an ADR from `docs/templates/adr.md`, or a UX/behaviour choice as a DDR from `docs/templates/ddr.md`, in `docs/decisions/` (next free number), and list it as `**Decisions:** ADR-0001`.
+6. Record a decision future developers will question (storage, dependency, time handling, auth) as an ADR from `docs/templates/adr.md`, or a UX/behaviour choice as a DDR from `docs/templates/ddr.md`, in `docs/decisions/` (next free number, checked against `origin/develop`; never overwrite a file), and list it as `**Decisions:** ADR-0001`.
 7. Next: `/sprint-prepare` or `/push-tickets`, then `/implement-ticket`.

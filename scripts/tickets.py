@@ -105,8 +105,11 @@ class Ticket:
             err(f"Priority must be one of {sorted(PRIORITIES)}")
         if f.get("Estimate") and f["Estimate"] not in ESTIMATES:
             err(f"Estimate must be one of {sorted(ESTIMATES)}")
-        if f.get("Plan") and f["Plan"] not in PLAN:
+        if "Plan" in f and f["Plan"] not in PLAN:
             err(f"Plan must be one of {sorted(PLAN)}")
+        if f.get("Plan") == "Approved" and not re.search(
+                r"^## (Plan|Fix and test)[ \t]*\n+(?!##)\S", self.body + "\n", re.M):
+            err("Plan: Approved needs a non-empty '## Plan' (or '## Fix and test') section")
         if f.get("Push") and f["Push"] not in PUSH:
             err(f"Push must be one of {sorted(PUSH)}")
         if f.get("Type") == "Bug" and not re.match(r"S[1-4]\b", f.get("Severity", "")):
