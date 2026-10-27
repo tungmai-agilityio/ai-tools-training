@@ -118,3 +118,22 @@ class SessionOut(BaseModel):
     role: Role
     expires_at: datetime
     must_change_password: bool
+
+
+class UserCreateIn(BaseModel):
+    username: str = Field(min_length=1, max_length=100)
+    password: str = Field(min_length=12, max_length=200)  # config.MIN_PASSWORD_LENGTH
+    role: Role
+
+    @field_validator("username")
+    @classmethod
+    def _strip(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("username is required")
+        return v
+
+
+class UserPatchIn(BaseModel):
+    active: bool | None = None
+    role: Role | None = None
