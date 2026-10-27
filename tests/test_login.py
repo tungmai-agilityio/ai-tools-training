@@ -62,6 +62,7 @@ def test_me_rejects_expired_or_tampered_cookie(anon_client, now):  # TC-5
     now["value"] += timedelta(hours=8, seconds=1)
     assert anon_client.get("/auth/me").status_code == 401
     now["value"] -= timedelta(hours=8, seconds=1)
+    anon_client.cookies.clear()  # else the jar keeps the valid cookie beside the tampered one and which is sent varies by version
     anon_client.cookies.set(config.SESSION_COOKIE, cookie[:-1] + ("0" if cookie[-1] != "0" else "1"))
     assert anon_client.get("/auth/me").status_code == 401
 
