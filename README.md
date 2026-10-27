@@ -30,9 +30,9 @@ Five failed logins lock a username for 15 minutes.
 Admins manage accounts with `GET/POST /users` and `PATCH /users/{id}` (`active`, `role`; sending `active: true` also unlocks).
 
 Clinic holidays (`/holidays`) and doctor time off (`/doctors/{id}/time-off`) are managed in Swagger.
-Adding or removing them needs `ADMIN_TOKEN` set in `.env` and sent as the `X-Admin-Token` header.
+Adding or removing them needs an administrator login (staff get `403`, no session gets `401`).
 Admin-only `GET /reports/revenue?from=YYYY-MM-DD&to=YYYY-MM-DD` returns consultation and penalty revenue per doctor and per day.
-The web app shows it on the Revenue screen (`#revenue`): enter the admin token (kept in memory only) and a date range.
+The web app shows it on the Revenue screen (`#revenue`): pick a date range (administrators only).
 
 Appointments persist in SQLite (`DB_PATH`, default `data/clinic.db`) via stdlib `sqlite3`.
 No ORM, no new dependency. Delete the file to start fresh. To fill the list with demo data

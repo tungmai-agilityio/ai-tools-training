@@ -23,3 +23,10 @@ def make_user(username="nurse1", password="correct horse battery", role="staff",
     )
     store.save_user(user)
     return user
+
+
+def login_as(client, username, password="correct horse battery"):
+    """Log `client` in (its cookie jar keeps the session); returns the response."""
+    r = client.post("/auth/login", json={"username": username, "password": password})
+    assert r.status_code == 200, r.text
+    return r

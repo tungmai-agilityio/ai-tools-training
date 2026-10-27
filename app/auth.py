@@ -6,7 +6,7 @@ import logging
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from fastapi import Request, Response
+from fastapi import Depends, Request, Response
 
 from app import clock, config
 from app.errors import DomainError
@@ -86,6 +86,17 @@ def current_user(request: Request) -> UserRecord:
     if user.must_change_password:
         raise DomainError("Password change required", 403)
     return user
+
+
+def require_role(role: str):
+    """Dependency factory: any signed-in user for "staff"; admins only for "admin"."""
+
+    def check(user: UserRecord = Depends(current_user)) -> UserRecord:
+        if role == "admin" and user.role != "admin":
+            raise DomainError("Administrator required", 403)
+        return user
+
+    return check
 
 
 def seed_admin() -> None:

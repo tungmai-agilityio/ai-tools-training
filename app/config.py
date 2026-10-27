@@ -6,9 +6,6 @@ CLINIC_TIMEZONE = os.getenv("CLINIC_TIMEZONE", "America/New_York")
 # SQLite file holding appointments (":memory:" in tests).
 DB_PATH = os.getenv("DB_PATH", "data/clinic.db")
 
-# Token for admin-only endpoints (see routes.require_admin).
-ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
-
 # Session signing key; empty means login is refused (fail closed).
 AUTH_SECRET = os.getenv("AUTH_SECRET", "")
 # First admin, seeded at startup only when the users table is empty.

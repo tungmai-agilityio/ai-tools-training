@@ -14,7 +14,7 @@ def test_password_hash_verifies_and_is_salted():
     assert not auth.verify_password("wrong", h1)
 
 
-def test_session_round_trip(client, now):
+def test_session_round_trip(anon_client, now):
     user = make_user()
     value, expires = auth.issue_session(user)
     got, got_exp = auth.read_session(value)
@@ -22,7 +22,7 @@ def test_session_round_trip(client, now):
     assert expires == now["value"] + timedelta(hours=8)
 
 
-def test_session_rejected_when_expired_or_tampered(client, now):
+def test_session_rejected_when_expired_or_tampered(anon_client, now):
     value, _ = auth.issue_session(make_user())
     now["value"] += timedelta(hours=8, seconds=1)
     with pytest.raises(DomainError) as e:
@@ -34,7 +34,7 @@ def test_session_rejected_when_expired_or_tampered(client, now):
             auth.read_session(bad)
 
 
-def test_session_rejected_without_secret_or_after_version_bump(client, monkeypatch):
+def test_session_rejected_without_secret_or_after_version_bump(anon_client, monkeypatch):
     user = make_user()
     value, _ = auth.issue_session(user)
     user.session_version += 1

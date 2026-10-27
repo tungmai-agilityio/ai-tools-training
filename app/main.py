@@ -1,11 +1,12 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import auth
+from app import auth, config
 from app.auth_routes import router as auth_router
 from app.errors import DomainError
 from app.routes import router
@@ -35,3 +36,25 @@ def index() -> FileResponse:
 @app.exception_handler(DomainError)
 def domain_error_handler(_: Request, exc: DomainError) -> JSONResponse:
     return JSONResponse(status_code=exc.status, content={"detail": exc.message})
+
+
+@app.get("/health")
+def health():
+    """Liveness / readiness probe returning the service status and configured timezone."""
+    return {"status": "ok", "timezone": config.CLINIC_TIMEZONE}
+
+
+CSP = "script-src 'self'; object-src 'none'; base-uri 'self'"
+UNSAFE_METHODS = {"POST", "PATCH", "PUT", "DELETE"}
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    """CSP on every response; refuse unsafe requests from another origin (second layer behind SameSite=Strict)."""
+    origin = request.headers.get("origin")
+    if request.method in UNSAFE_METHODS and origin and urlsplit(origin).netloc != request.headers.get("host"):
+        response = JSONResponse(status_code=403, content={"detail": "Cross-origin request refused"})
+    else:
+        response = await call_next(request)
+    response.headers["Content-Security-Policy"] = CSP
+    return response

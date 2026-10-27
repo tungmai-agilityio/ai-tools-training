@@ -8,21 +8,13 @@ from app.models import Appointment
 from app.store import store
 from tests.helpers import book
 
-ADMIN = {"x-admin-token": "s3cret"}
 WED_9 = "2026-10-14T09:00:00-04:00"
 WED_10 = "2026-10-14T10:00:00-04:00"
 THU_9 = "2026-10-15T09:00:00-04:00"
 
 
-@pytest.fixture(autouse=True)
-def admin_token(monkeypatch):
-    from app import config
-
-    monkeypatch.setattr(config, "ADMIN_TOKEN", "s3cret")
-
-
-def _report(client, frm, to, headers=ADMIN):
-    return client.get("/reports/revenue", params={"from": frm, "to": to}, headers=headers)
+def _report(client, frm, to):
+    return client.get("/reports/revenue", params={"from": frm, "to": to})
 
 
 def _complete(client, appt_id):
@@ -158,8 +150,8 @@ def test_from_after_to_is_rejected(client):
 
 
 def test_missing_from_or_to_is_rejected(client):
-    assert client.get("/reports/revenue", params={"to": "2026-10-14"}, headers=ADMIN).status_code == 422
-    assert client.get("/reports/revenue", params={"from": "2026-10-14"}, headers=ADMIN).status_code == 422
+    assert client.get("/reports/revenue", params={"to": "2026-10-14"}).status_code == 422
+    assert client.get("/reports/revenue", params={"from": "2026-10-14"}).status_code == 422
 
 
 def test_malformed_date_is_rejected(client):
@@ -176,21 +168,13 @@ def test_range_of_exactly_366_days_is_allowed(client):
 
 # --- auth -----------------------------------------------------------------
 
-def test_report_needs_admin_token(client):
-    assert _report(client, "2026-10-14", "2026-10-14", headers={}).status_code == 403
-    assert _report(client, "2026-10-14", "2026-10-14", headers={"x-admin-token": "wrong"}).status_code == 403
+def test_report_needs_admin_role(anon_client, staff_client):
+    assert _report(anon_client, "2026-10-14", "2026-10-14").status_code == 401
+    assert _report(staff_client, "2026-10-14", "2026-10-14").status_code == 403
 
 
-def test_report_refused_when_no_admin_token_configured(client, monkeypatch):
-    from app import config
-
-    monkeypatch.setattr(config, "ADMIN_TOKEN", "")
-    assert _report(client, "2026-10-14", "2026-10-14", headers={"x-admin-token": ""}).status_code == 403
-    assert _report(client, "2026-10-14", "2026-10-14").status_code == 403
-
-
-def test_bad_token_gets_403_before_date_validation(client):
-    assert client.get("/reports/revenue", params={"from": "nope"}, headers={"x-admin-token": "wrong"}).status_code == 403
+def test_staff_gets_403_before_date_validation(staff_client):
+    assert staff_client.get("/reports/revenue", params={"from": "nope"}).status_code == 403
 
 
 # --- read-only ------------------------------------------------------------

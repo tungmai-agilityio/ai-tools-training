@@ -18,7 +18,7 @@ def test_patients_endpoint_lists_seed_patients(client):
 
 
 def test_index_page_offers_reschedule_for_scheduled_appointments(client):
-    page = client.get("/").text
+    page = client.get("/static/app.js").text
     assert 'btn("reschedule", "Reschedule")' in page
     assert "/reschedule`" in page
 
@@ -28,7 +28,7 @@ def test_reschedule_picker_offers_the_appointments_own_slots(client):
     node = shutil.which("node")
     if not node:
         pytest.skip("node not installed")  # ponytail: JS check needs node; no JS test runner in this repo
-    page = client.get("/").text
+    page = client.get("/static/app.js").text
     start = page.index("function withOwnSlots")
     fn = page[start:page.index("\n}\n", start) + 2]
     script = 'const CLINIC_TZ = "America/New_York";\n' + fn + """
@@ -52,7 +52,7 @@ def _node():
 
 def _run_js(client, names, body):
     """Run page functions (by 'function name' marker) plus `body` in node; fail with node's stderr."""
-    page = client.get("/").text
+    page = client.get("/static/app.js").text
     fns = ""
     for marker in names:
         start = page.index(marker)
@@ -63,9 +63,10 @@ def _run_js(client, names, body):
 
 
 def test_index_page_has_a_revenue_screen(client):
-    page = client.get("/").text
-    assert 'href="#revenue"' in page
-    assert 'id="screen-revenue"' in page
+    html = client.get("/").text
+    page = client.get("/static/app.js").text
+    assert 'href="#revenue"' in html
+    assert 'id="screen-revenue"' in html
     assert '"revenue"' in page.split("const SCREENS = ", 1)[1].split("\n", 1)[0]
     assert "sessionStorage" not in page
     assert all("cb-theme" in line for line in page.splitlines() if "localStorage" in line)
@@ -91,22 +92,22 @@ def test_api_sends_caller_headers_with_json_content_type(client):
 let sent;
 globalThis.fetch = async (path, o) => { sent = o; return { ok: true, status: 200, json: async () => ({}) }; };
 (async () => {
-  await api("/x", { method: "POST", body: "{}", headers: { "X-Admin-Token": "t" } });
-  if (JSON.stringify(sent.headers) !== JSON.stringify({ "Content-Type": "application/json", "X-Admin-Token": "t" })) throw new Error(JSON.stringify(sent.headers));
+  await api("/x", { method: "POST", body: "{}", headers: { "X-Test": "t" } });
+  if (JSON.stringify(sent.headers) !== JSON.stringify({ "Content-Type": "application/json", "X-Test": "t" })) throw new Error(JSON.stringify(sent.headers));
   await api("/x");
   if (JSON.stringify(sent.headers) !== "{}") throw new Error(JSON.stringify(sent.headers));
-  await api("/x", { headers: { "X-Admin-Token": "t" } });
-  if (JSON.stringify(sent.headers) !== JSON.stringify({ "X-Admin-Token": "t" })) throw new Error(JSON.stringify(sent.headers));
+  await api("/x", { headers: { "X-Test": "t" } });
+  if (JSON.stringify(sent.headers) !== JSON.stringify({ "X-Test": "t" })) throw new Error(JSON.stringify(sent.headers));
 })().catch((e) => { console.error(e); process.exit(1); });
 """)
 
 
 def test_api_error_carries_http_status(client):
     _run_js(client, ["async function api"], """
-globalThis.fetch = async () => ({ ok: false, status: 403, statusText: "Forbidden", json: async () => ({ detail: "Admin token required" }) });
+globalThis.fetch = async () => ({ ok: false, status: 403, statusText: "Forbidden", json: async () => ({ detail: "Administrator required" }) });
 (async () => {
   try { await api("/x"); } catch (e) {
-    if (e.status !== 403 || e.message !== "403 · Admin token required") throw new Error(e.status + " " + e.message);
+    if (e.status !== 403 || e.message !== "403 · Administrator required") throw new Error(e.status + " " + e.message);
     return;
   }
   throw new Error("did not throw");

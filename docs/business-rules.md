@@ -12,7 +12,7 @@ Last updated by the clinic manager. Some points are still open. Those are marked
 ## Holidays and time off (T-014, defaults chosen by dev, pending clinic manager confirmation)
 - On a clinic holiday the whole clinic is closed: no doctor can be booked that day.
 - A doctor's time off blocks whole days (start and end date included) for that doctor only.
-- Both are whole clinic-time days. Only an administrator (admin token) can add or remove them.
+- Both are whole clinic-time days. Only an administrator can add or remove them.
 - A day that still has active appointments (scheduled or checked in) cannot be made a holiday or time off. Reschedule or cancel those appointments first.
 
 ## Booking
@@ -49,7 +49,7 @@ Last updated by the clinic manager. Some points are still open. Those are marked
 - Deleting an appointment is for administrators only and needs an administrator login (T-021, approved by client).
 
 ## Revenue report (T-015, defaults chosen by dev, pending clinic manager confirmation)
-- Only an administrator (admin token) can read the revenue report.
+- Only an administrator can read the revenue report.
 - Consultation revenue is the fee of `completed` visits. Penalty revenue is the fee charged on `no_show` and late-cancelled appointments. They are reported separately.
 - Each appointment counts on the clinic-local day of its scheduled start, whatever day it was completed or cancelled.
 - Amounts are gross: there are no refunds, and a deleted appointment drops out of the totals.

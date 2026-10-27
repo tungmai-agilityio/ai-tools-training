@@ -20,9 +20,9 @@ uvicorn app.main:app --reload
 pytest
 ```
 
-The app reads its settings (including `ADMIN_TOKEN`) from the environment, so source `.env` before starting it.
+The app reads its settings (including `AUTH_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`) from the environment, so source `.env` before starting it.
 The UI is at `/`, Swagger at `/docs`. The database path is configurable via `DB_PATH`.
-Run `python scripts/seed_demo.py` with the server running to seed demo data.
+Run `DEMO_USERNAME=... DEMO_PASSWORD=... python scripts/seed_demo.py` with the server running to seed demo data (log in first and change the seeded admin's password).
 
 ## Workflow
 
@@ -51,7 +51,7 @@ Start in Plan Mode. Then follow the steps that apply:
 
 ## Critical Constraints
 
-- Use fake data only. Never commit `.env`, real credentials, or a real `ADMIN_TOKEN`.
+- Use fake data only. Never commit `.env`, real credentials, or a real `AUTH_SECRET` or admin password.
 - Never weaken or delete tests just to make the suite pass.
 - Use SQLite via the existing `store` layer. Do not add an ORM or dependencies without approval.
 - Follow `docs/business-rules.md` and the existing project architecture.

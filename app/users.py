@@ -7,14 +7,7 @@ from app.errors import DomainError
 from app.models import User, UserCreateIn, UserPatchIn, UserRecord
 from app.store import store
 
-# ponytail: swap for require_role("admin") when T-021 lands it.
-def require_admin_user(user: UserRecord = Depends(auth.current_user)) -> UserRecord:
-    if user.role != "admin":
-        raise DomainError("Administrator required", 403)
-    return user
-
-
-router = APIRouter(prefix="/users", tags=["users"], dependencies=[Depends(require_admin_user)])
+router = APIRouter(prefix="/users", tags=["users"], dependencies=[Depends(auth.require_role("admin"))])
 
 # One lock so two admins cannot disable each other at the same moment (last-admin guard).
 _lock = threading.Lock()
