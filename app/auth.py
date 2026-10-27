@@ -92,6 +92,8 @@ def read_session(value: str | None) -> tuple[UserRecord, datetime]:
     unauth = DomainError("Not authenticated", 401)
     if not value or not secret_ok():
         raise unauth
+    if not value.isascii():  # compare_digest raises TypeError on non-ASCII text
+        raise unauth
     payload, _, sig = value.rpartition(".")
     if not hmac.compare_digest(sig, _sign(payload)):
         raise unauth

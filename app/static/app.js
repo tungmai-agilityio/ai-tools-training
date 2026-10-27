@@ -23,7 +23,7 @@ const svg = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor
 function esc(v) {
   const d = document.createElement("div");
   d.textContent = String(v ?? "");
-  return d.innerHTML;
+  return d.innerHTML.replace(/"/g, "&quot;").replace(/'/g, "&#39;"); // safe inside attributes too
 }
 const money = (cents) => "$" + (cents / 100).toFixed(2);
 const fmtDay = (iso) => new Date(iso).toLocaleDateString("en-GB", { timeZone: CLINIC_TZ, weekday: "short", day: "numeric", month: "short" });
@@ -522,6 +522,8 @@ async function enter(user) {
   state.user = user;
   document.querySelector(".cb-sidebar").hidden = false;
   document.querySelectorAll("[data-admin]").forEach((a) => (a.hidden = user.role !== "admin"));
+  $("who-name").textContent = `${user.username} · ${user.role}`;
+  $("who-until").textContent = `Session ends ${fmtWhen(user.expires_at)}`;
   if (user.must_change_password) {
     $("pw-forced").hidden = false;
     document.querySelector(".cb-nav").hidden = true;
@@ -547,7 +549,7 @@ $("login-form").addEventListener("submit", async (e) => {
   }
 });
 
-$("signout").addEventListener("click", async () => {
+for (const id of ["signout", "signout-side"]) $(id).addEventListener("click", async () => {
   try { await api("/auth/logout", { method: "POST" }); } catch {}
   appLoaded = false;
   location.hash = "";
@@ -570,6 +572,9 @@ $("pw-form").addEventListener("submit", async (e) => {
   }
 });
 
+// Error text without the "409 · " status prefix: these screens show no status codes (DDR-0003).
+const plain = (e) => e.message.replace(/^\d{3} · /, "");
+
 async function loadUsers() {
   $("user-list").innerHTML = skeleton(3);
   try {
@@ -577,10 +582,10 @@ async function loadUsers() {
     $("user-list").innerHTML = `<section class="cb-card"><table class="cb-table"><thead><tr><th>User</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>` +
       users.map((u) => `<tr><td><strong>${esc(u.username)}</strong></td><td>${esc(u.role)}</td><td>${u.active ? "Active" : "Disabled"}</td><td class="cb-right">` +
         `<button class="cb-btn cb-btn--sm" data-user="${u.id}" data-do="${u.active ? "disable" : "enable"}">${u.active ? "Disable" : "Enable"}</button> ` +
-        `<button class="cb-btn cb-btn--sm" data-user="${u.id}" data-do="unlock">Unlock</button> ` +
+        (u.active ? `<button class="cb-btn cb-btn--sm" data-user="${u.id}" data-do="unlock">Unlock</button> ` : "") +
         `<button class="cb-btn cb-btn--sm" data-user="${u.id}" data-do="reset" data-name="${esc(u.username)}">Reset password</button></td></tr>`).join("") +
       `</tbody></table></section>`;
-  } catch (err) { $("user-list").innerHTML = empty("Could not load users", esc(err.message)); }
+  } catch (err) { $("user-list").innerHTML = empty("Could not load users", esc(plain(err))); }
 }
 
 $("user-form").addEventListener("submit", async (e) => {
@@ -611,7 +616,7 @@ $("user-list").addEventListener("click", async (e) => {
     const body = b.dataset.do === "unlock" ? { active: true } : { active: b.dataset.do === "enable" };
     await api(url, { method: "PATCH", body: JSON.stringify(body) });
     loadUsers();
-  } catch (err) { fail("Could not update the user", err); }
+  } catch (err) { toast("Could not update the user", plain(err), "err"); }
 });
 $("temp-copy").addEventListener("click", () => navigator.clipboard?.writeText($("temp-value").textContent));
 $("dlg-temp").addEventListener("close", () => { $("temp-value").textContent = ""; });

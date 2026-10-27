@@ -90,3 +90,20 @@ def test_old_admin_token_name_is_gone_from_the_source():  # TC-8
     files = [*(root / "app").rglob("*.py"), *(root / "app/static").glob("*.*"), *(root / "scripts").rglob("*.py"), root / ".env.example"]
     hits = [str(f) for f in files if f.is_file() and any(n.lower() in f.read_text(errors="ignore").lower() for n in old)]
     assert not hits
+
+
+def test_non_ascii_session_cookie_is_401_not_500(anon_client):
+    r = anon_client.get("/doctors", headers={"Cookie": "clinic_session=1.0.9.é".encode("utf-8")})
+    assert r.status_code == 401
+
+
+def test_validation_errors_never_echo_a_password(client):
+    r = client.post("/users", json={"username": "x", "password": "short-pw-1", "role": "staff"})
+    assert r.status_code == 422 and "short-pw-1" not in r.text and "input" not in r.text
+    r = client.post("/auth/change-password", json={"current_password": "a", "new_password": "short-pw-2"})
+    assert r.status_code == 422 and "short-pw-2" not in r.text
+
+
+def test_swagger_page_is_not_blocked_by_the_script_policy(anon_client):
+    assert "content-security-policy" not in anon_client.get("/docs").headers
+    assert anon_client.get("/health").headers["content-security-policy"]

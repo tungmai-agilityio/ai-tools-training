@@ -3,6 +3,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -33,6 +34,13 @@ def index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@app.exception_handler(RequestValidationError)
+def validation_error_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
+    """Default 422 body, minus `input` and `ctx`: a rejected password must never be echoed back."""
+    detail = [{"loc": e["loc"], "msg": e["msg"], "type": e["type"]} for e in exc.errors()]
+    return JSONResponse(status_code=422, content={"detail": detail})
+
+
 @app.exception_handler(DomainError)
 def domain_error_handler(_: Request, exc: DomainError) -> JSONResponse:
     return JSONResponse(status_code=exc.status, content={"detail": exc.message})
@@ -44,6 +52,7 @@ def health():
     return {"status": "ok", "timezone": config.CLINIC_TIMEZONE}
 
 
+DOCS_PATHS = {"/docs", "/redoc", "/docs/oauth2-redirect"}  # Swagger needs a CDN script and an inline one
 CSP = "script-src 'self'; object-src 'none'; base-uri 'self'"
 UNSAFE_METHODS = {"POST", "PATCH", "PUT", "DELETE"}
 
@@ -56,5 +65,6 @@ async def security_headers(request: Request, call_next):
         response = JSONResponse(status_code=403, content={"detail": "Cross-origin request refused"})
     else:
         response = await call_next(request)
-    response.headers["Content-Security-Policy"] = CSP
+    if request.url.path not in DOCS_PATHS:
+        response.headers["Content-Security-Policy"] = CSP
     return response

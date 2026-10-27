@@ -33,6 +33,8 @@ def main() -> None:
         login = c.post("/auth/login", json={"username": os.getenv("DEMO_USERNAME", ""), "password": os.getenv("DEMO_PASSWORD", "")})
         if login.status_code != 200 or login.json()["must_change_password"]:
             sys.exit(f"Login failed ({login.status_code}): set DEMO_USERNAME and DEMO_PASSWORD for an account that has changed its password.")
+        # httpx will not send a Secure cookie over plain http, so pass the session cookie by hand.
+        c.headers["Cookie"] = f"clinic_session={login.cookies.get('clinic_session')}"
         ok = 0
         for i, t in enumerate(times):
             start = datetime.fromisoformat(f"{day}T{t}:00").replace(tzinfo=TZ)

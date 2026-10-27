@@ -141,3 +141,11 @@ def test_ui_stores_no_credential_and_signs_out_through_the_api(client):
     assert "/auth/logout" in js and "/auth/change-password" in js and "reset-password" in js
     assert "sessionStorage" not in js
     assert all("cb-theme" in line for line in js.splitlines() if "localStorage" in line)
+
+
+def test_esc_escapes_quotes_so_usernames_cannot_break_attributes(client):
+    _run_js(client, ["function esc"], """
+globalThis.document = { createElement: () => ({ set textContent(v) { this.innerHTML = String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); } }) };
+const out = esc('x"><img src=//e>');
+if (out.includes('"') || out.includes("<")) throw new Error(out);
+""")
