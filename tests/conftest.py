@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 os.environ.setdefault("CLINIC_TIMEZONE", "America/New_York")
 os.environ.setdefault("DB_PATH", ":memory:")
-os.environ.setdefault("AUTH_SECRET", "test-secret-not-real")
+os.environ.setdefault("AUTH_SECRET", "test-secret-not-real-0123456789abcdef")
 
 import pytest
 from fastapi.testclient import TestClient

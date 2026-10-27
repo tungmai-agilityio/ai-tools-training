@@ -74,3 +74,4 @@ After approval I run all tickets end to end without per-ticket confirmation. I s
 - T-019: login with AUTH_SECRET unset returns 503 (spec said only "refused").
 - T-019 security scan, not changed: logout only clears the cookie and does not bump session_version (ADR-0002 accepts this ceiling; AC-5b needs logout to work without a session); a locked username answers 423 instead of 401, which reveals that the username exists (AC-3 and DDR-0001 require the distinct message). Tung to confirm both at the end.
 - T-019 security scan, fixed: parallel login attempts could skip the lockout; check, verify and update now run under a per-username lock (a global lock was flagged as a login-DoS lever); per-IP rate limiting is not added.
+- T-019 (small deviation, from the hosting review in PR #49): AUTH_SECRET must be at least 32 characters. Unset still only disables login; a shorter secret refuses login and stops startup. Added to T-019 (config check and test), not T-021.

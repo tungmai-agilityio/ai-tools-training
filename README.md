@@ -22,7 +22,7 @@ Then open:
 - http://127.0.0.1:8000/docs for the raw API (Swagger)
 
 ### Login settings
-Set in `.env` before first start: `AUTH_SECRET` (random string that signs sessions; empty means login is refused),
+Set in `.env` before first start: `AUTH_SECRET` (random string of at least 32 characters that signs sessions; empty means login is refused, a shorter one stops startup),
 `ADMIN_USERNAME` and `ADMIN_PASSWORD` (12+ characters; seed the first admin only while no users exist, who must change the
 password at first sign-in). `COOKIE_SECURE=false` is for plain-http local demos only. `POST /auth/login` sets an 8-hour
 `HttpOnly`, `SameSite=Strict` cookie; `POST /auth/logout` clears it; `GET /auth/me` shows who is signed in.
