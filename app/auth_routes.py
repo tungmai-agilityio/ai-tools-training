@@ -10,9 +10,10 @@ from app.store import store
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# ponytail: one global lock makes check, verify and counter update atomic so parallel guesses cannot
-# skip the lockout; serialises logins (~50 ms each), use per-username locks if login volume grows.
-_login_lock = threading.Lock()
+# ponytail: one lock per existing user id (the dict only grows with real users) makes check, verify and
+# counter update atomic so parallel guesses cannot skip the lockout; unknown names never take a lock.
+# Add per-IP rate limiting if the app is exposed beyond the clinic network.
+_user_locks: dict[int, threading.Lock] = {}
 
 
 def _session_out(user: UserRecord, expires) -> SessionOut:
@@ -23,16 +24,19 @@ def _session_out(user: UserRecord, expires) -> SessionOut:
 def login(body: LoginIn, response: Response) -> SessionOut:
     if not config.AUTH_SECRET:
         raise DomainError("Login is not configured", 503)
-    with _login_lock:
-        return _login(body, response)
-
-
-def _login(body: LoginIn, response: Response) -> SessionOut:
-    now = clock.now_utc()
     user = store.get_user_by_name(body.username)
-    if user and user.locked_until and now < user.locked_until:
+    if user is None:
+        auth.verify_password(body.password, auth.DUMMY_HASH)
+        raise DomainError("Wrong username or password", 401)
+    with _user_locks.setdefault(user.id, threading.Lock()):
+        return _login(user, body, response)
+
+
+def _login(user: UserRecord, body: LoginIn, response: Response) -> SessionOut:
+    now = clock.now_utc()
+    if user.locked_until and now < user.locked_until:
         raise DomainError("Too many failed attempts. Try again later.", 423)
-    if user is None or not user.active:
+    if not user.active:
         auth.verify_password(body.password, auth.DUMMY_HASH)
         raise DomainError("Wrong username or password", 401)
     if not auth.verify_password(body.password, user.password_hash):
