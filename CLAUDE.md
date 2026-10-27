@@ -44,6 +44,7 @@ Start in Plan Mode. Then follow the steps that apply:
 - Run `/sync-tickets` at lifecycle checkpoints to bring issue status back to Markdown.
 - Follow the instructions in the relevant `.claude/` skills and agents.
 - Resolve blocking questions before implementation. Never invent answers to open business-rule questions.
+- Branches and commits follow `docs/references/git-conventions.md` (`feat|fix|chore|docs/...`, `<type>: <what> (#N)`). Never name a branch `claude/*`.
 - Keep changes scoped to the current issue. Record unrelated findings separately.
 - Ask before creating, editing, or commenting on GitHub issues, and before each push or merge.
 - Run relevant tests before finishing. Bug fixes must include regression tests.

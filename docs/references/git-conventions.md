@@ -11,6 +11,7 @@ GitHub flow: day-to-day work goes to `develop`, releases go to `main` (see Relea
 | Docs only | `docs/<kebab-slug>` | `docs/conventions` |
 
 - Branch from an up-to-date `develop`. One issue = one branch = one PR.
+- Name branches only from the table above. Never use tool-generated names such as `claude/*`; if a tool pre-created one, rename it before the first push.
 - Never commit straight to `develop`. Never force-push a branch someone else is reviewing.
 
 ## Commits
