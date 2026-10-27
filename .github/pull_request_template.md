@@ -4,6 +4,7 @@
 <1–3 sentences: what this PR changes.>
 
 Closes #N
+Jira: <optional, e.g. CLB-12; delete this line if there is none>
 
 ## Why
 <The problem, in one or two sentences. Link the issue section rather than repeating it.>

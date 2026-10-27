@@ -76,3 +76,11 @@ python3 scripts/tickets.py push T-018 T-019               # selected tickets
 ```
 In Claude Code: `/push-tickets sprint S-001`, `/sync-tickets sprint S-001`. `/release --sprint S-001` adds a
 sprint summary (done vs carried over) from a read-only sync.
+
+## Optional: Jira
+Teams that also track work in Jira can mirror tickets with `/jira-tickets` (Atlassian MCP; `scripts/tickets.py` is unchanged).
+- Mapping: Feature -> Jira `Feature`, Chore -> `Task`, Bug -> `Bug`. Summary is `T-018: <title>`, the body ends with `ticket-id: T-018`, labels are `chore`, `priority-low`, `area-api`.
+- Tracking gets one more line, `- **Jira:** [CLB-2](https://<site>.atlassian.net/browse/CLB-2)`. Markdown still owns title and body; Jira sync writes only `State` and `Synced`.
+- Dedupe by the `Jira` line, then by a JQL search for the marker. Dry run first, and creating an issue needs approval.
+- The Jira key is optional everywhere: a ticket without a `Jira` line follows the normal GitHub flow.
+
