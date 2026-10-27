@@ -42,6 +42,7 @@ URL_RE = re.compile(r"^https://github\.com/[\w.-]+/[\w.-]+/issues/\d+$")
 TRACKING_HEAD = re.compile(r"^## Tracking[ \t]*$", re.M)
 PAIR = re.compile(r"\*\*([A-Za-z ]+):\*\*\s*(.*?)(?=\s{2,}\*\*[A-Za-z ]+:\*\*|$)")
 TRACK_RE = re.compile(r"^- \*\*([A-Za-z ]+):\*\*\s*(.*)$")
+JIRA_RE = re.compile(r"^\[[A-Z][A-Z0-9]+-\d+\]\(https://[\w.-]+\.atlassian\.net/browse/[A-Z][A-Z0-9]+-\d+\)$")
 ISSUE_RE = re.compile(r"\[#(\d+)\]\((https://github\.com/[\w.-]+/[\w.-]+/issues/\d+)\)")
 MARKER = "<!-- ticket-id: {} -->"
 TABLE = re.compile(r"(<!-- tickets:begin.*?-->\n)(.*?)(<!-- tickets:end -->)", re.S)
@@ -128,6 +129,8 @@ class Ticket:
                 err(f"decision record {ref} not found in docs/decisions/")
         if "Issue" in self.tracking and not ISSUE_RE.search(self.tracking["Issue"]):
             err("Tracking Issue must look like [#34](url)")
+        if "Jira" in self.tracking and not JIRA_RE.match(self.tracking["Jira"]):
+            err("Tracking Jira must look like [CLB-2](https://<site>.atlassian.net/browse/CLB-2)")
 
     def _has_plan(self):
         """True if a '## Plan' (or '## Fix and test') section has text beyond blanks, HTML comments and code fences."""
@@ -193,8 +196,11 @@ class Ticket:
         if reason:
             lines.append(f"- **Reason:** {reason}")
         lines.append(f"- **Synced:** {now_utc().isoformat().replace('+00:00', 'Z')}")
+        # Jira lines belong to the /jira-tickets skill: keep them across a GitHub rewrite.
+        kept = {k: v for k, v in self.tracking.items() if k == "Jira" or k.startswith("Jira ")}
+        lines += [f"- **{k}:** {v}" for k, v in kept.items()]
         self.path.write_text(head + "\n\n## Tracking\n" + TRACKING_COMMENT + "\n" + "\n".join(lines) + "\n")
-        self.tracking = {"Issue": f"[#{issue}]({url})", "State": state}
+        self.tracking = {"Issue": f"[#{issue}]({url})", "State": state, **kept}
         if reason:
             self.tracking["Reason"] = reason
 

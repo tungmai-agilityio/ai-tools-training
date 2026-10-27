@@ -19,7 +19,7 @@ Reference: `docs/references/ticket-sync.md` (Jira section). Jira is an optional 
 - **Jira state:** open
 - **Jira synced:** 2026-10-27T06:22:00Z
 ```
-Limitation: `tickets.py push --apply`, `record` and `sync --apply` rewrite the whole Tracking section and would drop these lines. Until the script preserves them, use Jira on tickets that are not also synced to GitHub, or re-add the lines afterwards.
+`tickets.py` keeps these lines when its GitHub commands rewrite Tracking, and `check` fails a `Jira` line that is not an `https://<site>.atlassian.net/browse/<KEY>-<n>` link.
 Only a `https://<site>.atlassian.net/browse/<KEY>-<n>` URL is ever written.
 
 **Sync (read-only on Jira).** For each ticket with a `**Jira:**` line, `getJiraIssue` and map the status category: `new` and `indeterminate` -> `open`, `done` -> `closed`. Update only `**Jira state:**` and `**Jira synced:**`. Report drift in title or labels; never copy Jira text into the Markdown. If the key does not resolve, report the MCP error as is (a 403 is not a deletion), call it `missing` only for a clear not-found, never change the state on an error, and ask. A renamed project changes the key, so re-read the URL from Jira and ask before rewriting the Tracking line.
