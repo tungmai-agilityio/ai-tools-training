@@ -6,7 +6,7 @@ Reference: `docs/references/ticket-sync.md`. The script is `python3 scripts/tick
 
 1. **Select** tickets: ids (`T-018 T-019`), `--sprint S-001` or `--all`.
 2. **Validate:** `python3 scripts/tickets.py check <selector>`. Fix the Markdown (never invent values) and stop on a `FAIL`.
-3. **Preview (dry run):** `python3 scripts/tickets.py push <selector>`. With no `GH_TOKEN`, fetch the repo's issues with the GitHub MCP `list_issues` (state all), save them as JSON, and add `--issues-json FILE`. Show the table: `create`, `adopt`, `skip`, `blocked` (a gate failed), `error`.
+3. **Preview (dry run):** `python3 scripts/tickets.py push <selector>`. With no `GH_TOKEN`, fetch the repo's issues with the GitHub MCP `list_issues` (state all), save them as JSON, and add `--issues-json FILE` (the author cannot be verified there: an issue that already carries a ticket marker is only adopted with `--adopt-author <login>`, and only after the user confirms that login). Show the table: `create`, `adopt`, `skip`, `blocked` (a gate failed), `error`.
 4. **Go-ahead gate.** Show the preview and wait for the user's approval of exactly those rows. No approval, no GitHub write.
 5. **Apply:**
    - With `GH_TOKEN`: `python3 scripts/tickets.py push <selector> --apply`.

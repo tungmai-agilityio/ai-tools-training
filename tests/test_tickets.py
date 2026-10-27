@@ -122,7 +122,7 @@ def test_push_skips_drafts_and_selects_by_sprint(plans, monkeypatch):
 def test_push_adopts_issue_left_by_a_partial_failure(plans, monkeypatch):
     path = add(plans, "T-018")
     gh = FakeGitHub([{"number": 7, "html_url": "https://github.com/o/r/issues/7", "state": "open", "title": "t",
-                      "body": "b\n\n<!-- ticket-id: T-018 -->", "labels": []}])
+                      "body": "b\n\n<!-- ticket-id: T-018 -->", "labels": [], "user": {"login": "bot"}}], me="bot")
     run(monkeypatch, gh, "push", "T-018", "--apply")
     assert gh.created == [] and "[#7](https://github.com/o/r/issues/7)" in path.read_text()
 
@@ -283,3 +283,46 @@ def test_body_line_starting_like_tracking_does_not_truncate_the_ticket(plans):
     assert "Keep me." in t.issue_body
     t.write_tracking(5, "https://github.com/o/r/issues/5", "open")
     assert "Keep me." in path.read_text()
+
+
+MARKED = {"number": 7, "html_url": "https://github.com/o/r/issues/7", "state": "open", "title": "t",
+          "body": "<!-- ticket-id: T-018 -->", "labels": [], "user": {"login": "bot"}}
+
+
+def test_push_does_not_adopt_when_the_author_cannot_be_verified(plans, monkeypatch):
+    path = add(plans, "T-018")
+    gh = FakeGitHub([MARKED])  # me() is None, as with --issues-json or an Actions token
+    assert run(monkeypatch, gh, "push", "T-018", "--apply") == 1
+    assert "Tracking" not in path.read_text()
+    assert run(monkeypatch, gh, "push", "T-018", "--apply", "--adopt-author", "bot") == 0
+    assert "[#7]" in path.read_text()
+
+
+def test_me_returns_none_when_the_token_cannot_call_user(monkeypatch):
+    import urllib.error
+
+    gh = tk.GitHub("o/r", "t")
+
+    def forbidden(path):
+        raise urllib.error.HTTPError("u", 403, "forbidden", {}, None)
+
+    monkeypatch.setattr(gh, "_req_root", forbidden)
+    assert gh.me() is None
+
+
+def test_labels_are_read_across_pages(monkeypatch):
+    gh = tk.GitHub("o/r", "t")
+    pages = {1: [{"name": f"l{i}"} for i in range(100)], 2: [{"name": "chore"}]}
+    monkeypatch.setattr(gh, "_req", lambda method, path: pages[int(path.rsplit("=", 1)[1])])
+    assert "chore" in gh.labels()
+
+
+def test_record_rejects_a_url_for_a_different_issue(plans):
+    add(plans, "T-018")
+    with pytest.raises(SystemExit):
+        tk.main(["record", "T-018", "--issue", "34", "--url", "https://github.com/o/r/issues/99"])
+
+
+def test_pipe_in_a_title_does_not_break_the_sprint_table(plans):
+    add(plans, "T-018", title="A | B")
+    assert "A \\| B" in tk.sprint_table("S-001", tk.load_tickets())

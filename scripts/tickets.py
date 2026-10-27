@@ -248,10 +248,19 @@ class GitHub:
         return self._issues
 
     def me(self):
-        return self._req_root("/user")["login"]
+        try:
+            return self._req_root("/user")["login"]
+        except urllib.error.HTTPError:  # Actions/installation tokens cannot call /user
+            return None
 
     def labels(self):
-        return {l["name"] for l in self._req("GET", "/labels?per_page=100")}
+        names, page = set(), 1
+        while True:
+            batch = self._req("GET", f"/labels?per_page=100&page={page}")
+            names |= {l["name"] for l in batch}
+            if len(batch) < 100:
+                return names
+            page += 1
 
     def _req_root(self, path):
         req = urllib.request.Request(f"https://api.github.com{path}", headers={
@@ -359,13 +368,14 @@ def cmd_check(args):
     return 1 if bad else 0
 
 
-def plan_push(tickets, targets, gh):
+def plan_push(tickets, targets, gh, trusted=()):
     dupes = duplicates(tickets)
     issues = gh.list_issues()
-    me, known = gh.me(), gh.labels()
+    allowed = {x for x in (gh.me(), *trusted) if x}
+    known = gh.labels()
     rows = []
     for t in targets:
-        errs = t.errors + ([f"issue number shared with another ticket"] if t.id in dupes else [])
+        errs = t.errors + (["issue number shared with another ticket"] if t.id in dupes else [])
         if errs:
             rows.append((t, "error", "; ".join(errs), None))
         elif t.fields["Push"] != "Ready":
@@ -380,8 +390,9 @@ def plan_push(tickets, targets, gh):
                 rows.append((t, "error", f"{len(hits)} issues carry its marker: {[h['number'] for h in hits]}", None))
             elif hits:
                 author = (hits[0].get("user") or {}).get("login")
-                if me and author != me:
-                    rows.append((t, "error", f"#{hits[0]['number']} carries the marker but was opened by {author}, not {me}", None))
+                if author not in allowed:
+                    rows.append((t, "error", f"#{hits[0]['number']} carries the marker, opened by {author or 'unknown'}; "
+                                 f"not adopted. If that is you, pass --adopt-author {author or 'LOGIN'}", None))
                 else:
                     rows.append((t, "adopt", f"#{hits[0]['number']} already has its marker (author {author or 'unknown'})", hits[0]))
             elif known is not None and (missing := [l for l in t.labels if l not in known]):
@@ -395,7 +406,7 @@ def cmd_push(args):
     tickets = load_tickets()
     targets = select(tickets, args)
     gh = client(args)
-    rows = plan_push(tickets, targets, gh)
+    rows = plan_push(tickets, targets, gh, args.adopt_author)
     report([[t.id, a, why] for t, a, why, _ in rows], ["Ticket", "Action", "Detail"])
     todo = [r for r in rows if r[1] in ("create", "adopt")]
     failed = any(r[1] == "error" for r in rows)
@@ -427,7 +438,7 @@ def sprint_table(sprint, tickets):
         if t.fields.get("Sprint") != sprint:
             continue
         issue = f"[#{t.issue[0]}]({t.issue[1]})" if t.issue else "-"
-        rows.append(f"| [{t.id}](../tickets/{t.id}.md) {t.title} | {t.fields.get('Type', '')} | "
+        rows.append(f"| [{t.id}](../tickets/{t.id}.md) {t.title.replace('|', '\\|')} | {t.fields.get('Type', '')} | "
                     f"{t.fields.get('Priority', '')} | {t.fields.get('Estimate', '-')} | {issue} | "
                     f"{t.tracking.get('State', '-')} |")
     return "\n".join(rows) + "\n"
@@ -520,6 +531,8 @@ def cmd_record(args):
     t = next((x for x in tickets if x.id == args.id), None)
     if not t or t.errors:
         sys.exit(f"error: {args.id} " + ("not found" if not t else "invalid: " + "; ".join(t.errors)))
+    if not args.url.endswith(f"/issues/{args.issue}"):
+        sys.exit(f"error: --url must end with /issues/{args.issue}")
     if t.issue and t.issue[0] != args.issue:
         sys.exit(f"error: {t.id} is already mapped to #{t.issue[0]}")
     clash = [x.id for x in tickets if x.id != t.id and x.issue and x.issue[0] == args.issue]
@@ -546,6 +559,9 @@ def main(argv=None):
             sp.add_argument("--apply", action="store_true", help="really write (default is a dry run)")
             sp.add_argument("--issues-json", help="issues fetched via MCP instead of the REST API")
             sp.add_argument("--repo", help="owner/name (default: origin remote)")
+        if name == "push":
+            sp.add_argument("--adopt-author", action="append", default=[], metavar="LOGIN",
+                            help="also adopt marker issues opened by LOGIN (needed with --issues-json)")
         sp.set_defaults(fn=fn)
     sp = sub.add_parser("show")
     sp.add_argument("id")
