@@ -5,7 +5,7 @@ description: Review a Clinic Booking branch or PR against REVIEW.md via code-rev
 This skill never edits files.
 
 1. **Scope.** Default to `git diff origin/develop...HEAD` (after `git fetch origin develop`) plus any uncommitted changes, or the branch or range named. Find the ticket: the `#N` in the branch or commit names the `plans/tickets/` file whose Tracking Issue is #N. If there is none, read `gh issue view N`.
-2. **Review.** Run the **code-reviewer** subagent on the range and the ticket. It works through REVIEW.md and the security guidance, and checks every AC and test case.
+2. **Review.** Run the **code-reviewer** subagent on the range and the ticket. It works through REVIEW.md, and checks every AC and test case.
 3. **Issue link.** Check that the branch (`<type>/<N>-<slug>`) and the commit (`(#N)`) carry the issue number; flag a missing one as a nit.
 4. **Verdict.** **approve**, **approve with nits**, or **changes needed**, followed by the pytest line and the AC/test-case table (pass, fail, or manual).
 5. Post nothing to GitHub unless asked.

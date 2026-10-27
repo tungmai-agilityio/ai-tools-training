@@ -34,7 +34,7 @@ Conventional Commits, one line, imperative, lower case, no period, issue number 
 - Bad: `Fixed bug`, `fix: #31`, `WIP`, `fix: stuff and also refactor fees`
 - Aim for **one commit per issue**. Squash fixups before asking for review (`git commit --fixup <sha>` + `git rebase -i --autosquash develop`; agents: `GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash develop`).
 - Add a body (blank line, then wrapped text) only when the *why* is not obvious from the issue.
-- Older commits and files say `T-0NN`: those refer to the archived tickets in `tickets/`.
+- Older commits and files say `T-0NN`: those refer to the archived tickets in `plans/archive/`.
 
 ## Issues
 - Templates: `.github/ISSUE_TEMPLATE/` (feature, bug, chore). Type labels: `enhancement`, `bug`, `chore`.

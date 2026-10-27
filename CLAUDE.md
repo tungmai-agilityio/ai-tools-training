@@ -7,7 +7,7 @@ Clinic Booking is a FastAPI training project using fake data only.
 - Business rules: `docs/business-rules.md` — source of truth.
 - Project structure and setup: `README.md`.
 - Coding, testing and git conventions: `docs/references/`.
-- Work tracking: GitHub issues. `tickets/` is a read-only archive of T-001 to T-017.
+- Work tracking: GitHub issues. `plans/archive/` is a read-only archive of T-001 to T-017.
 - Planned work: Markdown in `plans/` is the source of truth; `/push-tickets` and `/sync-tickets` link it to issues (`docs/references/ticket-sync.md`).
 
 ## Commands
