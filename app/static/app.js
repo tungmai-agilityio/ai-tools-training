@@ -524,8 +524,9 @@ async function enter(user) {
   document.querySelector(".cb-app").classList.remove("cb-signed-out");
   document.querySelector(".cb-sidebar").hidden = false;
   document.querySelectorAll("[data-admin]").forEach((a) => (a.hidden = user.role !== "admin"));
-  $("who-name").textContent = `${user.username} · ${user.role}`;
-  $("who-until").textContent = `Session ends ${fmtWhen(user.expires_at)}`;
+  $("who-name").textContent = user.username;
+  $("who-role").textContent = user.role;
+  $("who-until").textContent = fmtWhen(user.expires_at);
   if (user.must_change_password) {
     $("pw-forced").hidden = false;
     document.querySelector(".cb-nav").hidden = true;
