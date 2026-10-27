@@ -64,7 +64,9 @@ cover behaviour that already works.
 | `data/seed.json` | Doctors and patients loaded at startup |
 | `docs/business-rules.md` | What the clinic says the system should do |
 | `docs/references/` | Code, git and testing conventions |
-| `docs/templates/` | PRD, spec, ADR, test plan, test and status report templates |
+| `docs/templates/` | PRD, spec, ADR, DDR, test plan, test and status report templates |
+| `docs/decisions/` | ADR and DDR records |
+| `plans/` | Markdown tickets, sprints and feature docs (source of truth for planned work) |
 | `.github/` | Issue templates (feature, bug, chore), PR template, workflows |
 | `.claude/` | Claude Code config for this repo. Skills: `/ticket` → `/plan` → `/implement` or `/fix` → `/review` → `/pr`; 4 subagents; commands; hooks that block forbidden Bash commands, ruff-fix edited `.py` files and notify on finish (`settings.json`). With `.mcp.json` (Playwright MCP), it loads when Claude Code is opened at the repo root |
 | `tickets/` | Read-only archive of the original tickets T-001 to T-017; new work is GitHub issues |
