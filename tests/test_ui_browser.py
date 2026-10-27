@@ -1,13 +1,25 @@
 """Browser smoke test for the web app (T-011). Optional: needs requirements-dev.txt and
 `playwright install chromium`; skipped otherwise, so plain `pytest` stays dependency-free."""
+import os
+import re
 import socket
 import threading
 import time
+from pathlib import Path
 
 import pytest
 
-sync_api = pytest.importorskip("playwright.sync_api")
-uvicorn = pytest.importorskip("uvicorn")
+# REQUIRE_BROWSER=1 (CI) turns every "browser not available" skip into a failure.
+REQUIRE_BROWSER = os.environ.get("REQUIRE_BROWSER") == "1"
+SHOTS = Path("test-artifacts/screenshots")
+SIZES = {"desktop": (1280, 800), "phone": (375, 812)}
+CSP_MARK = "Content Security Policy"
+
+if not REQUIRE_BROWSER:
+    pytest.importorskip("playwright.sync_api")
+    pytest.importorskip("uvicorn")
+from playwright import sync_api  # noqa: E402
+import uvicorn  # noqa: E402
 
 from tests.conftest import FIXED_NOW
 from tests.helpers import book
@@ -34,6 +46,8 @@ def page(base_url, client):  # `client` is signed in as an admin; hand its sessi
         try:
             browser = p.chromium.launch()
         except Exception as e:  # browser binary not installed
+            if REQUIRE_BROWSER:
+                pytest.fail(f"chromium not available: {e}")
             pytest.skip(f"chromium not available: {e}")
         # A browser far from New York: every time on screen must still be clinic time (NFR-2).
         context = browser.new_context(timezone_id="Asia/Ho_Chi_Minh", base_url=base_url)
@@ -42,8 +56,32 @@ def page(base_url, client):  # `client` is signed in as an admin; hand its sessi
         context.add_cookies([{"name": config.SESSION_COOKIE, "value": client.cookies.get(config.SESSION_COOKIE), "url": base_url}])
         pg = context.new_page()
         pg.clock.set_fixed_time(FIXED_NOW)
+        pg.csp_violations = []
+        pg.on("console", lambda m: pg.csp_violations.append(m.text) if CSP_MARK in m.text else None)
         yield pg
         browser.close()
+        assert not pg.csp_violations, f"CSP violation: {pg.csp_violations}"
+
+
+@pytest.fixture
+def snap(page, request):
+    """snap(name): save <test>-<name>-desktop.png and -phone.png, masking password and token inputs."""
+    SHOTS.mkdir(parents=True, exist_ok=True)
+
+    def take(name):
+        keep = page.viewport_size
+        for label, (w, h) in SIZES.items():
+            page.set_viewport_size({"width": w, "height": h})
+            test = re.sub(r"\W+", "-", request.node.name).strip("-")
+            page.screenshot(
+                path=str(SHOTS / f"{test}-{name}-{label}.png"),
+                animations="disabled",
+                mask=[page.locator("input[type=password], input[name*=token i], input[id*=token i]")],
+            )
+        if keep:
+            page.set_viewport_size(keep)
+
+    return take
 
 
 def test_booking_shows_summary_then_fee_toast_in_clinic_time(page):
@@ -98,22 +136,24 @@ def _signed_out(page):
     page.goto("/")
 
 
-def test_no_session_shows_only_the_login_form(page):  # T-022 TC-1
+def test_no_session_shows_only_the_login_form(page, snap):  # T-022 TC-1
     _signed_out(page)
     sync_api.expect(page.get_by_role("heading", name="Sign in")).to_be_visible()
     sync_api.expect(page.locator(".cb-sidebar")).to_be_hidden()
+    snap("login")
 
 
-def test_wrong_password_shows_a_generic_error_without_a_status_code(page):  # TC-2
+def test_wrong_password_shows_a_generic_error_without_a_status_code(page, snap):  # TC-2
     _signed_out(page)
     page.fill("#login-user", "nobody")
     page.fill("#login-pass", "not a real password")
     page.get_by_role("button", name="Sign in").click()
     sync_api.expect(page.locator("#login-msg")).to_have_text("Wrong username or password.")
     sync_api.expect(page.locator("#login-pass")).to_have_value("")
+    snap("wrong-password")
 
 
-def test_staff_sees_no_admin_items(client, page, base_url):  # TC-3
+def test_staff_sees_no_admin_items(client, page, base_url, snap):  # TC-3
     from tests.helpers import make_user
 
     make_user(username="nurse1")
@@ -124,12 +164,21 @@ def test_staff_sees_no_admin_items(client, page, base_url):  # TC-3
     sync_api.expect(page.get_by_role("link", name="Book")).to_be_visible()
     sync_api.expect(page.get_by_role("link", name="Revenue")).to_be_hidden()
     sync_api.expect(page.get_by_role("link", name="Users")).to_be_hidden()
+    snap("staff-menu")
 
 
-def test_a_401_returns_to_the_login_form(page):  # TC-4
-    page.goto("/")
-    sync_api.expect(page.locator(".cb-sidebar")).to_be_visible()
-    page.context.clear_cookies()
+def test_a_401_returns_to_the_login_form(page, snap):  # TC-4
     page.goto("/#appointments")
+    sync_api.expect(page.get_by_role("button", name="Refresh")).to_be_visible()
+    page.context.clear_cookies()  # after the screen loaded, or its own load already hits the 401
     page.get_by_role("button", name="Refresh").click()
     sync_api.expect(page.get_by_role("heading", name="Sign in")).to_be_visible()
+    snap("back-to-login")
+
+
+def test_an_inline_script_is_reported_as_a_csp_violation(page):
+    page.goto("/")
+    page.evaluate("document.body.insertAdjacentHTML('beforeend', '<img src=x onerror=alert(1)>')")
+    page.wait_for_timeout(200)
+    assert page.csp_violations, "the CSP check did not see an inline handler"
+    page.csp_violations.clear()  # expected here; the teardown check would otherwise fail this test
