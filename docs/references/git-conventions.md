@@ -45,7 +45,7 @@ Conventional Commits, one line, imperative, lower case, no period, issue number 
 - The PR body says `Closes #N`, so GitHub closes the issue when the PR merges. Never reopen a closed issue; open a new one with `Related: #N`.
 
 ## Pull requests
-- Title = the commit subject. Description = `.github/pull_request_template.md` (repo root), filled in, with `Closes #N`. If the ticket has a Jira key, fill the optional `Jira:` line; otherwise delete it.
+- Title = the commit subject. Description = `.github/pull_request_template.md` (repo root), filled in, with `Closes #N`. If the ticket has a Jira key, add a `Jira: CLB-12` line (see the comment in the template); otherwise leave it out.
 - Before opening: `pytest` is green and the diff is only the issue.
 - At least one approval. The author resolves every thread or answers it.
 - Merge with a merge commit (`Merge pull request #M from <user>/fix/31-...`) and delete the source branch.
