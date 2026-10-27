@@ -71,7 +71,7 @@ def test_no_session_is_401_and_unknown_user_404(client):
     assert client.patch("/users/999", json={"active": True}).status_code == 404
 
 
-def test_reenable_and_unlock_clear_the_lockout(client, now):
+def test_reenable_and_unlock_clear_the_lockout(client):
     signed_in(client)
     uid = new_user(client).json()["id"]
     for _ in range(config.LOCKOUT_FAILURES):
