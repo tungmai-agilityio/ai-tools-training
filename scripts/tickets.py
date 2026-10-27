@@ -107,8 +107,7 @@ class Ticket:
             err(f"Estimate must be one of {sorted(ESTIMATES)}")
         if "Plan" in f and f["Plan"] not in PLAN:
             err(f"Plan must be one of {sorted(PLAN)}")
-        if f.get("Plan") == "Approved" and not re.search(
-                r"^## (Plan|Fix and test)[ \t]*\n+(?!##)\S", self.body + "\n", re.M):
+        if f.get("Plan") == "Approved" and not self._has_plan():
             err("Plan: Approved needs a non-empty '## Plan' (or '## Fix and test') section")
         if f.get("Push") and f["Push"] not in PUSH:
             err(f"Push must be one of {sorted(PUSH)}")
@@ -129,6 +128,11 @@ class Ticket:
                 err(f"decision record {ref} not found in docs/decisions/")
         if "Issue" in self.tracking and not ISSUE_RE.search(self.tracking["Issue"]):
             err("Tracking Issue must look like [#34](url)")
+
+    def _has_plan(self):
+        """True if a '## Plan' (or '## Fix and test') section has text beyond blanks, HTML comments and code fences."""
+        body = re.sub(r"<!--.*?-->|```.*?```", "", self.body, flags=re.S)
+        return bool(re.search(r"^## (Plan|Fix and test)[ \t]*\n+(?!##)\S", body + "\n", re.M))
 
     @property
     def decisions(self):

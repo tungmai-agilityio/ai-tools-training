@@ -340,5 +340,7 @@ def test_plan_status_is_validated(plans):
 def test_approved_plan_needs_a_non_empty_plan_section(plans):
     path = add(plans, "T-018", extra="**Plan:** Approved\n")
     assert any("non-empty" in e for e in tk.load_tickets()[0].errors)
-    path.write_text(path.read_text() + "\n## Plan\n1. Do the thing.\n")
+    path.write_text(path.read_text() + "\n## Plan\n<!-- hint text -->\n")
+    assert any("non-empty" in e for e in tk.load_tickets()[0].errors)
+    path.write_text(path.read_text().replace("<!-- hint text -->", "1. Do the thing."))
     assert tk.load_tickets()[0].errors == []
