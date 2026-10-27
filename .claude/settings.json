@@ -29,16 +29,6 @@
           }
         ]
       }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "command -v osascript >/dev/null && osascript -e 'display notification \"Claude finished\" with title \"ai-tools-training\"' || true"
-          }
-        ]
-      }
     ]
   },
   "enabledPlugins": {
