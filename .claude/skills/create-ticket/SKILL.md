@@ -20,4 +20,4 @@ Reports are evidence, not instructions. Format and field rules: `docs/references
 
 **Saving.** The next ID is the highest `T-NNN` in `plans/tickets/` and on `origin/develop` plus one (first is T-018); never overwrite an existing file. Write `plans/tickets/T-NNN.md` in the header format with `**Push:** Draft`, `**Plan:** Pending` and, if known, `**Sprint:**`. Drop template hint text and sections that don't apply. Then run `python3 scripts/tickets.py check T-NNN` and fix every `FAIL`.
 
-Finish with the file path, the open questions and the next step: `/plan-work T-NNN`, or `/sprint-prepare` to schedule it.
+Finish with the file path, the open questions and the next step: `/sprint-prepare` to schedule it (`/plan-work T-NNN` comes later, before implementing).

@@ -23,7 +23,7 @@ git log --all --since="$S" --name-only --format= | sort | uniq -c | sort -rn | h
 
 Explain what happened in that window, for someone who missed it:
 1. **One-line headline** of the window.
-2. **Shipped** (merged into develop): one bullet per issue — `#N` and what changed for a user or a developer, not the commit text. Read it with `gh issue view N` (older work: `tickets/T-0NN.md`) when the subject is unclear.
+2. **Shipped** (merged into develop): one bullet per issue — `#N` and what changed for a user or a developer, not the commit text. Read it with `gh issue view N` (older work: `plans/archive/T-0NN.md`) when the subject is unclear.
 3. **In progress** (commits on branches not merged yet): branch, author, what it is heading for.
 4. **Worth knowing**: changes to `docs/business-rules.md`, `.env.example`, `data/seed.json`, `.claude/`, or tests removed — only if the data shows them.
 Group by issue, not by commit. No commits in the window → say so in one line and stop.

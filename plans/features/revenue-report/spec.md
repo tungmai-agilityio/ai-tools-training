@@ -1,6 +1,6 @@
 # Spec: Revenue report (T-015)
 
-**Author:** Tung Mai  **Status:** Draft  **PRD:** `tickets/T-015.md`  **Last updated:** 2026-10-21
+**Author:** Tung Mai  **Status:** Draft  **PRD:** `plans/archive/T-015.md`  **Last updated:** 2026-10-21
 
 > A Spec says **how**. It must be reviewable before any code is written.
 
@@ -83,7 +83,7 @@ request when `ADMIN_TOKEN` is empty. The response contains only fake doctor name
 patient data. Input is two typed `date` query parameters, and the 366-day cap bounds the range.
 
 ## 9. Test plan
-See `tickets/T-015.md` §7. All tests live in `tests/test_reports.py`.
+See `plans/archive/T-015.md` §7. All tests live in `tests/test_reports.py`.
 
 ## 10. Rollout
 No migration: an existing `data/clinic.db` is read as it is. No new config. Docs to update: the "Revenue report"

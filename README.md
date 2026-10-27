@@ -66,11 +66,9 @@ cover behaviour that already works.
 | `docs/references/` | Code, git and testing conventions |
 | `docs/templates/` | PRD, spec, ADR, DDR, test plan, test and status report templates |
 | `docs/decisions/` | ADR and DDR records |
-| `plans/` | Markdown tickets, sprints and feature docs (source of truth for planned work) |
+| `plans/` | Markdown tickets, sprints and feature docs (source of truth for planned work); `archive/` holds the read-only tickets T-001 to T-017 |
 | `.github/` | Issue templates (feature, bug, chore), PR template, workflows |
-| `.claude/` | Claude Code config for this repo. Skills: `/create-ticket` → `/plan-work` → `/sprint-prepare` → `/push-tickets` → `/implement-ticket` → `/review-pr` → `/pr`, plus `/sync-tickets`; 3 subagents (business-analyst, planner, code-reviewer); commands; hooks that block forbidden Bash commands, ruff-fix edited `.py` files and notify on finish (`settings.json`). With `.mcp.json` (Playwright MCP), it loads when Claude Code is opened at the repo root |
-| `tickets/` | Read-only archive of the original tickets T-001 to T-017; new work is GitHub issues |
-| `PRACTICE.md` | How to use this repo with the role-play drills |
+| `.claude/` | Claude Code config for this repo. Skills: `/create-ticket` → `/sprint-prepare` → `/push-tickets` → per ticket `/plan-work` → `/implement-ticket` → `/pr` → `/review-pr`, plus `/sync-tickets`; 3 subagents (business-analyst, planner, code-reviewer); commands; hooks that block forbidden Bash commands, ruff-fix edited `.py` files and notify on finish (`settings.json`). With `.mcp.json` (Playwright MCP), it loads when Claude Code is opened at the repo root |
 
 ## Rules of the practice
 

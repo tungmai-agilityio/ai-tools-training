@@ -11,6 +11,7 @@ GitHub flow: day-to-day work goes to `develop`, releases go to `main` (see Relea
 | Docs only | `docs/<kebab-slug>` | `docs/conventions` |
 
 - Branch from an up-to-date `develop`. One issue = one branch = one PR.
+- Name branches only from the table above. Never use tool-generated names such as `claude/*`; if a tool pre-created one, rename it before the first push.
 - Never commit straight to `develop`. Never force-push a branch someone else is reviewing.
 
 ## Commits
@@ -34,7 +35,7 @@ Conventional Commits, one line, imperative, lower case, no period, issue number 
 - Bad: `Fixed bug`, `fix: #31`, `WIP`, `fix: stuff and also refactor fees`
 - Aim for **one commit per issue**. Squash fixups before asking for review (`git commit --fixup <sha>` + `git rebase -i --autosquash develop`; agents: `GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash develop`).
 - Add a body (blank line, then wrapped text) only when the *why* is not obvious from the issue.
-- Older commits and files say `T-0NN`: those refer to the archived tickets in `tickets/`.
+- Older commits and files say `T-0NN`: those refer to the archived tickets in `plans/archive/`.
 
 ## Issues
 - Templates: `.github/ISSUE_TEMPLATE/` (feature, bug, chore). Type labels: `enhancement`, `bug`, `chore`.

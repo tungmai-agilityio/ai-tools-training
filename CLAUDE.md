@@ -7,7 +7,7 @@ Clinic Booking is a FastAPI training project using fake data only.
 - Business rules: `docs/business-rules.md` — source of truth.
 - Project structure and setup: `README.md`.
 - Coding, testing and git conventions: `docs/references/`.
-- Work tracking: GitHub issues. `tickets/` is a read-only archive of T-001 to T-017.
+- Work tracking: GitHub issues. `plans/archive/` is a read-only archive of T-001 to T-017.
 - Planned work: Markdown in `plans/` is the source of truth; `/push-tickets` and `/sync-tickets` link it to issues (`docs/references/ticket-sync.md`).
 
 ## Commands
@@ -26,9 +26,25 @@ Run `python scripts/seed_demo.py` with the server running to seed demo data.
 
 ## Workflow
 
-- Start in Plan Mode. Follow `/create-ticket` → `/plan-work` → `/sprint-prepare` → `/push-tickets` → `/implement-ticket` → `/review-pr` → `/pr` as applicable; `/sync-tickets` brings issue status back.
+Start in Plan Mode. Then follow the steps that apply:
+
+| # | Step | Command | Description |
+|---|------|---------|-------------|
+| 1 | Plan Mode | — | Analyze the requirement, explore the codebase, identify ambiguities. |
+| 2 | Create Ticket | `/create-ticket` | Structured Markdown ticket with acceptance criteria and test cases. |
+| 3 | Sprint Prepare | `/sprint-prepare` | Propose a Sprint Goal and feasible scope from estimates; the team approves it. |
+| 4 | Push Tickets | `/push-tickets` | Publish approved tickets to GitHub Issues. |
+| 5 | Plan Work | `/plan-work` | Per ticket, before coding: approach, dependencies, risks and testing; you approve it. |
+| 6 | Implement Ticket | `/implement-ticket` | Implement, run tests, report evidence. |
+| 7 | Create PR | `/pr` | PR with the ticket reference and implementation summary. |
+| 8 | Review PR | `/review-pr` | Review diff, acceptance criteria, security and tests; fix and re-review. |
+| 9 | Merge & Deliver | — | Merge after approval and CI; deploy per the release process. |
+
+- Do not implement tickets outside the approved sprint scope or change that scope without team agreement.
+- Run `/sync-tickets` at lifecycle checkpoints to bring issue status back to Markdown.
 - Follow the instructions in the relevant `.claude/` skills and agents.
 - Resolve blocking questions before implementation. Never invent answers to open business-rule questions.
+- Branches and commits follow `docs/references/git-conventions.md` (`feat|fix|chore|docs/...`, `<type>: <what> (#N)`). Never name a branch `claude/*`.
 - Keep changes scoped to the current issue. Record unrelated findings separately.
 - Ask before creating, editing, or commenting on GitHub issues, and before each push or merge.
 - Run relevant tests before finishing. Bug fixes must include regression tests.

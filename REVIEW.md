@@ -1,71 +1,69 @@
-# REVIEW.md
+# PR Review Guidelines
 
-Review instructions for Claude. This file is auto-discovered at the repository root.
+Review instructions for Claude Code Review. Auto-discovered at the repository root.
 
----
+## Review Priorities
 
-## Always flag (Walkthrough Checklist)
+Review changes for actionable defects, prioritizing:
 
-Follow this review order: **Correctness → Tests → Readability → Security basics → Scope**.
+1. Correctness and business logic.
+2. Security, authorization, and patient-data privacy.
+3. Data integrity, transactions, and migration safety.
+4. API contracts, validation, and error handling.
+5. Regression risks and missing tests.
+6. Significant maintainability issues.
 
-### 1. Correctness (Domain & Business Rules)
+## Clinic Booking Rules
 
-- **Money as floats.** All monetary values must be integer cents. Percentages round half up. Flag any use of `float` for fees, discounts, or price calculations. The correct pattern is `fees._percent(fee, pct)`.
-- **Naive datetimes.** Every `datetime` must be timezone-aware and stored in UTC. Flag `datetime.now()`, `datetime.utcnow()`, or any datetime without `tzinfo`. The correct entry point is `clock.now_utc()`.
-- **Direct status mutation.** Appointment status must change through `routes._move()`, which enforces the `TRANSITIONS` map. Flag any direct assignment like `appt.status = "cancelled"`.
-- **HTTPException instead of DomainError.** Business-rule failures must raise `DomainError(message, status)` (default 409, 422 for bad input). Flag any `raise HTTPException(...)` for domain logic.
-- **Missing `store.save()` / `store.delete()`.** Every endpoint that mutates an appointment must call `store.save(appt)` or `store.delete(id)` before returning. Flag mutations that skip persistence.
-- **Lunch break overlap.** No appointment may overlap 12:00–13:00 clinic time. Flag scheduling logic that ignores lunch.
-- **Booking-limit bypass.** Bookings must be in the future and ≤ 60 days ahead. Flag any path that skips this check.
-- **Open questions decided in code.** Items marked `OPEN QUESTION` in `docs/business-rules.md` must not be resolved in code without explicit approval. Flag any implementation that assumes an answer.
+Source of truth: `docs/business-rules.md`. Conventions: `docs/references/`.
 
-### 2. Tests (Coverage & Quality)
+**Correctness**
+- Money is integer cents; percentages round half up via `fees._percent`. Flag `float` in fee, discount or price code.
+- Datetimes are timezone-aware and UTC. Get "now" from `clock.now_utc()` through the module. Flag `datetime.now()`, `datetime.utcnow()` and naive values. Convert for display with `scheduling.to_local()`.
+- Appointment status changes only through `routes._move()`. Flag direct assignment such as `appt.status = "cancelled"`.
+- Business-rule failures raise `DomainError`, not `HTTPException`.
+- Every mutation calls `store.save()` or `store.delete()`.
+- Scheduling rules hold: no overlap with the 12:00-13:00 lunch break, bookings in the future and at most 60 days ahead, the 24h cancellation boundary, DST days.
+- Items marked `OPEN QUESTION` in `docs/business-rules.md` are not decided in code.
 
-- **Missing regression test for bug fixes.** Every bug fix must ship a test that fails before the fix and passes after. Flag fix PRs without one.
-- **New API route without an integration test.** Any new endpoint in `routes.py` must have at least one test exercising it through `TestClient`. Flag untested routes.
-- **Weakened or deleted tests.** Never weaken, skip, or delete an existing test to get the suite green. Flag `@pytest.mark.skip`, removed assertions, or loosened conditions on previously passing tests.
-- **Tests named after functions, not behaviour.** Test names should describe the behaviour: `test_insured_gets_20_percent_off`, not `test_fees_2`. Flag opaque names.
-- **Missing edge-case coverage.** For scheduling and fee changes, check that the PR considers: DST switch days, lunch break, 30 vs 60 minute slots, exactly-24h cancellation boundary, weekends, 60-day limit, back-to-back appointments, insured vs uninsured, odd-cent rounding.
+**Security and privacy**
+- Admin or destructive routes call `routes.require_admin()` first; it fails closed when `ADMIN_TOKEN` is unset and compares with `hmac.compare_digest`.
+- Never log, echo or return the admin token, and never give it a default value in code, tests or docs. No `.env`, `data/*.db` or real token is committed (`git ls-files | grep -E '\.env$|\.db$'` must print nothing).
+- Validate untrusted input with bounds (`min_length`, `max_length`, `ge`, `le`) in Pydantic models; reject naive datetimes; cap `page_size` at 100 and bound every new query parameter. An unknown ID is a 404, not a crash.
+- SQL lives in `app/store.py`, binds every value with `?`, and is never built with f-strings, `%`, `+` or `.format()`.
+- In `app/static/index.html`, API data goes through `esc()` or `textContent`. Flag `innerHTML`, `outerHTML` and `insertAdjacentHTML` with API data, and unescaped API values passed to helpers that take raw HTML.
+- Errors never echo raw user input, internal paths or tracebacks. No wildcard CORS (`allow_origins=["*"]`) or debug mode in committed config.
+- Fake data only in code, seed data, fixtures, tests and the UI: no real names, phones, emails or IDs.
 
-### 3. Readability & Maintainability
+**Data and dependencies**
+- SQLite through the `store` layer only. Flag a new ORM or pip dependency.
+- Preserve data integrity and scheduling rules when stored shapes change.
 
-- **Type hints missing on new functions.** All new function signatures must have type hints, including explicit `-> None` returns. Flag untyped additions.
-- **Duplicate helpers.** Before introducing a new utility, check for existing ones: `scheduling.overlaps()`, `scheduling.to_local()`, `fees.*`, `tests/helpers.book()`. Flag reinventions.
-- **Error messages not user-facing.** API error `detail` strings are shown to reception staff as-is. Flag cryptic, developer-only, or empty error messages.
-- **Needless complexity.** Flag speculative abstractions, unnecessary indirection, or over-engineered solutions.
+**Tests**
+- Bug fixes ship a regression test that fails before the fix. New routes have a `TestClient` test. Cover success, failure, authorization and edge cases (30 vs 60 minute slots, odd-cent rounding, insured vs uninsured).
+- Flag skipped, deleted or weakened tests.
 
-### 4. Security Basics
+**Scope**
+- Follow the issue's acceptance criteria and keep the PR to that one issue.
 
-Apply `.claude/claude-security-guidance.md` (rules and review procedure) and flag any violation. At minimum check:
+## Review Standards
 
-- **Admin guard.** Admin or destructive endpoints call `require_admin()` first.
-- **Injection and input.** SQL is parameter-bound; new inputs are validated and bounded.
-- **XSS.** API data is never rendered as raw HTML.
-- **Secrets.** No token, `.env` or database is committed, logged or echoed.
-- **Data exposure.** Fake data only; errors don't leak input, paths or tracebacks.
+- Focus on defects introduced or worsened by the PR.
+- Report only concrete, actionable findings with credible impact.
+- Avoid speculative concerns, subjective style preferences, and duplicate findings.
+- Do not invent requirements or flag existing issues unrelated to the changes.
+- Skip what linters catch (Ruff formatting, imports) and ignore `.venv/`, `__pycache__/` and cache directories.
+- Do not claim tests passed without evidence.
+- Do not modify code or push fixes during review unless explicitly requested.
 
-### 5. Scope & PR Hygiene
+## Findings Format
 
-- **Scope creep.** Each PR should address only its issue. Flag changes outside the issue's scope — note them for a separate issue instead.
-- **New dependency without an issue.** No new pip dependency or ORM. The project uses stdlib `sqlite3` only. Flag any added dependency.
-- **Multi-issue PRs.** One issue = one branch = one PR. Flag PRs that bundle unrelated changes.
-- **Branch and history.** Branch is `feat/<N>-<slug>`, `fix/<N>-<slug>`, `chore/<slug>`, or `docs/<slug>`; the PR body says `Closes #N`, rebased on `develop`, with exactly one commit.
-- **Non-conventional commit messages.** Commits must follow `<type>: <what changed> (#N)` format. Types: `feat`, `fix`, `test`, `refactor`, `docs`, `chore`. Flag deviations.
+For each finding, provide:
 
----
+- **Severity:** Critical, High, Medium, or Low.
+- **Location:** File and relevant line.
+- **Issue:** What is wrong and under what conditions.
+- **Impact:** Why it matters.
+- **Recommendation:** A practical fix.
 
-## Always skip
-
-- **Style nits a linter catches.** Ruff handles formatting and import order. Don't flag whitespace, trailing commas, or import sorting — the `lint-on-edit` hook covers these.
-- **The default GitLab README boilerplate.** The root `README.md` still has GitLab template text. Don't flag it unless the PR explicitly touches it.
-- **Virtual environment and cache directories.** Ignore `.venv/`, `__pycache__/`, `.pytest_cache/`, `.ruff_cache/`.
-- **Existing code outside the PR's issue scope.** If pre-existing code violates conventions but isn't part of this issue, don't flag it. Note it for a future issue at most.
-
----
-
-## Tone and format
-
-- Use **inline comments** for specific line-level issues.
-- Use **one summary comment** for overall observations (architecture, missing tests, pattern violations).
-- Be direct and constructive. Reference the relevant convention doc when flagging (e.g., "per `docs/references/code-conventions.md`, money must be integer cents").
-- Prioritise correctness bugs and missing tests over style.
+Use inline comments for line-level findings and one summary comment for the rest. If no actionable issues are found, state that clearly without claiming the code is bug-free.
