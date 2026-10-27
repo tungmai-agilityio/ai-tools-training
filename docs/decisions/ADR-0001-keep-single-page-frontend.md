@@ -16,6 +16,11 @@ Tung asked whether to split the frontend out into Next.js or React. What is true
 ## Decision
 We keep the frontend as same-origin static files served by FastAPI and build the authentication UI in the existing `index.html`. We do not adopt Next.js. If the UI outgrows one file (signals below), we migrate to a React + TypeScript SPA built with Vite, whose `dist/` output FastAPI serves from the same origin, so the deployment, auth and security model stay as they are. That migration would be its own ticketed piece of work, done screen by screen after authentication ships, not during it.
 
+Because the auth UI lands in a file that writes HTML with `innerHTML`, it ships with these guards (proposed, for Tung to confirm in the authentication spec):
+- The session token is never stored in `localStorage` or `sessionStorage`. Preferred: an `HttpOnly`, `SameSite=Strict` cookie set by FastAPI, with a CSRF check on state-changing routes. Fallback: keep the token in page memory only.
+- FastAPI sends a `Content-Security-Policy` header that blocks inline and third-party scripts, which means moving the inline `<script>` out of `index.html` into a static file.
+- A test fails when `index.html` passes a value to `innerHTML` that has not gone through `esc()`, or new screens use `textContent`.
+
 ## Options considered
 | Option | Pros | Cons |
 |---|---|---|
@@ -26,7 +31,8 @@ We keep the frontend as same-origin static files served by FastAPI and build the
 
 ## Consequences
 - Good: the authentication feature is not blocked or coupled to a framework migration; security review stays on one origin and one auth path.
-- Bad / ceiling: the single file keeps growing. Revisit and move to the React + Vite option when any of these hold: the file passes ~1,500 lines or 6 screens; two parallel tickets regularly conflict in `index.html`; an XSS finding comes from a missed `esc()`; or the team wants component-level tests.
+- Bad / ceiling: the single file keeps growing. Revisit and move to the React + Vite option when any of these hold: the file passes ~1,500 lines or 6 screens; two parallel tickets regularly conflict in `index.html`; an XSS finding comes from a missed `esc()`; or the team wants component-level tests. Re-check these signals when the auth screens land.
+- Migration cost not to forget: React + Vite brings a large transitive npm dependency set. If we migrate, the new dependencies need approval per `CLAUDE.md`, the lockfile is committed, and `npm audit` (or an equivalent) runs in CI.
 - Follow-up: if Accepted, add this ADR to the index in `docs/decisions/README.md`, and link it from the authentication spec so the login UI is built in `index.html`. If Tung prefers to migrate, draft tickets for the React + Vite option (scaffold and build pipeline, typed API client, port screens one per ticket, auth screens, CI and release changes, retire the old file).
 
 ## Open questions for Tung
