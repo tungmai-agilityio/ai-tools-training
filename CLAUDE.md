@@ -26,7 +26,7 @@ Run `python scripts/seed_demo.py` with the server running to seed demo data.
 
 ## Workflow
 
-- Start in Plan Mode. Follow `/ticket` → `/plan` → `/implement` (or `/fix`) → `/review` → `/pr` as applicable.
+- Start in Plan Mode. Follow `/create-ticket` → `/plan-work` → `/sprint-prepare` → `/push-tickets` → `/implement-ticket` → `/review-pr` → `/pr` as applicable; `/sync-tickets` brings issue status back.
 - Follow the instructions in the relevant `.claude/` skills and agents.
 - Resolve blocking questions before implementation. Never invent answers to open business-rule questions.
 - Keep changes scoped to the current issue. Record unrelated findings separately.

@@ -326,3 +326,10 @@ def test_record_rejects_a_url_for_a_different_issue(plans):
 def test_pipe_in_a_title_does_not_break_the_sprint_table(plans):
     add(plans, "T-018", title="A | B")
     assert "A \\| B" in tk.sprint_table("S-001", tk.load_tickets())
+
+
+def test_plan_status_is_validated(plans):
+    add(plans, "T-018", extra="**Plan:** Approved\n")
+    assert tk.load_tickets()[0].errors == []
+    add(plans, "T-018", extra="**Plan:** Maybe\n")
+    assert any("Plan must be" in e for e in tk.load_tickets()[0].errors)

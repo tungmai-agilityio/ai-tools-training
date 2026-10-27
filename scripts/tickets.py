@@ -30,7 +30,8 @@ TYPES = {"Bug": "bug", "Feature": "enhancement", "Chore": "chore"}
 PRIORITIES = {"Low", "Medium", "High"}
 ESTIMATES = {"XS", "S", "M", "L", "TBD"}
 PUSH = {"Draft", "Ready"}
-KEYS = {"Sprint", "Feature", "Type", "Priority", "Estimate", "Push", "Severity", "Areas", "Decisions"}
+PLAN = {"Pending", "Approved"}
+KEYS = {"Sprint", "Feature", "Type", "Priority", "Estimate", "Push", "Plan", "Severity", "Areas", "Decisions"}
 REQUIRED = ("Type", "Priority", "Push")
 ID_RE = re.compile(r"^T-\d{3,}$")
 FEATURE_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
@@ -104,6 +105,8 @@ class Ticket:
             err(f"Priority must be one of {sorted(PRIORITIES)}")
         if f.get("Estimate") and f["Estimate"] not in ESTIMATES:
             err(f"Estimate must be one of {sorted(ESTIMATES)}")
+        if f.get("Plan") and f["Plan"] not in PLAN:
+            err(f"Plan must be one of {sorted(PLAN)}")
         if f.get("Push") and f["Push"] not in PUSH:
             err(f"Push must be one of {sorted(PUSH)}")
         if f.get("Type") == "Bug" and not re.match(r"S[1-4]\b", f.get("Severity", "")):

@@ -10,7 +10,7 @@ description: Change the stored Appointment shape without breaking existing rows 
    |---|---|---|
    | New field with an honest default, removed field, new `Status` (check `TRANSITIONS`) | load | **A** |
    | New required field, rename, type or unit change, `Status` removed or renamed | **crash** | **B**, or **C** if B can't express it |
-   | Need to query or index by a field | — | Not a migration: stop, run the **planner**, write an ADR. |
+   | Need to query or index by a field | — | Not a migration: stop, run the **planner**, write an ADR (`/plan-work`). |
 
 2. **Apply the lightest path:**
    - **A. Default** that is true for old rows. If no honest default exists, it's an OPEN QUESTION: ask.
@@ -19,4 +19,4 @@ description: Change the stored Appointment shape without breaking existing rows 
 
 3. **Test red first** in `tests/test_migration_<slug>.py`: write an old-shape row to a `tmp_path` DB and assert it loads (for C, assert a second run changes 0 rows). A change that touches money or datetimes also tests that values stay integer cents and UTC-aware. Then run full `pytest`.
 4. **Try it on a backup:** copy `data/clinic.db` first and restore it if anything breaks. Never commit `data/*.db`.
-5. **Hand off:** record the path and why in the issue. For C, add a `## Deploy note` (back up, run the script before starting) for `/release`. Then `/implement` or `/fix`.
+5. **Hand off:** record the path and why in the ticket. For C, add a `## Deploy note` (back up, run the script before starting) for `/release`. Then `/implement-ticket`.
