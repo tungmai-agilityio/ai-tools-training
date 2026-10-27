@@ -3,7 +3,7 @@
 The rules every change in Clinic Booking follows. CLAUDE.md has the short version; this file has the why and the examples.
 
 ## Language and layout
-- Python 3.11+, FastAPI, pydantic v2, stdlib `sqlite3`. No ORM, no new dependency without a ticket that says so.
+- Python 3.11+, FastAPI, pydantic v2 with `pydantic-settings`, stdlib `sqlite3`. No ORM, no new dependency without a ticket that says so.
 - One module per concern: `routes.py` (HTTP + lifecycle), `scheduling.py` (slots, validation), `fees.py` (money),
   `store.py` (persistence), `config.py` (settings), `clock.py` (time), `errors.py` (domain errors).
 - The frontend is one file, `app/static/index.html`: vanilla JS, `fetch`, no build step, no framework.
@@ -44,7 +44,9 @@ The rules every change in Clinic Booking follows. CLAUDE.md has the short versio
 
 ## Data and secrets
 - Fake data only. No real names, phones, emails or IDs, ever.
-- Never commit `.env`, `data/*.db` or a real `AUTH_SECRET`. New settings go in `config.py` and `.env.example`.
+- Never commit `.env`, `data/*.db` or a real `AUTH_SECRET`. A new setting is a field on `Settings` in `config.py`
+  (the same-named environment variable or `.env` entry fills it, the environment winning), exposed as an UPPER_CASE
+  constant, and added to `.env.example`.
 
 ## Scope
 - Change only what the ticket asks. Anything else you notice becomes a note for a new ticket.
