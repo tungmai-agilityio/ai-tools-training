@@ -6,6 +6,7 @@ Clinic Booking is a FastAPI training project using fake data only.
 
 - Business rules: `docs/business-rules.md` — source of truth.
 - Project structure and setup: `README.md`.
+- API reference, endpoints and role rules: `docs/references/api.md`.
 - Coding, testing and git conventions: `docs/references/`.
 - Work tracking: GitHub issues. `plans/archive/` is a read-only archive of T-001 to T-017.
 - Planned work: Markdown in `plans/` is the source of truth; `/push-tickets` and `/sync-tickets` link it to issues (`docs/references/ticket-sync.md`).
@@ -15,12 +16,11 @@ Clinic Booking is a FastAPI training project using fake data only.
 ```bash
 pip install -r requirements.txt
 cp .env.example .env
-set -a; source .env; set +a
 uvicorn app.main:app --reload
 pytest
 ```
 
-The app reads its settings (including `AUTH_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`) from the environment, so source `.env` before starting it.
+The app reads its settings (including `AUTH_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`) from the environment and loads `.env` at startup; real environment variables win over the file.
 The UI is at `/`, Swagger at `/docs`. The database path is configurable via `DB_PATH`.
 Run `DEMO_USERNAME=... DEMO_PASSWORD=... python scripts/seed_demo.py` with the server running to seed demo data (log in first and change the seeded admin's password).
 

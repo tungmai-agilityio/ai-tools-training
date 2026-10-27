@@ -12,33 +12,37 @@ Fake data only. Never put real client or patient data in this repo.
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-set -a; source .env; set +a
 uvicorn app.main:app --reload
 ```
+
+`.env` is read at startup, so there is nothing to source first.
 
 Then open:
 
 - http://127.0.0.1:8000/ for the web app (book, appointment list, today's schedule)
 - http://127.0.0.1:8000/docs for the raw API (Swagger)
 
+Every endpoint, the session and role rules, and the business checks are listed in
+[docs/references/api.md](docs/references/api.md).
+
 ### Login settings
-Set in `.env` before first start: `AUTH_SECRET` (random string of at least 32 characters that signs sessions; empty means login is refused, a shorter one stops startup),
-`ADMIN_USERNAME` and `ADMIN_PASSWORD` (12+ characters; seed the first admin only while no users exist, who must change the
-password at first sign-in). `COOKIE_SECURE=false` is for plain-http local demos only. `POST /auth/login` sets an 8-hour
-`HttpOnly`, `SameSite=Strict` cookie; `POST /auth/logout` clears it; `GET /auth/me` shows who is signed in.
-Five failed logins lock a username for 15 minutes.
-To create an admin, or reset one's password, without putting it in .env (also when users already exist): run scripts/seed_admin.py with a username; it prompts for the password, then restart the server.
-Admins manage accounts with `GET/POST /users` and `PATCH /users/{id}` (`active`, `role`; sending `active: true` also unlocks).
-Users change their own password with `POST /auth/change-password`; admins reset one with `POST /users/{id}/reset-password` (a temporary password, shown once, that must be changed at next sign-in).
 
-Clinic holidays (`/holidays`) and doctor time off (`/doctors/{id}/time-off`) are managed in Swagger.
-Adding or removing them needs an administrator login (staff get `403`, no session gets `401`).
-Admin-only `GET /reports/revenue?from=YYYY-MM-DD&to=YYYY-MM-DD` returns consultation and penalty revenue per doctor and per day.
-The web app shows it on the Revenue screen (`#revenue`): pick a date range (administrators only).
+Set these in `.env` before the first start: the app loads that file itself, and variables already in the environment take precedence.
 
-Appointments persist in SQLite (`DB_PATH`, default `data/clinic.db`) via stdlib `sqlite3`.
-No ORM, no new dependency. Delete the file to start fresh. To fill the list with demo data
-(you need 11+ appointments to see pagination), run in another terminal:
+| Variable | Value | What it does |
+|---|---|---|
+| `AUTH_SECRET` | random string, 32+ characters | Signs session cookies. Empty refuses every login; shorter stops startup. |
+| `ADMIN_USERNAME` | e.g. `admin` | The first admin, seeded only while no users exist. |
+| `ADMIN_PASSWORD` | 12+ characters | The first admin must change it at first sign-in. |
+| `COOKIE_SECURE` | `true` | Set to `false` only for plain-http local demos. |
+
+**Sessions and lockout.** Login sets an 8-hour `HttpOnly`, `SameSite=Strict` cookie; five failed logins lock a username for 15 minutes.
+
+**Accounts.** Create an admin or reset its password without putting it in `.env` (works when users already exist): `python scripts/seed_admin.py USERNAME` prompts for the password. Restart the server afterwards. Admins manage accounts from the web app.
+
+Clinic holidays, doctor time off and revenue reports are handled through the API; the admin-only ones need an administrator login. The web app has a Revenue screen for administrators.
+
+Appointments persist in SQLite (`DB_PATH`, default `data/clinic.db`); delete the file to start fresh. To fill the list with demo data, run:
 
 ```bash
 python scripts/seed_demo.py
@@ -73,7 +77,7 @@ cover behaviour that already works.
 | `scripts/seed_demo.py` | Books demo appointments through the API |
 | `data/seed.json` | Doctors and patients loaded at startup |
 | `docs/business-rules.md` | What the clinic says the system should do |
-| `docs/references/` | Code, git and testing conventions |
+| `docs/references/` | API reference, code, git and testing conventions |
 | `docs/templates/` | PRD, spec, ADR, DDR, test plan, test and status report templates |
 | `docs/decisions/` | ADR and DDR records |
 | `plans/` | Markdown tickets, sprints and feature docs (source of truth for planned work); `archive/` holds the read-only tickets T-001 to T-017 |
