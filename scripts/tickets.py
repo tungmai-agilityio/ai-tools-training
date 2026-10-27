@@ -30,7 +30,8 @@ TYPES = {"Bug": "bug", "Feature": "enhancement", "Chore": "chore"}
 PRIORITIES = {"Low", "Medium", "High"}
 ESTIMATES = {"XS", "S", "M", "L", "TBD"}
 PUSH = {"Draft", "Ready"}
-KEYS = {"Sprint", "Feature", "Type", "Priority", "Estimate", "Push", "Severity", "Areas", "Decisions"}
+PLAN = {"Pending", "Approved"}
+KEYS = {"Sprint", "Feature", "Type", "Priority", "Estimate", "Push", "Plan", "Severity", "Areas", "Decisions"}
 REQUIRED = ("Type", "Priority", "Push")
 ID_RE = re.compile(r"^T-\d{3,}$")
 FEATURE_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
@@ -104,6 +105,10 @@ class Ticket:
             err(f"Priority must be one of {sorted(PRIORITIES)}")
         if f.get("Estimate") and f["Estimate"] not in ESTIMATES:
             err(f"Estimate must be one of {sorted(ESTIMATES)}")
+        if "Plan" in f and f["Plan"] not in PLAN:
+            err(f"Plan must be one of {sorted(PLAN)}")
+        if f.get("Plan") == "Approved" and not self._has_plan():
+            err("Plan: Approved needs a non-empty '## Plan' (or '## Fix and test') section")
         if f.get("Push") and f["Push"] not in PUSH:
             err(f"Push must be one of {sorted(PUSH)}")
         if f.get("Type") == "Bug" and not re.match(r"S[1-4]\b", f.get("Severity", "")):
@@ -123,6 +128,11 @@ class Ticket:
                 err(f"decision record {ref} not found in docs/decisions/")
         if "Issue" in self.tracking and not ISSUE_RE.search(self.tracking["Issue"]):
             err("Tracking Issue must look like [#34](url)")
+
+    def _has_plan(self):
+        """True if a '## Plan' (or '## Fix and test') section has text beyond blanks, HTML comments and code fences."""
+        body = re.sub(r"<!--.*?-->|```.*?```", "", self.body, flags=re.S)
+        return bool(re.search(r"^## (Plan|Fix and test)[ \t]*\n+(?!##)\S", body + "\n", re.M))
 
     @property
     def decisions(self):

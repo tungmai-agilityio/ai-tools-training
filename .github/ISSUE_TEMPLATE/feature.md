@@ -38,7 +38,7 @@ Type: happy, error, edge. At least one happy and one error case per AC. Edge cas
 1. <question> — <who answers>
 
 ## 8. Implementation plan
-<Filled by `/plan` after the user approves it: affected modules, dependencies, risks, steps, testing strategy.>
+<Filled by `/plan-work` after the user approves it: affected modules, dependencies, risks, steps, testing strategy.>
 
 ## Deploy note
 <Optional. Only if deploying this needs a manual step (a `/db-migration` script to run, a new env var, a data reset). `/release` copies it verbatim into the release notes.>

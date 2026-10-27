@@ -5,9 +5,9 @@ description: Open, rebase and merge a Clinic Booking GitHub pull request into de
 Reference: `docs/references/git-conventions.md`. **Ask before each push and each merge.**
 
 **Open**
-1. **Gate.** `/review` must have passed on the current HEAD (**approve** or **approve with nits**); otherwise run it. **changes needed** means stop.
+1. **Gate.** `/review-pr` must have passed on the current HEAD (**approve** or **approve with nits**); otherwise run it. **changes needed** means stop.
 2. **Sync.** Rebase on `origin/develop`. For a conflict, read both sides and their issues, keep both intended behaviours, and never drop the other side's test. If rules conflict or the answer is unclear, stop and ask. Run `pytest` after any rebase.
-3. **Describe.** Fill `.github/pull_request_template.md`: title = commit subject, `Closes #N`, every AC and test case mapped to evidence, and tick only what `/review` verified.
+3. **Describe.** Fill `.github/pull_request_template.md`: title = commit subject, `Closes #N`, every AC and test case mapped to evidence, and tick only what `/review-pr` verified.
 4. **Go-ahead → open.** Push (`--force-with-lease` after a rebase) and run `gh pr create --base develop`. Report the link.
 
 **Finish** (after GitHub approval)

@@ -21,4 +21,4 @@ Reference: `docs/references/git-conventions.md` (Releases). **Ask before each pu
 3. Commit the notes on `docs/release-vX.Y.Z` and run `/pr` into `develop` (no issue to close).
 4. **Go-ahead →** `gh pr create --head develop --base main --title "release: vX.Y.Z" --body-file docs/releases/vX.Y.Z.md`. Never delete `develop` on merge.
 5. After the merge, **go-ahead →** tag `vX.Y.Z` on `origin/main` and push the tag.
-6. Report the version, PR link, tag and deploy notes; offer `/ticket` for any non-blocking problems.
+6. Report the version, PR link, tag and deploy notes; offer `/create-ticket` for any non-blocking problems.

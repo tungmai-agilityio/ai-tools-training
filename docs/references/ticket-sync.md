@@ -11,6 +11,11 @@ plans/features/<slug>/     intent.md, spec.md, plan.md (optional, new features)
 docs/decisions/            ADR-NNNN-*.md, DDR-NNNN-*.md
 ```
 
+## Flow
+`/create-ticket` -> `/plan-work` -> `/sprint-prepare` -> `/push-tickets` -> `/implement-ticket` -> `/review-pr` -> `/pr`,
+with `/sync-tickets` whenever status should flow back. `/create-ticket`, `/plan-work` and `/sprint-prepare` write Markdown
+only; `/push-tickets` is the one that creates issues.
+
 ## Ticket format
 ```markdown
 # Revenue report endpoint
@@ -27,7 +32,7 @@ docs/decisions/            ADR-NNNN-*.md, DDR-NNNN-*.md
 - **Synced:** 2026-10-27T04:00:00Z
 ```
 Required: `Type` (Bug|Feature|Chore), `Priority` (Low|Medium|High), `Push` (Draft|Ready). A Bug also needs
-`Severity` (S1-S4). Optional: `Sprint`, `Feature`, `Estimate` (XS|S|M|L|TBD), `Areas`, `Decisions`.
+`Severity` (S1-S4). Optional: `Sprint`, `Feature`, `Estimate` (XS|S|M|L|TBD), `Plan` (Pending|Approved, set by `/plan-work`), `Areas`, `Decisions`.
 Unknown fields or bad values fail `check`. The file name is the ID.
 
 ## Mapping to GitHub
