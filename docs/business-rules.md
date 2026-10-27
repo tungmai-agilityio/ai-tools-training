@@ -34,8 +34,19 @@ Last updated by the clinic manager. Some points are still open. Those are marked
 - A patient who checks in but leaves before being seen is marked `left_unseen`. No fee. (T-005, pending clinic manager confirmation)
 - A `scheduled` appointment can be rescheduled before its start time. It keeps the same record and doctor, and there is no fee. The new time must pass the same booking checks; changing the length changes the consultation fee. To change doctor, cancel and rebook. (T-009, approved by the clinic manager)
 
+## Authentication (T-019 to T-023, approved by client)
+- Only staff and administrators can use the clinic system, including every read; patients have no accounts. Only the health check, the sign-in page and its files, the API docs and login are public. (T-021, approved by client)
+- Staff can book, check in, complete, mark left-unseen or no-show, cancel and reschedule. Administrators can do all of that plus holidays, time off, deleting appointments, the revenue report and user management. (T-021, approved by client)
+- A login lasts 8 hours and cannot be extended; the user signs in again afterwards. (T-019, approved by client)
+- After 5 failed logins in a row a username is locked for 15 minutes, even with the right password; a successful login resets the count. An administrator can unlock it early. (T-019, approved by client)
+- A password has at least 12 characters, with no other rules. (T-019, approved by client)
+- A signed-in user can change their own password by entering the current one; the new one must differ from it. (T-023, approved by client)
+- An administrator can reset a user's password. The user gets a temporary password shown once and must change it at next sign-in before doing anything else. (T-023, approved by client)
+- Changing, resetting or disabling a password or account ends that user's other sessions. (T-023, approved by client)
+- Administrators create, disable and re-enable accounts. The last active administrator cannot be disabled or demoted. (T-020, approved by client)
+
 ## Admin
-- Deleting an appointment is for administrators only and needs the admin token.
+- Deleting an appointment is for administrators only and needs an administrator login (T-021, approved by client).
 
 ## Revenue report (T-015, defaults chosen by dev, pending clinic manager confirmation)
 - Only an administrator (admin token) can read the revenue report.
