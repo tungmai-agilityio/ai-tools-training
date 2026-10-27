@@ -132,3 +132,13 @@ def test_seed_ignored_when_users_exist(seed_env, anon_client, monkeypatch):  # T
     auth.seed_admin()
     assert len(store.users) == 1
     assert login(anon_client, "firstadmin", "seed password 123").status_code == 200
+
+
+def test_weak_secret_refuses_login_and_stops_startup(anon_client, monkeypatch):
+    make_user()
+    monkeypatch.setattr(config, "AUTH_SECRET", "x" * 31)
+    assert login(anon_client).status_code == 503
+    with pytest.raises(RuntimeError), TestClient(app):
+        pass
+    monkeypatch.setattr(config, "AUTH_SECRET", "x" * 32)
+    assert login(anon_client).status_code == 200

@@ -14,7 +14,7 @@ def _session_out(user: UserRecord, expires) -> SessionOut:
 
 @router.post("/login")
 def login(body: LoginIn, response: Response) -> SessionOut:
-    if not config.AUTH_SECRET:
+    if not auth.secret_ok():
         raise DomainError("Login is not configured", 503)
     user = store.get_user_by_name(body.username)
     if user is None:

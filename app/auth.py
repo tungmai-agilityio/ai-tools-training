@@ -54,6 +54,17 @@ def register_failure(user: UserRecord) -> None:
 DUMMY_HASH = hash_password("not-a-real-password")
 
 
+def secret_ok() -> bool:
+    """True when AUTH_SECRET is set and long enough to sign sessions; otherwise login fails closed."""
+    return len(config.AUTH_SECRET) >= config.AUTH_SECRET_MIN_LENGTH
+
+
+def check_secret() -> None:
+    """Startup check: an unset secret only disables login, a weak one stops the app."""
+    if config.AUTH_SECRET and not secret_ok():
+        raise RuntimeError(f"AUTH_SECRET must be at least {config.AUTH_SECRET_MIN_LENGTH} characters")
+
+
 def _sign(payload: str) -> str:
     return hmac.new(config.AUTH_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()
 
@@ -79,7 +90,7 @@ def clear_session_cookie(response: Response) -> None:
 def read_session(value: str | None) -> tuple[UserRecord, datetime]:
     """Verify a cookie value; raise 401 if it is missing, forged, expired or its user is gone/disabled."""
     unauth = DomainError("Not authenticated", 401)
-    if not value or not config.AUTH_SECRET:
+    if not value or not secret_ok():
         raise unauth
     payload, _, sig = value.rpartition(".")
     if not hmac.compare_digest(sig, _sign(payload)):
@@ -129,6 +140,7 @@ def set_password(user: UserRecord, password: str, must_change: bool) -> None:
 
 def seed_admin() -> None:
     """Create the first admin from ADMIN_USERNAME/ADMIN_PASSWORD, only when no user exists."""
+    check_secret()
     if store.users:
         return
     username, password = config.ADMIN_USERNAME.strip(), config.ADMIN_PASSWORD

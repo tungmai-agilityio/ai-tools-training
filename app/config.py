@@ -8,6 +8,7 @@ DB_PATH = os.getenv("DB_PATH", "data/clinic.db")
 
 # Session signing key; empty means login is refused (fail closed).
 AUTH_SECRET = os.getenv("AUTH_SECRET", "")
+AUTH_SECRET_MIN_LENGTH = 32
 # First admin, seeded at startup only when the users table is empty.
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
