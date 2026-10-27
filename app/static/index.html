@@ -266,7 +266,8 @@
   .cb-nav a:hover { background: var(--surface-sunken); color: var(--ink); }
   .cb-nav a[aria-current="page"] { background: var(--brand-soft); color: var(--brand-strong); font-weight: 600; }
   .cb-nav svg { width: 20px; height: 20px; flex: none; }
-  .cb-tz { margin-top: auto; padding: 0 var(--space-3); font-size: 12px; line-height: 16px; color: var(--ink-muted); }
+  .cb-tz { margin: 0; padding: 0 var(--space-3); font-size: 12px; line-height: 16px; color: var(--ink-muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .cb-main { min-width: 0; padding: var(--space-6); }
   .cb-main > * { max-width: 1120px; }
   .cb-pagehead { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-5); }
@@ -276,7 +277,7 @@
     .cb-app { grid-template-columns: minmax(0, 1fr); }
     .cb-sidebar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; flex-direction: row; height: var(--tabbar-h); padding: 0;
       border-right: 0; border-top: 1px solid var(--line); }
-    .cb-brandline, .cb-tz { display: none; }
+    .cb-brandline, .cb-sidebar__foot { display: none; }
     .cb-nav { width: 100%; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0; }
     .cb-nav a { flex-direction: column; justify-content: center; gap: 2px; min-height: var(--tabbar-h); border-radius: 0; font-size: 12px; line-height: 16px; }
     .cb-nav a[aria-current="page"] { background: none; }
@@ -349,11 +350,17 @@
   .cb-option .cb-sub { flex: none; }
   .cb-option[aria-disabled="true"] { color: var(--ink-muted); cursor: default; }
   .cb-stack { grid-template-columns: minmax(0, 1fr); }
-  .cb-theme { display: grid; gap: var(--space-1); margin-top: auto; padding: 0 var(--space-3); }
+  /* Sidebar footer: theme, who is signed in, sign out and the clinic timezone, pinned to the bottom. */
+  .cb-sidebar__foot { display: grid; gap: var(--space-4); margin-top: auto; padding-top: var(--space-4); border-top: 1px solid var(--line); }
+  .cb-theme { display: grid; gap: var(--space-1); padding: 0 var(--space-3); }
   .cb-theme .cb-seg { display: grid; grid-template-columns: repeat(3, 1fr); }
   .cb-theme .cb-seg span { padding: 0; text-align: center; font-size: 13px; line-height: 30px; }
-  .cb-theme + .cb-tz { margin-top: 0; }
-  @media (max-width: 768px) { .cb-theme { display: none; } } /* no room in the tab bar; phones follow the OS */ /* wide children (timeline, date strip) scroll inside, not the page */
+  .cb-who { display: grid; gap: var(--space-2); padding: 0 var(--space-3); }
+  .cb-who__row { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+  .cb-who__row strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; line-height: 20px; }
+  .cb-who__row .cb-tag { flex: none; text-transform: capitalize; }
+  .cb-who__until { margin: 0; font-size: 12px; line-height: 16px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+  /* wide children (timeline, date strip) scroll inside, not the page */
   .cb-slots .cb-empty { padding: var(--space-5) var(--space-4); }
   .cb-dialog__facts .cb-sub { margin-top: 2px; }
   /* Forms: the heading gets room, and buttons keep their natural width instead of filling a grid cell. */
@@ -392,17 +399,22 @@
       <a href="#users" data-admin hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.8a3.5 3.5 0 010 6.4M18 14.8c1.9.7 3.1 2.3 3.5 5.2"/></svg><span>Users</span></a>
       <a href="#account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c.7-4.2 4-6.5 8-6.5s7.3 2.3 8 6.5"/></svg><span>Account</span></a>
     </nav>
-    <div class="cb-theme">
-      <span class="cb-field__label" id="theme-label">Theme</span>
-      <div class="cb-seg" role="radiogroup" aria-labelledby="theme-label">
-        <label><input type="radio" name="theme" value="system"><span>System</span></label>
-        <label><input type="radio" name="theme" value="light"><span>Light</span></label>
-        <label><input type="radio" name="theme" value="dark"><span>Dark</span></label>
+    <div class="cb-sidebar__foot">
+      <div class="cb-theme">
+        <span class="cb-field__label" id="theme-label">Theme</span>
+        <div class="cb-seg" role="radiogroup" aria-labelledby="theme-label">
+          <label><input type="radio" name="theme" value="system"><span>System</span></label>
+          <label><input type="radio" name="theme" value="light"><span>Light</span></label>
+          <label><input type="radio" name="theme" value="dark"><span>Dark</span></label>
+        </div>
       </div>
+      <div class="cb-who">
+        <div class="cb-who__row"><strong id="who-name"></strong><span class="cb-tag cb-tag--brand" id="who-role"></span></div>
+        <p class="cb-who__until">Session ends <time id="who-until"></time></p>
+        <button class="cb-btn cb-btn--sm cb-btn--block" id="signout-side" type="button">Sign out</button>
+      </div>
+      <p class="cb-tz">Times in <span class="tzname"></span></p>
     </div>
-    <div class="cb-tz" id="who"><strong id="who-name"></strong><br><span id="who-until"></span><br>
-      <button class="cb-btn cb-btn--sm" id="signout-side" type="button">Sign out</button></div>
-    <p class="cb-tz">Times in <span class="tzname"></span></p>
   </aside>
 
   <main class="cb-main">
