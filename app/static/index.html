@@ -329,6 +329,8 @@
   .cb-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   /* App-specific additions */
   [hidden] { display: none !important; }
+  /* A submit button inside a field grid keeps its own size, on its own row, instead of stretching to fill a cell. */
+  .cb-fields > .cb-btn { grid-column: 1 / -1; justify-self: start; }
   /* Sign-in: the sidebar is hidden, so the page is one column and the card sits centred. */
   .cb-app.cb-signed-out { grid-template-columns: minmax(0, 1fr); }
   .cb-signed-out .cb-main { padding: var(--space-4); }
