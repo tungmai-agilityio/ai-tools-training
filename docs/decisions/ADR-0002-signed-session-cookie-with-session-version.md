@@ -2,7 +2,7 @@
 
 > Claude-assisted draft for Tung's edit. Decisions confirmed by Tung on 2026-10-27.
 
-**Status:** Proposed  **Date:** 2026-10-27  **Deciders:** Tung  **Issue:** none yet (T-019, T-021)
+**Status:** Accepted  **Date:** 2026-10-27  **Deciders:** Tung  **Issue:** none yet (T-019, T-021)
 
 ## Context
 The app has no user accounts; admin routes compare one shared `X-Admin-Token` (`app/routes.py:69`). The authentication feature (`plans/features/authentication/spec.md`) needs a login that lasts one shift, can be ended early, and works with the single-page frontend. Constraints: no new dependency without approval (`CLAUDE.md`), SQLite through the `store` layer, time through `clock.now_utc()`. ADR-0001 already decided that the credential lives in an `HttpOnly`, `SameSite=Strict` cookie, never in `localStorage`, behind a `script-src 'self'` CSP.

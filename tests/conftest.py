@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 os.environ.setdefault("CLINIC_TIMEZONE", "America/New_York")
 os.environ.setdefault("DB_PATH", ":memory:")
+os.environ.setdefault("AUTH_SECRET", "test-secret-not-real")
 
 import pytest
 from fastapi.testclient import TestClient
@@ -27,4 +28,5 @@ def client(now):
     from app.store import store
 
     store.reset()
-    return TestClient(app)
+    # https base URL so the Secure session cookie is sent back
+    return TestClient(app, base_url="https://testserver")

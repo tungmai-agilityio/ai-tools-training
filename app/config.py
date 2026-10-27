@@ -9,6 +9,19 @@ DB_PATH = os.getenv("DB_PATH", "data/clinic.db")
 # Token for admin-only endpoints (see routes.require_admin).
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
 
+# Session signing key; empty means login is refused (fail closed).
+AUTH_SECRET = os.getenv("AUTH_SECRET", "")
+# First admin, seeded at startup only when the users table is empty.
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
+# Set COOKIE_SECURE=false only for plain-http local demos.
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true").lower() != "false"
+SESSION_COOKIE = "clinic_session"
+SESSION_TTL_HOURS = 8
+LOCKOUT_FAILURES = 5
+LOCKOUT_MINUTES = 15
+MIN_PASSWORD_LENGTH = 12
+
 # Business hours, in minutes after local midnight.
 WORK_START = 8 * 60
 WORK_END = 17 * 60

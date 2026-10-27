@@ -2,7 +2,7 @@
 
 > Claude-assisted draft for Tung's edit. Decisions confirmed by Tung on 2026-10-27.
 
-**Status:** Proposed  **Date:** 2026-10-27  **Deciders:** Tung  **Ticket:** T-019, T-020
+**Status:** Accepted  **Date:** 2026-10-27  **Deciders:** Tung  **Ticket:** T-019, T-020
 
 ## Context
 Staff sign in with a username and password on shared clinic computers. Without a limit, passwords can be guessed. A permanent lock could leave the only admin locked out. The sign-in screen must not reveal whether a username exists.
