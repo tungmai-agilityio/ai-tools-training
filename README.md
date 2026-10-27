@@ -27,6 +27,7 @@ Set in `.env` before first start: `AUTH_SECRET` (random string of at least 32 ch
 password at first sign-in). `COOKIE_SECURE=false` is for plain-http local demos only. `POST /auth/login` sets an 8-hour
 `HttpOnly`, `SameSite=Strict` cookie; `POST /auth/logout` clears it; `GET /auth/me` shows who is signed in.
 Five failed logins lock a username for 15 minutes.
+Admins manage accounts with `GET/POST /users` and `PATCH /users/{id}` (`active`, `role`; sending `active: true` also unlocks).
 
 Clinic holidays (`/holidays`) and doctor time off (`/doctors/{id}/time-off`) are managed in Swagger.
 Adding or removing them needs `ADMIN_TOKEN` set in `.env` and sent as the `X-Admin-Token` header.

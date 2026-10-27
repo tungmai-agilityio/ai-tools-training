@@ -9,6 +9,7 @@ from app import auth
 from app.auth_routes import router as auth_router
 from app.errors import DomainError
 from app.routes import router
+from app.users import router as users_router
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -22,6 +23,7 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title="Clinic Booking", lifespan=lifespan)
 app.include_router(router)
 app.include_router(auth_router)
+app.include_router(users_router)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
