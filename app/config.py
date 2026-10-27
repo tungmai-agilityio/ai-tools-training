@@ -1,19 +1,42 @@
-import os
+"""Settings read from the environment (and the repo-root .env), plus fixed business-hour constants."""
 
-# Clinic-local timezone. All business hours below are expressed in this zone.
-CLINIC_TIMEZONE = os.getenv("CLINIC_TIMEZONE", "America/New_York")
+from pathlib import Path
 
-# SQLite file holding appointments (":memory:" in tests).
-DB_PATH = os.getenv("DB_PATH", "data/clinic.db")
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Session signing key; empty means login is refused (fail closed).
-AUTH_SECRET = os.getenv("AUTH_SECRET", "")
+ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
+
+
+class Settings(BaseSettings):
+    """Environment variables win over .env; unknown variables are ignored."""
+
+    model_config = SettingsConfigDict(
+        env_file=ENV_FILE, env_file_encoding="utf-8", extra="ignore", hide_input_in_errors=True)
+
+    # Clinic-local timezone. All business hours below are expressed in this zone.
+    clinic_timezone: str = "America/New_York"
+    # SQLite file holding appointments (":memory:" in tests).
+    db_path: str = "data/clinic.db"
+    # Session signing key; empty means login is refused (fail closed).
+    auth_secret: str = ""
+    # First admin, seeded at startup only when the users table is empty.
+    admin_username: str = ""
+    admin_password: str = ""
+    # Set COOKIE_SECURE=false only for plain-http local demos.
+    cookie_secure: bool = True
+
+
+settings = Settings()
+
+# The app reads these names, and tests patch them on this module.
+CLINIC_TIMEZONE = settings.clinic_timezone
+DB_PATH = settings.db_path
+AUTH_SECRET = settings.auth_secret
+ADMIN_USERNAME = settings.admin_username
+ADMIN_PASSWORD = settings.admin_password
+COOKIE_SECURE = settings.cookie_secure
+
 AUTH_SECRET_MIN_LENGTH = 32
-# First admin, seeded at startup only when the users table is empty.
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
-# Set COOKIE_SECURE=false only for plain-http local demos.
-COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true").lower() != "false"
 SESSION_COOKIE = "clinic_session"
 SESSION_TTL_HOURS = 8
 LOCKOUT_FAILURES = 5
