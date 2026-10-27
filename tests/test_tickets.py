@@ -344,3 +344,29 @@ def test_approved_plan_needs_a_non_empty_plan_section(plans):
     assert any("non-empty" in e for e in tk.load_tickets()[0].errors)
     path.write_text(path.read_text().replace("<!-- hint text -->", "1. Do the thing."))
     assert tk.load_tickets()[0].errors == []
+
+
+JIRA_TRACKING = (
+    "\n## Tracking\n- **Issue:** [#5](https://github.com/o/r/issues/5)\n- **State:** open\n"
+    "- **Jira:** [CLB-2](https://x.atlassian.net/browse/CLB-2)\n- **Jira state:** open\n"
+)
+
+
+def test_github_tracking_rewrite_keeps_jira_lines(plans):
+    path = add(plans, "T-018")
+    path.write_text(path.read_text() + JIRA_TRACKING)
+    t = tk.Ticket(path)
+    assert t.errors == []
+    t.write_tracking(5, "https://github.com/o/r/issues/5", "closed", "completed")
+    text = path.read_text()
+    assert "- **Jira:** [CLB-2](https://x.atlassian.net/browse/CLB-2)" in text
+    assert "- **Jira state:** open" in text
+    assert "- **State:** closed" in text
+    again = tk.Ticket(path)
+    assert again.tracking["Jira"].startswith("[CLB-2]") and again.errors == []
+
+
+def test_check_rejects_a_jira_line_that_is_not_an_atlassian_browse_url(plans):
+    path = add(plans, "T-018")
+    path.write_text(path.read_text() + "\n## Tracking\n- **Jira:** [CLB-2](https://evil.example/browse/CLB-2)\n")
+    assert any("Tracking Jira must look like" in e for e in tk.Ticket(path).errors)

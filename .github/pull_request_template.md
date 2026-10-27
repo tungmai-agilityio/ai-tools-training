@@ -4,6 +4,7 @@
 <1–3 sentences: what this PR changes.>
 
 Closes #N
+<!-- Optional: add a line `Jira: CLB-12` when the ticket has a Jira key -->
 
 ## Why
 <The problem, in one or two sentences. Link the issue section rather than repeating it.>

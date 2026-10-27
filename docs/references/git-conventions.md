@@ -31,6 +31,7 @@ Conventional Commits, one line, imperative, lower case, no period, issue number 
 | `chore` | tooling, config, dependencies, housekeeping |
 
 - No issue (a `chore/` or `docs/` branch): leave the suffix off, e.g. `chore: ignore .claude/worktrees/`.
+- Jira key (optional): if the ticket has a `Jira` line in its Tracking section, you may add the key inside the brackets, e.g. `fix: charge 50% for cancels inside 24 hours (#31, CLB-12)`. Never required; leave it off when there is no Jira ticket.
 - Good: `fix: charge 50% for cancels inside 24 hours (#31)`
 - Bad: `Fixed bug`, `fix: #31`, `WIP`, `fix: stuff and also refactor fees`
 - Aim for **one commit per issue**. Squash fixups before asking for review (`git commit --fixup <sha>` + `git rebase -i --autosquash develop`; agents: `GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash develop`).
@@ -44,7 +45,7 @@ Conventional Commits, one line, imperative, lower case, no period, issue number 
 - The PR body says `Closes #N`, so GitHub closes the issue when the PR merges. Never reopen a closed issue; open a new one with `Related: #N`.
 
 ## Pull requests
-- Title = the commit subject. Description = `.github/pull_request_template.md` (repo root), filled in, with `Closes #N`.
+- Title = the commit subject. Description = `.github/pull_request_template.md` (repo root), filled in, with `Closes #N`. If the ticket has a Jira key, add a `Jira: CLB-12` line (see the comment in the template); otherwise leave it out.
 - Before opening: `pytest` is green and the diff is only the issue.
 - At least one approval. The author resolves every thread or answers it.
 - Merge with a merge commit (`Merge pull request #M from <user>/fix/31-...`) and delete the source branch.
