@@ -32,9 +32,9 @@ Start in Plan Mode. Then follow the steps that apply:
 |---|------|---------|-------------|
 | 1 | Plan Mode | — | Analyze the requirement, explore the codebase, identify ambiguities. |
 | 2 | Create Ticket | `/create-ticket` | Structured Markdown ticket with acceptance criteria and test cases. |
-| 3 | Plan Work | `/plan-work` | Implementation approach, dependencies, risks and testing. |
-| 4 | Sprint Prepare | `/sprint-prepare` | Propose a Sprint Goal and feasible scope; the team approves it. |
-| 5 | Push Tickets | `/push-tickets` | Publish approved tickets to GitHub Issues. |
+| 3 | Sprint Prepare | `/sprint-prepare` | Propose a Sprint Goal and feasible scope from estimates; the team approves it. |
+| 4 | Push Tickets | `/push-tickets` | Publish approved tickets to GitHub Issues. |
+| 5 | Plan Work | `/plan-work` | Per ticket, before coding: approach, dependencies, risks and testing; you approve it. |
 | 6 | Implement Ticket | `/implement-ticket` | Implement, run tests, report evidence. |
 | 7 | Create PR | `/pr` | PR with the ticket reference and implementation summary. |
 | 8 | Review PR | `/review-pr` | Review diff, acceptance criteria, security and tests; fix and re-review. |

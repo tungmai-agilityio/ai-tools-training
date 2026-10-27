@@ -68,7 +68,7 @@ cover behaviour that already works.
 | `docs/decisions/` | ADR and DDR records |
 | `plans/` | Markdown tickets, sprints and feature docs (source of truth for planned work); `archive/` holds the read-only tickets T-001 to T-017 |
 | `.github/` | Issue templates (feature, bug, chore), PR template, workflows |
-| `.claude/` | Claude Code config for this repo. Skills: `/create-ticket` → `/plan-work` → `/sprint-prepare` → `/push-tickets` → `/implement-ticket` → `/review-pr` → `/pr`, plus `/sync-tickets`; 3 subagents (business-analyst, planner, code-reviewer); commands; hooks that block forbidden Bash commands, ruff-fix edited `.py` files and notify on finish (`settings.json`). With `.mcp.json` (Playwright MCP), it loads when Claude Code is opened at the repo root |
+| `.claude/` | Claude Code config for this repo. Skills: `/create-ticket` → `/sprint-prepare` → `/push-tickets` → per ticket `/plan-work` → `/implement-ticket` → `/pr` → `/review-pr`, plus `/sync-tickets`; 3 subagents (business-analyst, planner, code-reviewer); commands; hooks that block forbidden Bash commands, ruff-fix edited `.py` files and notify on finish (`settings.json`). With `.mcp.json` (Playwright MCP), it loads when Claude Code is opened at the repo root |
 
 ## Rules of the practice
 

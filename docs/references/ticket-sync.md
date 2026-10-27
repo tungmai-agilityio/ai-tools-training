@@ -12,8 +12,8 @@ docs/decisions/            ADR-NNNN-*.md, DDR-NNNN-*.md
 ```
 
 ## Flow
-`/create-ticket` -> `/plan-work` -> `/sprint-prepare` -> `/push-tickets` -> `/implement-ticket` -> `/review-pr` -> `/pr`,
-with `/sync-tickets` whenever status should flow back. `/create-ticket`, `/plan-work` and `/sprint-prepare` write Markdown
+`/create-ticket` -> `/sprint-prepare` -> `/push-tickets` -> then per ticket `/plan-work` -> `/implement-ticket` -> `/pr` -> `/review-pr`,
+with `/sync-tickets` whenever status should flow back. `/create-ticket`, `/sprint-prepare` and `/plan-work` write Markdown
 only; `/push-tickets` is the one that creates issues.
 
 ## Ticket format
