@@ -97,7 +97,7 @@ def test_booking_shows_summary_then_fee_toast_in_clinic_time(page):
     sync_api.expect(page.locator(".cb-toast--ok")).to_contain_text("Fee $120.00")  # 150.00 - 20% insured
 
 
-@pytest.mark.parametrize("screen", ["book", "appointments", "today", "revenue"])
+@pytest.mark.parametrize("screen", ["book", "appointments", "today", "revenue", "account", "users"])
 def test_no_sideways_scroll_on_a_phone(client, page, screen):
     book(client, "2026-10-13T11:00:00-04:00")  # gives Today a timeline block
     page.set_viewport_size({"width": 375, "height": 812})
@@ -182,3 +182,18 @@ def test_an_inline_script_is_reported_as_a_csp_violation(page):
     page.wait_for_timeout(200)
     assert page.csp_violations, "the CSP check did not see an inline handler"
     page.csp_violations.clear()  # expected here; the teardown check would otherwise fail this test
+
+
+
+@pytest.mark.parametrize("screen,button", [("account", "Change password"), ("users", "Add user")])
+def test_form_submit_buttons_keep_their_natural_width(page, screen, button):
+    page.goto(f"/#{screen}")
+    box = page.locator(f"#screen-{screen}").get_by_role("button", name=button).bounding_box()
+    assert box["width"] < 200  # was a full grid column (~220px+) when the button sat inside .cb-fields
+
+
+def test_phone_tab_bar_keeps_the_appointments_name(page):
+    page.set_viewport_size({"width": 375, "height": 812})
+    page.goto("/")
+    sync_api.expect(page.get_by_role("link", name="Appointments", exact=True)).to_be_visible()
+    assert page.evaluate("document.documentElement.scrollWidth") <= 375

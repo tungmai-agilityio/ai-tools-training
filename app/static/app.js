@@ -582,10 +582,10 @@ async function loadUsers() {
   try {
     const users = await api("/users");
     $("user-list").innerHTML = `<section class="cb-card"><table class="cb-table"><thead><tr><th>User</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>` +
-      users.map((u) => `<tr><td><strong>${esc(u.username)}</strong></td><td>${esc(u.role)}</td><td>${u.active ? "Active" : "Disabled"}</td><td class="cb-right">` +
-        `<button class="cb-btn cb-btn--sm" data-user="${u.id}" data-do="${u.active ? "disable" : "enable"}">${u.active ? "Disable" : "Enable"}</button> ` +
-        (u.active ? `<button class="cb-btn cb-btn--sm" data-user="${u.id}" data-do="unlock">Unlock</button> ` : "") +
-        `<button class="cb-btn cb-btn--sm" data-user="${u.id}" data-do="reset" data-name="${esc(u.username)}">Reset password</button></td></tr>`).join("") +
+      users.map((u) => `<tr><td data-col="who"><strong>${esc(u.username)}</strong></td><td data-col="role">${esc(u.role)}</td><td data-col="status"><span class="cb-badge" data-status="${u.active ? "completed" : "cancelled"}">${u.active ? "Active" : "Disabled"}</span></td><td data-col="actions"><div class="cb-actions">` +
+        `<button class="cb-btn cb-btn--sm" data-user="${u.id}" data-do="${u.active ? "disable" : "enable"}">${u.active ? "Disable" : "Enable"}</button>` +
+        (u.active ? `<button class="cb-btn cb-btn--sm" data-user="${u.id}" data-do="unlock">Unlock</button>` : "") +
+        `<button class="cb-btn cb-btn--sm" data-user="${u.id}" data-do="reset" data-name="${esc(u.username)}">Reset password</button></div></td></tr>`).join("") +
       `</tbody></table></section>`;
   } catch (err) { $("user-list").innerHTML = empty("Could not load users", esc(plain(err))); }
 }
