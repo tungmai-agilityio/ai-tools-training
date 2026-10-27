@@ -11,4 +11,6 @@ A superseded record stays; set its `Status: Superseded by ...`. A ticket or spec
 `**Decisions:** ADR-0001, DDR-0002`; `tickets.py` checks that each file exists.
 
 ## Index
-None yet.
+| Record | Decision | Status |
+|---|---|---|
+| [ADR-0001](ADR-0001-keep-single-page-frontend.md) | Keep the same-origin vanilla frontend; React (Vite) when we outgrow it | Accepted |

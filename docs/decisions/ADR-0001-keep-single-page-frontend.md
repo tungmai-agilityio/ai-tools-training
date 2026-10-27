@@ -1,8 +1,8 @@
 # ADR-0001: Keep the same-origin vanilla frontend; React (Vite) is the path when we outgrow it
 
-> **DRAFT** — Claude-assisted, awaiting Tung's edit and approval. Nothing here is decided until Status says Accepted.
+> Claude-assisted; decisions confirmed by Tung on 2026-10-27.
 
-**Status:** Proposed  **Date:** 2026-10-27  **Deciders:** Tung  **Issue:** none yet
+**Status:** Accepted  **Date:** 2026-10-27  **Deciders:** Tung  **Issue:** none yet
 
 ## Context
 Tung asked whether to split the frontend out into Next.js or React. What is true today:
@@ -34,7 +34,7 @@ Because the auth UI lands in a file that writes HTML with `innerHTML`, it ships 
 - Good: the authentication feature is not blocked or coupled to a framework migration; security review stays on one origin and one auth path.
 - Bad / ceiling: the single file keeps growing. Revisit and move to the React + Vite option when any of these hold: the file passes ~1,500 lines or 6 screens; two parallel tickets regularly conflict in `index.html`; an XSS finding comes from a missed `esc()`; or the team wants component-level tests. Re-check these signals when the auth screens land.
 - Migration cost not to forget: React + Vite brings a large transitive npm dependency set. If we migrate, the new dependencies need approval per `CLAUDE.md`, the lockfile is committed, and `npm audit` (or an equivalent) runs in CI.
-- Follow-up: if Accepted, add this ADR to the index in `docs/decisions/README.md`, and link it from the authentication spec so the login UI is built in `index.html`. If Tung prefers to migrate, draft tickets for the React + Vite option (scaffold and build pipeline, typed API client, port screens one per ticket, auth screens, CI and release changes, retire the old file).
+- Follow-up: link it from the authentication spec so the login UI is built in `index.html`. If Tung prefers to migrate, draft tickets for the React + Vite option (scaffold and build pipeline, typed API client, port screens one per ticket, auth screens, CI and release changes, retire the old file).
 
 ## Open questions for Tung
 - Is there a driver beyond this app's size (team skills, a later patient-facing portal, a separate frontend team)? A patient portal with public pages would be the case where Next.js earns a second look.
