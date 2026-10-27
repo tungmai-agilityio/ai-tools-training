@@ -27,6 +27,7 @@ Set in `.env` before first start: `AUTH_SECRET` (random string of at least 32 ch
 password at first sign-in). `COOKIE_SECURE=false` is for plain-http local demos only. `POST /auth/login` sets an 8-hour
 `HttpOnly`, `SameSite=Strict` cookie; `POST /auth/logout` clears it; `GET /auth/me` shows who is signed in.
 Five failed logins lock a username for 15 minutes.
+To create an admin, or reset one's password, without putting it in .env (also when users already exist): run scripts/seed_admin.py with a username; it prompts for the password, then restart the server.
 Admins manage accounts with `GET/POST /users` and `PATCH /users/{id}` (`active`, `role`; sending `active: true` also unlocks).
 Users change their own password with `POST /auth/change-password`; admins reset one with `POST /users/{id}/reset-password` (a temporary password, shown once, that must be changed at next sign-in).
 
