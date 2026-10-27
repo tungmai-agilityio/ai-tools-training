@@ -28,6 +28,7 @@ password at first sign-in). `COOKIE_SECURE=false` is for plain-http local demos 
 `HttpOnly`, `SameSite=Strict` cookie; `POST /auth/logout` clears it; `GET /auth/me` shows who is signed in.
 Five failed logins lock a username for 15 minutes.
 Admins manage accounts with `GET/POST /users` and `PATCH /users/{id}` (`active`, `role`; sending `active: true` also unlocks).
+Users change their own password with `POST /auth/change-password`; admins reset one with `POST /users/{id}/reset-password` (a temporary password, shown once, that must be changed at next sign-in).
 
 Clinic holidays (`/holidays`) and doctor time off (`/doctors/{id}/time-off`) are managed in Swagger.
 Adding or removing them needs an administrator login (staff get `403`, no session gets `401`).

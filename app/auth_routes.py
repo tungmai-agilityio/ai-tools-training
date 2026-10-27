@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Request, Response
 
 from app import auth, clock, config
 from app.errors import DomainError
-from app.models import LoginIn, SessionOut, UserRecord
+from app.models import ChangePasswordIn, LoginIn, SessionOut, UserRecord
 from app.store import store
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -63,3 +63,19 @@ def logout() -> Response:
 @router.get("/me")
 def me(session=Depends(auth.session_user)) -> SessionOut:
     return _session_out(*session)
+
+
+@router.post("/change-password", status_code=204)
+def change_password(body: ChangePasswordIn, session=Depends(auth.session_user)) -> Response:
+    """Allowed even while a password change is pending; ends the user's other sessions, keeps this one."""
+    user, _ = session
+    with _user_locks.setdefault(user.id, threading.Lock()):
+        if not auth.verify_password(body.current_password, user.password_hash):
+            raise DomainError("Current password is wrong", 403)
+        if body.new_password == body.current_password:
+            raise DomainError("The new password must differ from the current one", 422)
+        auth.set_password(user, body.new_password, must_change=False)
+        store.save_user(user)
+    response = Response(status_code=204)
+    auth.set_session_cookie(response, auth.issue_session(user)[0])
+    return response

@@ -137,3 +137,12 @@ class UserCreateIn(BaseModel):
 class UserPatchIn(BaseModel):
     active: bool | None = None
     role: Role | None = None
+
+
+class ChangePasswordIn(BaseModel):
+    current_password: str = Field(max_length=200)
+    new_password: str = Field(min_length=12, max_length=200)  # config.MIN_PASSWORD_LENGTH
+
+
+class ResetPasswordOut(BaseModel):
+    temporary_password: str

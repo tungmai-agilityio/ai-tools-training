@@ -1,10 +1,11 @@
+import secrets
 import threading
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 
 from app import auth, clock
 from app.errors import DomainError
-from app.models import User, UserCreateIn, UserPatchIn, UserRecord
+from app.models import ResetPasswordOut, User, UserCreateIn, UserPatchIn, UserRecord
 from app.store import store
 
 router = APIRouter(prefix="/users", tags=["users"], dependencies=[Depends(auth.require_role("admin"))])
@@ -60,3 +61,15 @@ def update_user(user_id: int, body: UserPatchIn) -> User:
         user.active, user.role = active, role
         store.save_user(user)
     return _public(user)
+
+
+@router.post("/{user_id}/reset-password")
+def reset_password(user_id: int, response: Response) -> ResetPasswordOut:
+    """Give the user a one-time temporary password; they must change it at next sign-in."""
+    response.headers["Cache-Control"] = "no-store"
+    with _lock:
+        user = _get(user_id)
+        temporary = secrets.token_urlsafe(12)  # 16 characters, above the 12-character minimum
+        auth.set_password(user, temporary, must_change=True)
+        store.save_user(user)
+    return ResetPasswordOut(temporary_password=temporary)

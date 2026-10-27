@@ -99,6 +99,14 @@ def require_role(role: str):
     return check
 
 
+def set_password(user: UserRecord, password: str, must_change: bool) -> None:
+    """Store a new password; ends every older session of the user and clears the lockout."""
+    user.password_hash = hash_password(password)
+    user.must_change_password = must_change
+    user.session_version += 1
+    user.failed_attempts, user.locked_until = 0, None
+
+
 def seed_admin() -> None:
     """Create the first admin from ADMIN_USERNAME/ADMIN_PASSWORD, only when no user exists."""
     if store.users:
