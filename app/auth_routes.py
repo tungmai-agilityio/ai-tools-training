@@ -1,3 +1,4 @@
+import threading
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, Request, Response
@@ -9,6 +10,10 @@ from app.store import store
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# ponytail: one global lock makes check, verify and counter update atomic so parallel guesses cannot
+# skip the lockout; serialises logins (~50 ms each), use per-username locks if login volume grows.
+_login_lock = threading.Lock()
+
 
 def _session_out(user: UserRecord, expires) -> SessionOut:
     return SessionOut(username=user.username, role=user.role, expires_at=expires, must_change_password=user.must_change_password)
@@ -18,6 +23,11 @@ def _session_out(user: UserRecord, expires) -> SessionOut:
 def login(body: LoginIn, response: Response) -> SessionOut:
     if not config.AUTH_SECRET:
         raise DomainError("Login is not configured", 503)
+    with _login_lock:
+        return _login(body, response)
+
+
+def _login(body: LoginIn, response: Response) -> SessionOut:
     now = clock.now_utc()
     user = store.get_user_by_name(body.username)
     if user and user.locked_until and now < user.locked_until:

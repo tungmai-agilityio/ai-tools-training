@@ -71,4 +71,6 @@ After approval I run all tickets end to end without per-ticket confirmation. I s
 
 ## 9. Issues & decisions (collected during implementation)
 
-None yet.
+- T-019: login with AUTH_SECRET unset returns 503 (spec said only "refused").
+- T-019 security scan, not changed: logout only clears the cookie and does not bump session_version (ADR-0002 accepts this ceiling; AC-5b needs logout to work without a session); a locked username answers 423 instead of 401, which reveals that the username exists (AC-3 and DDR-0001 require the distinct message). Tung to confirm both at the end.
+- T-019 security scan, fixed: parallel login attempts could skip the lockout; check, verify and update now run under one lock.
