@@ -23,8 +23,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PLANS = Path(os.environ.get("TICKETS_PLANS", ROOT / "plans"))
-DECISIONS = Path(os.environ.get("TICKETS_DECISIONS", ROOT / "docs" / "decisions"))
+PLANS = ROOT / "plans"
+DECISIONS = ROOT / "docs" / "decisions"
 
 TYPES = {"Bug": "bug", "Feature": "enhancement", "Chore": "chore"}
 PRIORITIES = {"Low", "Medium", "High"}
@@ -33,9 +33,15 @@ PUSH = {"Draft", "Ready"}
 KEYS = {"Sprint", "Feature", "Type", "Priority", "Estimate", "Push", "Severity", "Areas", "Decisions"}
 REQUIRED = ("Type", "Priority", "Push")
 ID_RE = re.compile(r"^T-\d{3,}$")
+FEATURE_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+DECISION_RE = re.compile(r"^(ADR|DDR)-\d{4}$")
+REPO_RE = re.compile(r"^[\w.-]+/[\w.-]+$")
+REASON_RE = re.compile(r"^[a-z_ ]+$")
+URL_RE = re.compile(r"^https://github\.com/[\w.-]+/[\w.-]+/issues/\d+$")
+TRACKING_HEAD = re.compile(r"^## Tracking[ \t]*$", re.M)
 PAIR = re.compile(r"\*\*([A-Za-z ]+):\*\*\s*(.*?)(?=\s{2,}\*\*[A-Za-z ]+:\*\*|$)")
 TRACK_RE = re.compile(r"^- \*\*([A-Za-z ]+):\*\*\s*(.*)$")
-ISSUE_RE = re.compile(r"\[#(\d+)\]\((\S+)\)")
+ISSUE_RE = re.compile(r"\[#(\d+)\]\((https://github\.com/[\w.-]+/[\w.-]+/issues/\d+)\)")
 MARKER = "<!-- ticket-id: {} -->"
 TABLE = re.compile(r"(<!-- tickets:begin.*?-->\n)(.*?)(<!-- tickets:end -->)", re.S)
 TRACKING_COMMENT = "<!-- tracking (written by push-tickets / sync-tickets, do not edit) -->"
@@ -57,7 +63,8 @@ class Ticket:
         self._parse(self.path.read_text())
 
     def _parse(self, text):
-        head, _, track = text.partition("\n## Tracking")
+        m = TRACKING_HEAD.search(text)
+        head, track = (text[:m.start()], text[m.end():]) if m else (text, "")
         lines = head.split("\n")
         if not ID_RE.match(self.id):
             self.errors.append(f"file name must be T-NNN.md, got {self.path.name}")
@@ -107,8 +114,12 @@ class Ticket:
             err("Sprint must look like S-001")
         if not self.title:
             err("empty title")
+        if f.get("Feature") and not FEATURE_RE.match(f["Feature"]):
+            err("Feature must be a lower-case slug (a-z, 0-9, -)")
         for ref in self.decisions:
-            if not list(DECISIONS.glob(f"{ref}-*.md")):
+            if not DECISION_RE.match(ref):
+                err(f"Decisions entry {ref!r} must look like ADR-0001 or DDR-0001")
+            elif not list(DECISIONS.glob(f"{ref}-*.md")):
                 err(f"decision record {ref} not found in docs/decisions/")
         if "Issue" in self.tracking and not ISSUE_RE.search(self.tracking["Issue"]):
             err("Tracking Issue must look like [#34](url)")
@@ -163,8 +174,11 @@ class Ticket:
         return None
 
     def write_tracking(self, issue, url, state, reason=None):
+        if not URL_RE.match(url) or (reason and not REASON_RE.match(reason)):
+            raise ValueError(f"refusing to write unexpected issue url or reason: {url!r} {reason!r}")
         text = self.path.read_text()
-        head = text.partition("\n## Tracking")[0].rstrip("\n")
+        m = TRACKING_HEAD.search(text)
+        head = (text[:m.start()] if m else text).rstrip("\n")
         lines = [f"- **Issue:** [#{issue}]({url})", f"- **State:** {state}"]
         if reason:
             lines.append(f"- **Reason:** {reason}")
@@ -206,6 +220,8 @@ class GitHub:
     """Minimal REST client; tests and --issues-json use the same interface."""
 
     def __init__(self, repo, token):
+        if not REPO_RE.match(repo):
+            sys.exit(f"error: bad repo {repo!r}; expected owner/name")
         self.repo, self.token = repo, token
         self._issues = None
 
@@ -230,6 +246,18 @@ class GitHub:
                 page += 1
             self._issues = issues
         return self._issues
+
+    def me(self):
+        return self._req_root("/user")["login"]
+
+    def labels(self):
+        return {l["name"] for l in self._req("GET", "/labels?per_page=100")}
+
+    def _req_root(self, path):
+        req = urllib.request.Request(f"https://api.github.com{path}", headers={
+            "Authorization": f"Bearer {self.token}", "Accept": "application/vnd.github+json"})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return json.load(resp)
 
     def get_issue(self, number):
         try:
@@ -265,6 +293,12 @@ class FileIssues:
         return next((i for i in self.issues if i["number"] == number), None)
 
     def find_milestone(self, title):
+        return None
+
+    def me(self):
+        return None
+
+    def labels(self):
         return None
 
     def create_issue(self, *a, **k):
@@ -328,6 +362,7 @@ def cmd_check(args):
 def plan_push(tickets, targets, gh):
     dupes = duplicates(tickets)
     issues = gh.list_issues()
+    me, known = gh.me(), gh.labels()
     rows = []
     for t in targets:
         errs = t.errors + ([f"issue number shared with another ticket"] if t.id in dupes else [])
@@ -344,7 +379,13 @@ def plan_push(tickets, targets, gh):
             if len(hits) > 1:
                 rows.append((t, "error", f"{len(hits)} issues carry its marker: {[h['number'] for h in hits]}", None))
             elif hits:
-                rows.append((t, "adopt", f"#{hits[0]['number']} already has its marker", hits[0]))
+                author = (hits[0].get("user") or {}).get("login")
+                if me and author != me:
+                    rows.append((t, "error", f"#{hits[0]['number']} carries the marker but was opened by {author}, not {me}", None))
+                else:
+                    rows.append((t, "adopt", f"#{hits[0]['number']} already has its marker (author {author or 'unknown'})", hits[0]))
+            elif known is not None and (missing := [l for l in t.labels if l not in known]):
+                rows.append((t, "blocked", f"labels do not exist: {missing}", None))
             else:
                 rows.append((t, "create", t.issue_title, None))
     return rows

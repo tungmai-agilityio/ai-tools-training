@@ -36,7 +36,7 @@ Unknown fields or bad values fail `check`. The file name is the ID.
 | ID + `# title` | title `T-018: <title>` |
 | everything between the title and `## Tracking` | body, plus hidden marker `<!-- ticket-id: T-018 -->` and links to `Decisions` |
 | Type | label `bug` / `enhancement` / `chore` |
-| Priority, Severity, Areas | labels `priority: x`, `severity: Sx`, `area: x` (must already exist; never auto-created) |
+| Priority, Severity, Areas | labels `priority: x`, `severity: Sx`, `area: x` (must already exist; a ticket with an unknown label is `blocked`, never auto-created) |
 | Sprint's `**Milestone:**` | milestone, if it exists (never auto-created) |
 
 ## Field ownership
@@ -54,9 +54,10 @@ GitHub title, label or body edits are reported as drift and never copied into Ma
 
 ## Safety and idempotency
 - Every command is a **dry run** until `--apply`. `push --apply` is the only GitHub write (creates issues, never edits, closes or reopens). Ask the user first.
-- Dedupe: Tracking `Issue` set -> skip. Otherwise the repo is searched for the `ticket-id` marker; one hit is **adopted** (recovers a crash between create and write-back), two hits or one issue number in two files is an error and nothing is written.
+- Dedupe: Tracking `Issue` set -> skip. Otherwise the repo is searched for the `ticket-id` marker; one hit is **adopted** (recovers a crash between create and write-back) only if it was opened by the authenticated user; a marker planted by someone else is an error. Two hits or one issue number in two files is an error and nothing is written.
 - Per-ticket processing: an API error is logged, the run continues, exit code 1. Markdown changes only after GitHub confirms. Re-running is safe and a no-op when nothing changed.
-- `sync` handles closed, reopened, `missing` (deleted or transferred) and `mismatch` (issue lacks this ticket's marker) without changing the ticket.
+- `sync` handles closed, reopened, `missing` (deleted or transferred) and `mismatch` (issue lacks this ticket's marker) without changing the ticket. They make the exit code non-zero until someone fixes the ticket or the issue.
+- Only `https://github.com/<owner>/<repo>/issues/<n>` URLs and a plain state reason are ever written to Markdown.
 - No `GH_TOKEN`: fetch issues with the GitHub MCP, pass `--issues-json FILE`, and for creation use `show T-018` + MCP `issue_write` + `record T-018 --issue N --url URL`.
 
 ## Usage

@@ -22,7 +22,8 @@ old
 
 
 class FakeGitHub:
-    def __init__(self, issues=None, fail=()):
+    def __init__(self, issues=None, fail=(), me=None, labels=None):
+        self._me, self._labels = me, labels
         self.issues = list(issues or [])
         self.fail = set(fail)
         self.created = []
@@ -36,10 +37,16 @@ class FakeGitHub:
     def find_milestone(self, title):
         return None
 
+    def me(self):
+        return self._me
+
+    def labels(self):
+        return self._labels
+
     def create_issue(self, title, body, labels, milestone=None):
         if title.split(":")[0] in self.fail:
             raise RuntimeError("boom")
-        issue = {"number": 100 + len(self.issues), "html_url": f"https://x/{len(self.issues)}",
+        issue = {"number": 100 + len(self.issues), "html_url": f"https://github.com/o/r/issues/{100 + len(self.issues)}",
                  "state": "open", "title": title, "body": body, "labels": labels}
         self.issues.append(issue)
         self.created.append(title)
@@ -99,7 +106,7 @@ def test_push_apply_records_tracking_and_rerun_is_idempotent(plans, monkeypatch)
     gh = FakeGitHub()
     run(monkeypatch, gh, "push", "--all", "--apply")
     text = path.read_text()
-    assert "- **Issue:** [#100](https://x/0)" in text and "Locally authored requirement." in text
+    assert "- **Issue:** [#100](https://github.com/o/r/issues/100)" in text and "Locally authored requirement." in text
     run(monkeypatch, gh, "push", "--all", "--apply")
     assert gh.created == ["T-018: Do a thing"] and path.read_text() == text
 
@@ -114,16 +121,16 @@ def test_push_skips_drafts_and_selects_by_sprint(plans, monkeypatch):
 
 def test_push_adopts_issue_left_by_a_partial_failure(plans, monkeypatch):
     path = add(plans, "T-018")
-    gh = FakeGitHub([{"number": 7, "html_url": "https://x/7", "state": "open", "title": "t",
+    gh = FakeGitHub([{"number": 7, "html_url": "https://github.com/o/r/issues/7", "state": "open", "title": "t",
                       "body": "b\n\n<!-- ticket-id: T-018 -->", "labels": []}])
     run(monkeypatch, gh, "push", "T-018", "--apply")
-    assert gh.created == [] and "[#7](https://x/7)" in path.read_text()
+    assert gh.created == [] and "[#7](https://github.com/o/r/issues/7)" in path.read_text()
 
 
 def test_push_refuses_when_two_issues_carry_the_marker(plans, monkeypatch):
     add(plans, "T-018")
     body = "<!-- ticket-id: T-018 -->"
-    gh = FakeGitHub([{"number": n, "html_url": "u", "state": "open", "title": "t", "body": body, "labels": []}
+    gh = FakeGitHub([{"number": n, "html_url": "https://github.com/o/r/issues/1", "state": "open", "title": "t", "body": body, "labels": []}
                      for n in (7, 8)])
     assert run(monkeypatch, gh, "push", "T-018", "--apply") == 1
     assert gh.created == [] and "Tracking" not in (plans / "tickets" / "T-018.md").read_text()
@@ -153,18 +160,18 @@ def test_push_failure_on_one_ticket_does_not_stop_the_rest(plans, monkeypatch):
 
 def test_two_tickets_with_one_issue_number_are_rejected(plans, monkeypatch):
     for i in ("T-018", "T-019"):
-        add(plans, i).write_text(add(plans, i).read_text() + "\n## Tracking\n- **Issue:** [#5](u)\n- **State:** open\n")
+        add(plans, i).write_text(add(plans, i).read_text() + "\n## Tracking\n- **Issue:** [#5](https://github.com/o/r/issues/5)\n- **State:** open\n")
     assert tk.main(["check", "--all"]) == 1
 
 
 def mapped(plans, id_="T-018", state="open"):
     path = add(plans, id_)
-    tk.Ticket(path).write_tracking(5, "https://x/5", state)
+    tk.Ticket(path).write_tracking(5, "https://github.com/o/r/issues/5", state)
     return path
 
 
 def issue(state="closed", reason="completed", body="<!-- ticket-id: T-018 -->", title="T-018: Do a thing"):
-    return {"number": 5, "html_url": "https://x/5", "state": state, "state_reason": reason,
+    return {"number": 5, "html_url": "https://github.com/o/r/issues/5", "state": state, "state_reason": reason,
             "title": title, "body": body, "labels": ["chore", "priority: medium"]}
 
 
@@ -210,7 +217,7 @@ def test_sync_refreshes_the_sprint_table(plans, monkeypatch):
     mapped(plans)
     run(monkeypatch, FakeGitHub([issue()]), "sync", "--sprint", "S-001", "--apply")
     sprint = (plans / "sprints" / "S-001.md").read_text()
-    assert "[T-018](../tickets/T-018.md) Do a thing" in sprint and "[#5](https://x/5)" in sprint
+    assert "[T-018](../tickets/T-018.md) Do a thing" in sprint and "[#5](https://github.com/o/r/issues/5)" in sprint
     assert "| closed |" in sprint and "\nold\n" not in sprint
 
 
@@ -224,11 +231,11 @@ def test_record_refuses_to_remap_or_reuse_a_number(plans):
     mapped(plans)
     add(plans, "T-019")
     with pytest.raises(SystemExit):
-        tk.main(["record", "T-018", "--issue", "9", "--url", "u"])
+        tk.main(["record", "T-018", "--issue", "9", "--url", "https://github.com/o/r/issues/9"])
     with pytest.raises(SystemExit):
-        tk.main(["record", "T-019", "--issue", "5", "--url", "u"])
-    tk.main(["record", "T-019", "--issue", "6", "--url", "u"])
-    assert tk.load_tickets()[1].issue == (6, "u")
+        tk.main(["record", "T-019", "--issue", "5", "--url", "https://github.com/o/r/issues/5"])
+    tk.main(["record", "T-019", "--issue", "6", "--url", "https://github.com/o/r/issues/6"])
+    assert tk.load_tickets()[1].issue == (6, "https://github.com/o/r/issues/6")
 
 
 def test_missing_decision_record_fails_validation(plans):
@@ -237,3 +244,42 @@ def test_missing_decision_record_fails_validation(plans):
     (plans / "decisions").mkdir()
     (plans / "decisions" / "ADR-0001-x.md").write_text("# ADR")
     assert tk.load_tickets()[0].errors == []
+
+
+def test_push_does_not_adopt_a_marker_planted_by_someone_else(plans, monkeypatch):
+    path = add(plans, "T-018")
+    gh = FakeGitHub([{"number": 7, "html_url": "https://github.com/o/r/issues/7", "state": "open", "title": "t",
+                      "body": "<!-- ticket-id: T-018 -->", "labels": [], "user": {"login": "stranger"}}], me="bot")
+    assert run(monkeypatch, gh, "push", "T-018", "--apply") == 1
+    assert gh.created == [] and "Tracking" not in path.read_text()
+
+
+def test_push_is_blocked_when_a_label_does_not_exist(plans, monkeypatch):
+    add(plans, "T-018")
+    gh = FakeGitHub(labels={"chore"})
+    run(monkeypatch, gh, "push", "T-018", "--apply")
+    assert gh.created == []
+
+
+@pytest.mark.parametrize("extra", ["**Feature:** ../../x\n", "**Decisions:** ../../x\n"])
+def test_path_like_feature_or_decision_values_fail_validation(plans, extra):
+    add(plans, "T-018", extra=extra)
+    assert tk.load_tickets()[0].errors
+
+
+def test_tracking_rejects_non_github_urls_and_odd_reasons(plans):
+    path = add(plans, "T-018")
+    t = tk.Ticket(path)
+    with pytest.raises(ValueError):
+        t.write_tracking(5, "javascript:alert(1)", "open")
+    with pytest.raises(ValueError):
+        t.write_tracking(5, "https://github.com/o/r/issues/5", "closed", "x\n- **Issue:** [#1](y)")
+    assert "Tracking" not in path.read_text()
+
+
+def test_body_line_starting_like_tracking_does_not_truncate_the_ticket(plans):
+    path = add(plans, "T-018", extra="\n## Trackingnotes\nKeep me.\n")
+    t = tk.Ticket(path)
+    assert "Keep me." in t.issue_body
+    t.write_tracking(5, "https://github.com/o/r/issues/5", "open")
+    assert "Keep me." in path.read_text()
