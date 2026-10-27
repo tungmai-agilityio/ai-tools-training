@@ -16,9 +16,10 @@ Tung asked whether to split the frontend out into Next.js or React. What is true
 ## Decision
 We keep the frontend as same-origin static files served by FastAPI and build the authentication UI in the existing `index.html`. We do not adopt Next.js. If the UI outgrows one file (signals below), we migrate to a React + TypeScript SPA built with Vite, whose `dist/` output FastAPI serves from the same origin, so the deployment, auth and security model stay as they are. That migration would be its own ticketed piece of work, done screen by screen after authentication ships, not during it.
 
-Because the auth UI lands in a file that writes HTML with `innerHTML`, it ships with these guards (proposed, for Tung to confirm in the authentication spec):
-- The session token is never stored in `localStorage` or `sessionStorage`. Preferred: an `HttpOnly`, `SameSite=Strict` cookie set by FastAPI, with a CSRF check on state-changing routes. Fallback: keep the token in page memory only.
+Because the auth UI lands in a file that writes HTML with `innerHTML`, it ships with these guards (confirmed by Tung, 2026-10-27):
+- The session token is never stored in `localStorage` or `sessionStorage`. It travels in an `HttpOnly`, `SameSite=Strict` cookie set by FastAPI, with a CSRF check on state-changing routes.
 - FastAPI sends a `Content-Security-Policy` header with `script-src 'self'`, which blocks inline and third-party scripts. Both inline scripts move to static files: the theme script (`app/static/index.html:8`) stays a synchronous `<script src>` in `<head>` so the theme does not flash, and the main app script (`app/static/index.html:505`) moves too. The policy covers scripts only; the inline `<style>` block and `style=` attributes stay, so `style-src` allows `'unsafe-inline'` for now.
+- Admin routes move off the `X-Admin-Token` header (`app/routes.py:69`) onto the same login session, so the UI has one auth path.
 - New code sets text with `textContent`, and a test fails on any `innerHTML` assignment that interpolates a value not passed through `esc()`. A pattern test is easy to evade, so the CSP is the backstop, not the test.
 
 ## Options considered
@@ -38,4 +39,3 @@ Because the auth UI lands in a file that writes HTML with `innerHTML`, it ships 
 ## Open questions for Tung
 - Is there a driver beyond this app's size (team skills, a later patient-facing portal, a separate frontend team)? A patient portal with public pages would be the case where Next.js earns a second look.
 - Would a Node toolchain in CI and release be acceptable if we later move to React + Vite?
-- Do admin routes move from the `X-Admin-Token` header (`app/routes.py:69`) to the same login session? The auth plan retires the shared token, which keeps one auth path; until that ships, the UI carries two.
