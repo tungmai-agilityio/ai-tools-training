@@ -40,11 +40,11 @@ The rules every change in Clinic Booking follows. CLAUDE.md has the short versio
 ## API
 - REST, JSON, plural nouns: `/appointments`, `/appointments/{id}/cancel`.
 - Errors return `{"detail": "<human sentence>"}`. The message is shown to reception as-is, so write it for them.
-- Admin-only endpoints call `require_admin(x_admin_token)` first, as `delete_appointment` does (fails closed when `ADMIN_TOKEN` is unset). Existing code that predates these rules is not fixed outside its ticket. Never log or echo the token.
+- Every route needs a session (the router depends on `auth.current_user`); admin-only endpoints add `dependencies=ADMIN`, as `delete_appointment` does. Never log or echo a password or session value.
 
 ## Data and secrets
 - Fake data only. No real names, phones, emails or IDs, ever.
-- Never commit `.env`, `data/*.db` or a real `ADMIN_TOKEN`. New settings go in `config.py` and `.env.example`.
+- Never commit `.env`, `data/*.db` or a real `AUTH_SECRET`. New settings go in `config.py` and `.env.example`.
 
 ## Scope
 - Change only what the ticket asks. Anything else you notice becomes a note for a new ticket.

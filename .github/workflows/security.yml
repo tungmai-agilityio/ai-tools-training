@@ -28,8 +28,8 @@ jobs:
             Do a security-focused review of this pull request.
 
             Prioritise exploitable issues introduced by the diff:
-            - Authentication and authorization, especially `require_admin()` on admin and
-              destructive endpoints (constant-time compare, fails closed when `ADMIN_TOKEN` is unset).
+            - Authentication and authorization, especially `auth.current_user` on every route and
+              `auth.require_role("admin")` on admin and destructive endpoints (signed session cookie, fails closed when `AUTH_SECRET` is unset).
             - Injection: SQL in `app/store.py` (parameterized queries only), command execution,
               path traversal, SSRF.
             - XSS: every API value rendered in `app/static/index.html` must go through `esc()`;

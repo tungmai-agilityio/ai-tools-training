@@ -18,7 +18,7 @@ def test_patients_endpoint_lists_seed_patients(client):
 
 
 def test_index_page_offers_reschedule_for_scheduled_appointments(client):
-    page = client.get("/").text
+    page = client.get("/static/app.js").text
     assert 'btn("reschedule", "Reschedule")' in page
     assert "/reschedule`" in page
 
@@ -28,7 +28,7 @@ def test_reschedule_picker_offers_the_appointments_own_slots(client):
     node = shutil.which("node")
     if not node:
         pytest.skip("node not installed")  # ponytail: JS check needs node; no JS test runner in this repo
-    page = client.get("/").text
+    page = client.get("/static/app.js").text
     start = page.index("function withOwnSlots")
     fn = page[start:page.index("\n}\n", start) + 2]
     script = 'const CLINIC_TZ = "America/New_York";\n' + fn + """
@@ -52,7 +52,7 @@ def _node():
 
 def _run_js(client, names, body):
     """Run page functions (by 'function name' marker) plus `body` in node; fail with node's stderr."""
-    page = client.get("/").text
+    page = client.get("/static/app.js").text
     fns = ""
     for marker in names:
         start = page.index(marker)
@@ -63,9 +63,10 @@ def _run_js(client, names, body):
 
 
 def test_index_page_has_a_revenue_screen(client):
-    page = client.get("/").text
-    assert 'href="#revenue"' in page
-    assert 'id="screen-revenue"' in page
+    html = client.get("/").text
+    page = client.get("/static/app.js").text
+    assert 'href="#revenue"' in html
+    assert 'id="screen-revenue"' in html
     assert '"revenue"' in page.split("const SCREENS = ", 1)[1].split("\n", 1)[0]
     assert "sessionStorage" not in page
     assert all("cb-theme" in line for line in page.splitlines() if "localStorage" in line)
@@ -91,22 +92,22 @@ def test_api_sends_caller_headers_with_json_content_type(client):
 let sent;
 globalThis.fetch = async (path, o) => { sent = o; return { ok: true, status: 200, json: async () => ({}) }; };
 (async () => {
-  await api("/x", { method: "POST", body: "{}", headers: { "X-Admin-Token": "t" } });
-  if (JSON.stringify(sent.headers) !== JSON.stringify({ "Content-Type": "application/json", "X-Admin-Token": "t" })) throw new Error(JSON.stringify(sent.headers));
+  await api("/x", { method: "POST", body: "{}", headers: { "X-Test": "t" } });
+  if (JSON.stringify(sent.headers) !== JSON.stringify({ "Content-Type": "application/json", "X-Test": "t" })) throw new Error(JSON.stringify(sent.headers));
   await api("/x");
   if (JSON.stringify(sent.headers) !== "{}") throw new Error(JSON.stringify(sent.headers));
-  await api("/x", { headers: { "X-Admin-Token": "t" } });
-  if (JSON.stringify(sent.headers) !== JSON.stringify({ "X-Admin-Token": "t" })) throw new Error(JSON.stringify(sent.headers));
+  await api("/x", { headers: { "X-Test": "t" } });
+  if (JSON.stringify(sent.headers) !== JSON.stringify({ "X-Test": "t" })) throw new Error(JSON.stringify(sent.headers));
 })().catch((e) => { console.error(e); process.exit(1); });
 """)
 
 
 def test_api_error_carries_http_status(client):
     _run_js(client, ["async function api"], """
-globalThis.fetch = async () => ({ ok: false, status: 403, statusText: "Forbidden", json: async () => ({ detail: "Admin token required" }) });
+globalThis.fetch = async () => ({ ok: false, status: 403, statusText: "Forbidden", json: async () => ({ detail: "Administrator required" }) });
 (async () => {
   try { await api("/x"); } catch (e) {
-    if (e.status !== 403 || e.message !== "403 · Admin token required") throw new Error(e.status + " " + e.message);
+    if (e.status !== 403 || e.message !== "403 · Administrator required") throw new Error(e.status + " " + e.message);
     return;
   }
   throw new Error("did not throw");
@@ -125,4 +126,26 @@ renderRevenue({ from: "2026-10-01", to: "2026-10-13", at: Date.UTC(2026, 9, 13, 
 const html = out.innerHTML;
 if (!html.includes("$399.97")) throw new Error("total not shown");
 if (html.includes("<b>x</b>") || !html.includes("&lt;b&gt;x&lt;/b&gt;")) throw new Error("doctor name not escaped");
+""")
+
+
+def test_page_has_login_account_and_user_screens_and_hides_admin_links_by_default(client):
+    html = client.get("/").text
+    for marker in ('id="screen-login"', 'id="screen-account"', 'id="screen-users"', 'id="dlg-temp"'):
+        assert marker in html
+    assert '<a href="#revenue" data-admin>' in html and '<a href="#users" data-admin hidden>' in html
+
+
+def test_ui_stores_no_credential_and_signs_out_through_the_api(client):
+    js = client.get("/static/app.js").text
+    assert "/auth/logout" in js and "/auth/change-password" in js and "reset-password" in js
+    assert "sessionStorage" not in js
+    assert all("cb-theme" in line for line in js.splitlines() if "localStorage" in line)
+
+
+def test_esc_escapes_quotes_so_usernames_cannot_break_attributes(client):
+    _run_js(client, ["function esc"], """
+globalThis.document = { createElement: () => ({ set textContent(v) { this.innerHTML = String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); } }) };
+const out = esc('x"><img src=//e>');
+if (out.includes('"') || out.includes("<")) throw new Error(out);
 """)

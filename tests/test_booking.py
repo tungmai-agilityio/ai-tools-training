@@ -351,21 +351,9 @@ def test_same_page_requested_twice_is_identical(client):
 
 # --- admin delete -------------------------------------------------------
 
-def test_admin_delete_requires_token(client, monkeypatch):
-    from app import config
-
-    monkeypatch.setattr(config, "ADMIN_TOKEN", "s3cret")
+def test_admin_delete_requires_admin_role(client, staff_client):
     appt_id = book(client, WED_9).json()["id"]
-    assert client.delete(f"/appointments/{appt_id}").status_code == 403
-    assert client.delete(f"/appointments/{appt_id}", headers={"x-admin-token": "s3cret"}).status_code == 204
-    assert client.get(f"/appointments/{appt_id}").status_code == 404
-
-
-def test_delete_is_refused_when_no_admin_token_is_configured(client, monkeypatch):
-    from app import config
-
-    monkeypatch.setattr(config, "ADMIN_TOKEN", "")
-    appt_id = book(client, WED_9).json()["id"]
-    assert client.delete(f"/appointments/{appt_id}").status_code == 403
-    assert client.delete(f"/appointments/{appt_id}", headers={"x-admin-token": ""}).status_code == 403
+    assert staff_client.delete(f"/appointments/{appt_id}").status_code == 403
     assert client.get(f"/appointments/{appt_id}").status_code == 200
+    assert client.delete(f"/appointments/{appt_id}").status_code == 204
+    assert client.get(f"/appointments/{appt_id}").status_code == 404

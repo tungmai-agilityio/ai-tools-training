@@ -27,8 +27,8 @@ Source of truth: `docs/business-rules.md`. Conventions: `docs/references/`.
 - Items marked `OPEN QUESTION` in `docs/business-rules.md` are not decided in code.
 
 **Security and privacy**
-- Admin or destructive routes call `routes.require_admin()` first; it fails closed when `ADMIN_TOKEN` is unset and compares with `hmac.compare_digest`.
-- Never log, echo or return the admin token, and never give it a default value in code, tests or docs. No `.env`, `data/*.db` or real token is committed (`git ls-files | grep -E '\.env$|\.db$'` must print nothing).
+- Every route needs a session (router-level `auth.current_user`); admin or destructive routes add `dependencies=ADMIN` (`auth.require_role("admin")`). Auth fails closed when `AUTH_SECRET` is unset and compares with `hmac.compare_digest`.
+- Never log, echo or return a password, hash or session value, and never give them a default value in code, tests or docs. No `.env`, `data/*.db` or real secret is committed (`git ls-files | grep -E '\.env$|\.db$'` must print nothing).
 - Validate untrusted input with bounds (`min_length`, `max_length`, `ge`, `le`) in Pydantic models; reject naive datetimes; cap `page_size` at 100 and bound every new query parameter. An unknown ID is a 404, not a crash.
 - SQL lives in `app/store.py`, binds every value with `?`, and is never built with f-strings, `%`, `+` or `.format()`.
 - In `app/static/index.html`, API data goes through `esc()` or `textContent`. Flag `innerHTML`, `outerHTML` and `insertAdjacentHTML` with API data, and unescaped API values passed to helpers that take raw HTML.

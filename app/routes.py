@@ -7,18 +7,19 @@ no-show, cancel). It reads and writes through the store and delegates
 business logic to the scheduling, fees, and clock modules.
 """
 
-import hmac
 from datetime import date, datetime, timedelta
 
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
 
-from app import clock, config, fees, scheduling
+from app import auth, clock, config, fees, scheduling
 from app.errors import DomainError
 from app.models import Appointment, AppointmentIn, Holiday, RescheduleIn, RevenueReport, Status, TimeOff, TimeOffIn
 from app.store import store
 
-router = APIRouter()
+# Deny by default: every route here needs a signed-in user; ADMIN adds the admin role (ADR-0003).
+router = APIRouter(dependencies=[Depends(auth.current_user)])
+ADMIN = [Depends(auth.require_role("admin"))]
 
 # Allowed state transitions for appointment lifecycle.
 # Each key is a current status; the value is the set of statuses
@@ -64,28 +65,6 @@ def _check_conflicts(doctor_id: int, patient_id: int, start: datetime, duration_
             raise DomainError("Doctor is not available at that time", 409)
         if other.patient_id == patient_id:
             raise DomainError("Patient already has an appointment at that time", 409)
-
-
-def require_admin(x_admin_token: str | None = Header(default=None)) -> None:
-    """Validate the admin token from the X-Admin-Token header.
-
-    Raises a 403 DomainError if the provided token does not match.
-    Fails closed: when ADMIN_TOKEN is empty/unset, every request is refused.
-    """
-    expected = config.ADMIN_TOKEN.encode()
-    given = (x_admin_token or "").encode()
-    if not expected or not hmac.compare_digest(given, expected):
-        raise DomainError("Admin token required", 403)
-
-
-# ---------------------------------------------------------------------------
-# General endpoints
-# ---------------------------------------------------------------------------
-
-@router.get("/health")
-def health():
-    """Liveness / readiness probe returning the service status and configured timezone."""
-    return {"status": "ok", "timezone": config.CLINIC_TIMEZONE}
 
 
 @router.get("/doctors")
@@ -141,10 +120,9 @@ def list_holidays() -> list[Holiday]:
     return sorted(store.holidays.values(), key=lambda h: h.date)
 
 
-@router.post("/holidays", status_code=201)
-def add_holiday(body: Holiday, x_admin_token: str | None = Header(default=None)) -> Holiday:
+@router.post("/holidays", status_code=201, dependencies=ADMIN)
+def add_holiday(body: Holiday) -> Holiday:
     """Close the whole clinic on one day (admin-only)."""
-    require_admin(x_admin_token)
     if body.date in store.holidays:
         raise DomainError("That day is already a holiday", 409)
     _reject_if_booked({body.date})
@@ -152,10 +130,9 @@ def add_holiday(body: Holiday, x_admin_token: str | None = Header(default=None))
     return body
 
 
-@router.delete("/holidays/{day}", status_code=204)
-def remove_holiday(day: date, x_admin_token: str | None = Header(default=None)):
+@router.delete("/holidays/{day}", status_code=204, dependencies=ADMIN)
+def remove_holiday(day: date):
     """Reopen a holiday (admin-only)."""
-    require_admin(x_admin_token)
     if day not in store.holidays:
         raise DomainError("Holiday not found", 404)
     store.delete_holiday(day)
@@ -178,10 +155,9 @@ def _check_range(start: date, end: date, order_msg: str, length_msg: str) -> Non
         raise DomainError(length_msg, 422)
 
 
-@router.post("/doctors/{doctor_id}/time-off", status_code=201)
-def add_time_off(doctor_id: int, body: TimeOffIn, x_admin_token: str | None = Header(default=None)) -> TimeOff:
+@router.post("/doctors/{doctor_id}/time-off", status_code=201, dependencies=ADMIN)
+def add_time_off(doctor_id: int, body: TimeOffIn) -> TimeOff:
     """Block whole days for one doctor, both ends inclusive (admin-only)."""
-    require_admin(x_admin_token)
     if doctor_id not in store.doctors:
         raise DomainError("Doctor not found", 404)
     _check_range(body.start_date, body.end_date, "end_date must be on or after start_date", "Time off cannot be longer than a year")
@@ -190,10 +166,9 @@ def add_time_off(doctor_id: int, body: TimeOffIn, x_admin_token: str | None = He
     return store.add_time_off(doctor_id, body)
 
 
-@router.delete("/doctors/{doctor_id}/time-off/{time_off_id}", status_code=204)
-def remove_time_off(doctor_id: int, time_off_id: int, x_admin_token: str | None = Header(default=None)):
+@router.delete("/doctors/{doctor_id}/time-off/{time_off_id}", status_code=204, dependencies=ADMIN)
+def remove_time_off(doctor_id: int, time_off_id: int):
     """Cancel a doctor's time off (admin-only)."""
-    require_admin(x_admin_token)
     entry = store.time_off.get(time_off_id)
     if entry is None or entry.doctor_id != doctor_id:
         raise DomainError("Time off not found", 404)
@@ -414,14 +389,12 @@ def reschedule(appointment_id: int, body: RescheduleIn) -> Appointment:
     return appt
 
 
-@router.delete("/appointments/{appointment_id}", status_code=204)
-def delete_appointment(appointment_id: int, x_admin_token: str | None = Header(default=None)):
+@router.delete("/appointments/{appointment_id}", status_code=204, dependencies=ADMIN)
+def delete_appointment(appointment_id: int):
     """Permanently delete an appointment record (admin-only).
 
-    Requires a valid admin token in the ``X-Admin-Token`` header.
     Returns HTTP 204 No Content on success.
     """
-    require_admin(x_admin_token)
     # Verify the appointment exists before deleting
     _get(appointment_id)
     store.delete(appointment_id)
@@ -432,7 +405,7 @@ def delete_appointment(appointment_id: int, x_admin_token: str | None = Header(d
 # Reports
 # ---------------------------------------------------------------------------
 
-@router.get("/reports/revenue", dependencies=[Depends(require_admin)])
+@router.get("/reports/revenue", dependencies=ADMIN)
 def revenue_report(
     response: Response, from_date: date = Query(alias="from"), to_date: date = Query(alias="to")
 ) -> RevenueReport:

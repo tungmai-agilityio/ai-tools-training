@@ -1,26 +1,16 @@
 """Clinic holidays and doctor time off (T-014). Time is frozen at Tue 2026-10-13 10:00 New York."""
 
-import pytest
-
 from tests.helpers import book
 
-ADMIN = {"x-admin-token": "s3cret"}
 WED_9AM = "2026-10-14T09:00:00-04:00"
 
 
-@pytest.fixture(autouse=True)
-def admin_token(monkeypatch):
-    from app import config
-
-    monkeypatch.setattr(config, "ADMIN_TOKEN", "s3cret")
+def _holiday(client, day="2026-10-14", name="Founders Day"):
+    return client.post("/holidays", json={"date": day, "name": name})
 
 
-def _holiday(client, day="2026-10-14", name="Founders Day", headers=ADMIN):
-    return client.post("/holidays", json={"date": day, "name": name}, headers=headers)
-
-
-def _time_off(client, start="2026-10-14", end="2026-10-15", doctor_id=1, headers=ADMIN):
-    return client.post(f"/doctors/{doctor_id}/time-off", json={"start_date": start, "end_date": end, "reason": "Conference"}, headers=headers)
+def _time_off(client, start="2026-10-14", end="2026-10-15", doctor_id=1):
+    return client.post(f"/doctors/{doctor_id}/time-off", json={"start_date": start, "end_date": end, "reason": "Conference"})
 
 
 def _slots(client, day, doctor_id=1):
@@ -29,8 +19,8 @@ def _slots(client, day, doctor_id=1):
 
 # --- clinic holidays ------------------------------------------------------
 
-def test_holiday_needs_admin_token(client):
-    assert _holiday(client, headers={}).status_code == 403
+def test_holiday_needs_admin_role(client, staff_client):
+    assert _holiday(staff_client).status_code == 403
     assert client.get("/holidays").json() == []
 
 
@@ -83,16 +73,16 @@ def test_duplicate_holiday_is_409(client):
 
 def test_removing_a_holiday_reopens_the_day(client):
     _holiday(client)
-    assert client.delete("/holidays/2026-10-14", headers=ADMIN).status_code == 204
+    assert client.delete("/holidays/2026-10-14").status_code == 204
     assert _slots(client, "2026-10-14")["slots"]
     assert book(client, WED_9AM).status_code == 201
-    assert client.delete("/holidays/2026-10-14", headers=ADMIN).status_code == 404
+    assert client.delete("/holidays/2026-10-14").status_code == 404
 
 
 # --- doctor time off ------------------------------------------------------
 
-def test_time_off_needs_admin_token(client):
-    assert _time_off(client, headers={"x-admin-token": "wrong"}).status_code == 403
+def test_time_off_needs_admin_role(staff_client):
+    assert _time_off(staff_client).status_code == 403
 
 
 def test_time_off_blocks_every_day_in_the_range_for_that_doctor_only(client):
@@ -135,8 +125,8 @@ def test_time_off_is_listed_and_can_be_removed(client):
     entry = _time_off(client).json()
     assert client.get("/doctors/1/time-off").json() == [entry]
     assert client.get("/doctors/2/time-off").json() == []
-    assert client.delete(f"/doctors/2/time-off/{entry['id']}", headers=ADMIN).status_code == 404
-    assert client.delete(f"/doctors/1/time-off/{entry['id']}", headers=ADMIN).status_code == 204
+    assert client.delete(f"/doctors/2/time-off/{entry['id']}").status_code == 404
+    assert client.delete(f"/doctors/1/time-off/{entry['id']}").status_code == 204
     assert book(client, WED_9AM).status_code == 201
 
 
@@ -164,7 +154,7 @@ def test_holidays_and_time_off_survive_a_restart(tmp_path):
 def test_time_off_ids_are_never_reused_after_a_delete(client):
     first = _time_off(client, start="2026-10-14", end="2026-10-14").json()["id"]
     second = _time_off(client, start="2026-10-15", end="2026-10-15").json()["id"]
-    client.delete(f"/doctors/1/time-off/{second}", headers=ADMIN)
+    client.delete(f"/doctors/1/time-off/{second}")
     third = _time_off(client, start="2026-10-16", end="2026-10-16").json()["id"]
     assert len({first, second, third}) == 3
     assert [t["id"] for t in client.get("/doctors/1/time-off").json()] == [first, third]

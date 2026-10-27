@@ -22,16 +22,18 @@ Then open:
 - http://127.0.0.1:8000/docs for the raw API (Swagger)
 
 ### Login settings
-Set in `.env` before first start: `AUTH_SECRET` (random string that signs sessions; empty means login is refused),
+Set in `.env` before first start: `AUTH_SECRET` (random string of at least 32 characters that signs sessions; empty means login is refused, a shorter one stops startup),
 `ADMIN_USERNAME` and `ADMIN_PASSWORD` (12+ characters; seed the first admin only while no users exist, who must change the
 password at first sign-in). `COOKIE_SECURE=false` is for plain-http local demos only. `POST /auth/login` sets an 8-hour
 `HttpOnly`, `SameSite=Strict` cookie; `POST /auth/logout` clears it; `GET /auth/me` shows who is signed in.
 Five failed logins lock a username for 15 minutes.
+Admins manage accounts with `GET/POST /users` and `PATCH /users/{id}` (`active`, `role`; sending `active: true` also unlocks).
+Users change their own password with `POST /auth/change-password`; admins reset one with `POST /users/{id}/reset-password` (a temporary password, shown once, that must be changed at next sign-in).
 
 Clinic holidays (`/holidays`) and doctor time off (`/doctors/{id}/time-off`) are managed in Swagger.
-Adding or removing them needs `ADMIN_TOKEN` set in `.env` and sent as the `X-Admin-Token` header.
+Adding or removing them needs an administrator login (staff get `403`, no session gets `401`).
 Admin-only `GET /reports/revenue?from=YYYY-MM-DD&to=YYYY-MM-DD` returns consultation and penalty revenue per doctor and per day.
-The web app shows it on the Revenue screen (`#revenue`): enter the admin token (kept in memory only) and a date range.
+The web app shows it on the Revenue screen (`#revenue`): pick a date range (administrators only).
 
 Appointments persist in SQLite (`DB_PATH`, default `data/clinic.db`) via stdlib `sqlite3`.
 No ORM, no new dependency. Delete the file to start fresh. To fill the list with demo data

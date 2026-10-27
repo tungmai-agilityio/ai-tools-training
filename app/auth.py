@@ -4,9 +4,10 @@ import hashlib
 import hmac
 import logging
 import secrets
+import threading
 from datetime import datetime, timedelta, timezone
 
-from fastapi import Request, Response
+from fastapi import Depends, Request, Response
 
 from app import clock, config
 from app.errors import DomainError
@@ -30,8 +31,38 @@ def verify_password(password: str, stored: str) -> bool:
     return hmac.compare_digest(check, bytes.fromhex(digest))
 
 
+# ponytail: one lock per existing user id (the dict only grows with real users) makes check, verify and
+# counter update atomic so parallel guesses cannot skip the lockout; unknown names never take a lock.
+# Add per-IP rate limiting if the app is exposed beyond the clinic network.
+_user_locks: dict[int, threading.Lock] = {}
+
+
+def user_lock(user_id: int) -> threading.Lock:
+    """Serialises every password, lockout and session-version change for one user."""
+    return _user_locks.setdefault(user_id, threading.Lock())
+
+
+def register_failure(user: UserRecord) -> None:
+    """Count a wrong password; lock the username after LOCKOUT_FAILURES in a row. Caller holds user_lock and saves."""
+    user.failed_attempts += 1
+    if user.failed_attempts >= config.LOCKOUT_FAILURES:
+        user.failed_attempts = 0
+        user.locked_until = clock.now_utc() + timedelta(minutes=config.LOCKOUT_MINUTES)
+
+
 # Checked for unknown usernames so a miss costs the same as a wrong password.
 DUMMY_HASH = hash_password("not-a-real-password")
+
+
+def secret_ok() -> bool:
+    """True when AUTH_SECRET is set and long enough to sign sessions; otherwise login fails closed."""
+    return len(config.AUTH_SECRET) >= config.AUTH_SECRET_MIN_LENGTH
+
+
+def check_secret() -> None:
+    """Startup check: an unset secret only disables login, a weak one stops the app."""
+    if config.AUTH_SECRET and not secret_ok():
+        raise RuntimeError(f"AUTH_SECRET must be at least {config.AUTH_SECRET_MIN_LENGTH} characters")
 
 
 def _sign(payload: str) -> str:
@@ -59,7 +90,9 @@ def clear_session_cookie(response: Response) -> None:
 def read_session(value: str | None) -> tuple[UserRecord, datetime]:
     """Verify a cookie value; raise 401 if it is missing, forged, expired or its user is gone/disabled."""
     unauth = DomainError("Not authenticated", 401)
-    if not value or not config.AUTH_SECRET:
+    if not value or not secret_ok():
+        raise unauth
+    if not value.isascii():  # compare_digest raises TypeError on non-ASCII text
         raise unauth
     payload, _, sig = value.rpartition(".")
     if not hmac.compare_digest(sig, _sign(payload)):
@@ -88,8 +121,28 @@ def current_user(request: Request) -> UserRecord:
     return user
 
 
+def require_role(role: str):
+    """Dependency factory: any signed-in user for "staff"; admins only for "admin"."""
+
+    def check(user: UserRecord = Depends(current_user)) -> UserRecord:
+        if role == "admin" and user.role != "admin":
+            raise DomainError("Administrator required", 403)
+        return user
+
+    return check
+
+
+def set_password(user: UserRecord, password: str, must_change: bool) -> None:
+    """Store a new password; ends every older session of the user and clears the lockout."""
+    user.password_hash = hash_password(password)
+    user.must_change_password = must_change
+    user.session_version += 1
+    user.failed_attempts, user.locked_until = 0, None
+
+
 def seed_admin() -> None:
     """Create the first admin from ADMIN_USERNAME/ADMIN_PASSWORD, only when no user exists."""
+    check_secret()
     if store.users:
         return
     username, password = config.ADMIN_USERNAME.strip(), config.ADMIN_PASSWORD
