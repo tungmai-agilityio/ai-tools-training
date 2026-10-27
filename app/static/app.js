@@ -511,6 +511,7 @@ $("rev-results").addEventListener("click", (e) => { if (e.target.closest("#rev-r
 // The session cookie is HttpOnly: the page never sees it and stores no credential anywhere.
 function showLogin() {
   state.user = null;
+  document.querySelector(".cb-app").classList.add("cb-signed-out");
   document.querySelector(".cb-sidebar").hidden = true;
   for (const s of SCREENS) $("screen-" + s).hidden = true;
   $("screen-login").hidden = false;
@@ -520,6 +521,7 @@ function onUnauthorized() { if (state.user) { showLogin(); toast("Signed out", "
 let appLoaded = false;
 async function enter(user) {
   state.user = user;
+  document.querySelector(".cb-app").classList.remove("cb-signed-out");
   document.querySelector(".cb-sidebar").hidden = false;
   document.querySelectorAll("[data-admin]").forEach((a) => (a.hidden = user.role !== "admin"));
   $("who-name").textContent = `${user.username} · ${user.role}`;
