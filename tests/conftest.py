@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timezone
 
 os.environ.setdefault("CLINIC_TIMEZONE", "America/New_York")
-os.environ.setdefault("DB_PATH", ":memory:")
+os.environ["DB_PATH"] = ":memory:"  # always: a sourced .env must never point the tests at data/clinic.db (they wipe it)
 os.environ.setdefault("AUTH_SECRET", "test-secret-not-real-0123456789abcdef")
 
 import pytest
