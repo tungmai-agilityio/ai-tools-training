@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import logging
 import secrets
+import threading
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, Request, Response
@@ -28,6 +29,25 @@ def verify_password(password: str, stored: str) -> bool:
     salt, digest = stored.split("$")
     check = hashlib.scrypt(password.encode(), salt=bytes.fromhex(salt), **_SCRYPT)
     return hmac.compare_digest(check, bytes.fromhex(digest))
+
+
+# ponytail: one lock per existing user id (the dict only grows with real users) makes check, verify and
+# counter update atomic so parallel guesses cannot skip the lockout; unknown names never take a lock.
+# Add per-IP rate limiting if the app is exposed beyond the clinic network.
+_user_locks: dict[int, threading.Lock] = {}
+
+
+def user_lock(user_id: int) -> threading.Lock:
+    """Serialises every password, lockout and session-version change for one user."""
+    return _user_locks.setdefault(user_id, threading.Lock())
+
+
+def register_failure(user: UserRecord) -> None:
+    """Count a wrong password; lock the username after LOCKOUT_FAILURES in a row. Caller holds user_lock and saves."""
+    user.failed_attempts += 1
+    if user.failed_attempts >= config.LOCKOUT_FAILURES:
+        user.failed_attempts = 0
+        user.locked_until = clock.now_utc() + timedelta(minutes=config.LOCKOUT_MINUTES)
 
 
 # Checked for unknown usernames so a miss costs the same as a wrong password.

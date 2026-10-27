@@ -45,7 +45,7 @@ def create_user(body: UserCreateIn) -> User:
 
 @router.patch("/{user_id}")
 def update_user(user_id: int, body: UserPatchIn) -> User:
-    with _lock:
+    with _lock, auth.user_lock(user_id):
         user = _get(user_id)
         active = user.active if body.active is None else body.active
         role = user.role if body.role is None else body.role
@@ -67,7 +67,7 @@ def update_user(user_id: int, body: UserPatchIn) -> User:
 def reset_password(user_id: int, response: Response) -> ResetPasswordOut:
     """Give the user a one-time temporary password; they must change it at next sign-in."""
     response.headers["Cache-Control"] = "no-store"
-    with _lock:
+    with _lock, auth.user_lock(user_id):
         user = _get(user_id)
         temporary = secrets.token_urlsafe(12)  # 16 characters, above the 12-character minimum
         auth.set_password(user, temporary, must_change=True)

@@ -77,3 +77,11 @@ def test_change_and_reset_end_older_sessions_and_clear_the_lockout(client, anon_
     temp = client.post(f"/users/{nurse.id}/reset-password").json()["temporary_password"]
     assert old.get("/auth/me").status_code == 401  # TC-6: old cookie no longer works
     assert anon_client.post("/auth/login", json={"username": "nurse1", "password": temp}).status_code == 200  # lock cleared
+
+
+def test_wrong_current_password_counts_toward_lockout(anon_client):
+    make_user()
+    login_as(anon_client, "nurse1")
+    for _ in range(5):
+        assert change(anon_client, current="not the password").status_code == 403
+    assert change(anon_client).status_code == 423  # right password, still locked
