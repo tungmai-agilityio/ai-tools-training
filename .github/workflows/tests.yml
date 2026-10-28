@@ -1,11 +1,15 @@
 
 name: Tests
 
+# Docs and planning files cannot change a test result, so a change to only these files skips the run.
+# Hooks (.claude/), workflows, scripts/, requirements and render.yaml still run it.
 on:
   pull_request:
     branches: [develop]
+    paths-ignore: ["**.md", "docs/**", "plans/**", ".github/ISSUE_TEMPLATE/**"]
   push:
     branches: [develop]
+    paths-ignore: ["**.md", "docs/**", "plans/**", ".github/ISSUE_TEMPLATE/**"]
 
 permissions:
   contents: read
