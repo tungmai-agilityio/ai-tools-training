@@ -1,5 +1,6 @@
 """Browser smoke test for the web app (T-011). Optional: needs requirements-dev.txt and
 `playwright install chromium`; skipped otherwise, so plain `pytest` stays dependency-free."""
+import contextlib
 import os
 import re
 import socket
@@ -40,8 +41,12 @@ def base_url(client):  # `client` resets the store and freezes the clock (Tue 20
     server.should_exit = True
 
 
-@pytest.fixture
-def page(base_url, client):  # `client` is signed in as an admin; hand its session cookie to the browser
+PASSWORD = "correct horse battery"  # tests.helpers.make_user default
+
+
+@contextlib.contextmanager
+def _browser_page(base_url, username):
+    """A page signed in as `username` through POST /auth/login on the context's own cookie jar."""
     with sync_api.sync_playwright() as p:
         try:
             browser = p.chromium.launch()
@@ -51,9 +56,8 @@ def page(base_url, client):  # `client` is signed in as an admin; hand its sessi
             pytest.skip(f"chromium not available: {e}")
         # A browser far from New York: every time on screen must still be clinic time (NFR-2).
         context = browser.new_context(timezone_id="Asia/Ho_Chi_Minh", base_url=base_url)
-        from app import config
-
-        context.add_cookies([{"name": config.SESSION_COOKIE, "value": client.cookies.get(config.SESSION_COOKIE), "url": base_url}])
+        r = context.request.post("/auth/login", data={"username": username, "password": PASSWORD})
+        assert r.ok, r.text()
         pg = context.new_page()
         pg.clock.set_fixed_time(FIXED_NOW)
         pg.csp_violations = []
@@ -64,11 +68,37 @@ def page(base_url, client):  # `client` is signed in as an admin; hand its sessi
 
 
 @pytest.fixture
-def snap(page, request):
+def page(base_url, client):  # `client` created the "testadmin" admin
+    with _browser_page(base_url, "testadmin") as pg:
+        yield pg
+
+
+@pytest.fixture
+def admin_page(base_url, anon_client):
+    from tests.helpers import make_user
+
+    make_user(username="admin1", role="admin")
+    with _browser_page(base_url, "admin1") as pg:
+        yield pg
+
+
+@pytest.fixture
+def staff_page(base_url, anon_client):
+    from tests.helpers import make_user
+
+    make_user(username="nurse1")
+    with _browser_page(base_url, "nurse1") as pg:
+        yield pg
+
+
+@pytest.fixture
+def snap(request):
     """snap(name): save <test>-<name>-desktop.png and -phone.png, masking password and token inputs."""
     SHOTS.mkdir(parents=True, exist_ok=True)
 
     def take(name):
+        # the test's own page fixture (a second one would start a second Playwright in the same thread)
+        page = request.getfixturevalue(next(f for f in ("page", "admin_page", "staff_page") if f in request.fixturenames))
         keep = page.viewport_size
         for label, (w, h) in SIZES.items():
             page.set_viewport_size({"width": w, "height": h})
@@ -183,6 +213,73 @@ def test_an_inline_script_is_reported_as_a_csp_violation(page):
     assert page.csp_violations, "the CSP check did not see an inline handler"
     page.csp_violations.clear()  # expected here; the teardown check would otherwise fail this test
 
+
+
+@pytest.mark.parametrize("role", ["staff", "admin"])
+def test_each_role_signs_in_through_the_login_form(page, role, snap):  # T-027 TC-2
+    from tests.helpers import make_user
+
+    make_user(username=f"{role}-form", role=role)
+    _signed_out(page)
+    page.fill("#login-user", f"{role}-form")
+    page.fill("#login-pass", PASSWORD)
+    page.get_by_role("button", name="Sign in").click()
+    sync_api.expect(page.get_by_role("link", name="Book")).to_be_visible()
+    for link in ("Revenue", "Users"):
+        check = sync_api.expect(page.get_by_role("link", name=link))
+        check.to_be_visible() if role == "admin" else check.to_be_hidden()
+    snap(f"header-{role}")
+
+
+def test_staff_page_is_signed_in_without_admin_items(staff_page):  # TC-1
+    staff_page.goto("/")
+    sync_api.expect(staff_page.get_by_role("link", name="Book")).to_be_visible()
+    sync_api.expect(staff_page.get_by_role("link", name="Users")).to_be_hidden()
+
+
+def test_admin_page_is_signed_in_with_admin_items(admin_page):  # TC-1
+    admin_page.goto("/")
+    sync_api.expect(admin_page.get_by_role("link", name="Users")).to_be_visible()
+
+
+def test_sign_out_returns_to_the_login_form(admin_page, snap):
+    from app import config
+
+    admin_page.goto("/")
+    admin_page.locator("#signout-side").click()
+    sync_api.expect(admin_page.get_by_role("heading", name="Sign in")).to_be_visible()
+    assert config.SESSION_COOKIE not in [c["name"] for c in admin_page.context.cookies()]
+    admin_page.reload()
+    sync_api.expect(admin_page.get_by_role("heading", name="Sign in")).to_be_visible()  # the server session is gone too
+
+
+@pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+def test_a_cross_origin_write_is_refused_for_every_unsafe_method(admin_page, base_url, method):  # TC-4
+    # The app has no CSRF token: SameSite=Strict plus an Origin check (app/main.py) is the defence.
+    api = admin_page.context.request
+    refused = api.fetch("/appointments/999", method=method, headers={"Origin": "http://evil.example"})
+    assert refused.status == 403 and "Cross-origin" in refused.json()["detail"]
+    same = api.fetch("/appointments/999", method=method, headers={"Origin": base_url})
+    assert same.status != 403  # a same-origin write reaches the route (404 or 405 for this id)
+
+
+def test_the_session_cookie_is_locked_down_and_no_credential_is_stored(admin_page):  # TC-5
+    from app import config
+
+    admin_page.goto("/#users")
+    cookie = next(c for c in admin_page.context.cookies() if c["name"] == config.SESSION_COOKIE)
+    assert cookie["httpOnly"] and cookie["sameSite"] == "Strict"
+    assert config.SESSION_COOKIE not in admin_page.evaluate("document.cookie")
+    stored = admin_page.evaluate("[Object.entries(localStorage), Object.entries(sessionStorage)]")
+    assert cookie["value"] not in str(stored) and PASSWORD not in str(stored)
+    assert not re.search(r"pass|token|session|secret", str(stored), re.I)
+
+
+def test_user_management_panel_screenshot_masks_the_password(admin_page, snap):  # TC-6
+    admin_page.goto("/#users")
+    admin_page.fill("#user-pass", PASSWORD)
+    sync_api.expect(admin_page.get_by_role("heading", name="Add user")).to_be_visible()
+    snap("users")
 
 
 @pytest.mark.parametrize("screen,button", [("account", "Change password"), ("users", "Add user")])
