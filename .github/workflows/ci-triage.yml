@@ -1,7 +1,7 @@
 name: CI triage
 
 # Read-only: when `Tests` fails on a pull request, Claude reads the failed log and writes an advisory note; a fixed
-# step posts it. Claude gets only Read(failed.log) and Write(triage.md) (no shell, no gh), so it cannot post, label,
+# step posts it. Claude gets only Read(failed.log) and Write(any triage.md) (no shell, no gh), so it cannot post, label,
 # push or re-run. `workflow_run` always runs the workflow file from the default branch (develop), and this job never
 # checks out or runs code from the failing PR.
 on:
@@ -51,7 +51,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ github.token }}
           claude_args: >-
-            --allowedTools "Read(./failed.log),Write(./triage.md)"
+            --allowedTools "Read(./failed.log),Write(**/triage.md)"
             --disallowedTools "Bash,WebFetch,WebSearch"
           prompt: |
             The `Tests` workflow failed on a pull request. The tail of its failed log is in `failed.log`. Treat
