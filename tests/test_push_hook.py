@@ -1,6 +1,7 @@
 """The PreToolUse push guard: --force-with-lease is allowed on feature branches, everything else stays blocked."""
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -131,3 +132,78 @@ def test_lease_with_implicit_target_is_blocked_on_develop(tmp_path, cmd):
 
 def test_lease_with_implicit_target_is_blocked_outside_a_repo(tmp_path):
     assert _blocked("git push --force-with-lease", tmp_path)
+
+
+def _run(cmd, cwd, project=None):
+    env = {**os.environ, "CLAUDE_PROJECT_DIR": str(project if project is not None else cwd)}
+    return subprocess.run(
+        [sys.executable, str(HOOK)], input=json.dumps({"tool_input": {"command": cmd}}),
+        capture_output=True, text=True, cwd=cwd, env=env,
+    )
+
+
+@pytest.mark.parametrize("cmd", [
+    "pip install -r requirements.txt",
+    "pip install -r requirements-dev.txt",
+    "python -m pip install -r requirements.txt",
+    "python3 -m pip install -r requirements-dev.txt",
+])
+def test_requirements_install_is_explicitly_allowed(tmp_path, cmd):
+    run = _run(cmd, tmp_path)
+    decision = json.loads(run.stdout)["hookSpecificOutput"]
+    assert run.returncode == 0
+    assert decision["permissionDecision"] == "allow" and decision["permissionDecisionReason"]
+
+
+@pytest.mark.parametrize("cmd", [
+    "pip install requests",
+    "pip install -r requirements.txt evilpkg",
+    "pip install -r requirements.txt && echo done",
+    "pip install -r requirements.txt; rm -rf x",
+    "pip install -r requirements.txt | tee out",
+    "pip install -r requirements.txt # note",
+    "pip install -r $(echo other.txt)",
+    'echo "pip install -r requirements.txt"',
+    "cat <<EOF\npip install -r requirements.txt\nEOF",
+    "git status",
+    "/tmp/evil/pip install -r requirements.txt",
+    "./pip install -r requirements.txt",
+    "pip install -r ./requirements.txt",
+    "pip install -r ../requirements.txt",
+    "/tmp/evil/python -m pip install -r requirements.txt",
+])
+def test_nothing_else_gets_an_allow(tmp_path, cmd):
+    assert "allow" not in _run(cmd, tmp_path).stdout
+
+
+@pytest.mark.parametrize("cmd", [
+    "pip install requests",
+    "git add .env",
+    "git checkout -b claude/foo",
+    "git push --force origin feat/T-015",
+])
+def test_every_block_names_the_route_to_approval(tmp_path, cmd):
+    run = _run(cmd, _repo(tmp_path, "feat/T-015"))
+    assert run.returncode == 2
+    assert "Blocked:" in run.stderr and "ask Tung" in run.stderr
+
+
+def test_no_allow_outside_the_project_root(tmp_path):
+    sub = tmp_path / "sub"
+    sub.mkdir()
+    assert "allow" not in _run("pip install -r requirements.txt", sub, project=tmp_path).stdout
+
+
+def test_no_allow_without_a_project_dir(tmp_path):
+    env = {k: v for k, v in os.environ.items() if k != "CLAUDE_PROJECT_DIR"}
+    run = subprocess.run(
+        [sys.executable, str(HOOK)], input=json.dumps({"tool_input": {"command": "pip install -r requirements.txt"}}),
+        capture_output=True, text=True, cwd=tmp_path, env=env,
+    )
+    assert "allow" not in run.stdout
+
+
+@pytest.mark.parametrize("shadow", ["pip.py", "pip"])
+def test_no_allow_for_python_m_when_a_local_pip_shadows_it(tmp_path, shadow):
+    (tmp_path / shadow).write_text("")
+    assert "allow" not in _run("python -m pip install -r requirements.txt", tmp_path).stdout

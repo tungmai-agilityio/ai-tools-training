@@ -48,6 +48,22 @@ def pip_install(seg):
     return False
 
 
+def requirements_install(cmd):
+    """True only if the whole command is exactly `[python -m] pip install -r <project requirements file>`,
+    with bare `pip`/`python` names (no path, so no look-alike binary) run from the project root."""
+    if re.search(r"[;&|<>$`#\n\\()\"']", cmd):  # chaining, expansion, comments, quotes, heredocs: fall through
+        return False
+    project = os.environ.get("CLAUDE_PROJECT_DIR", "")
+    if not project or os.path.realpath(project) != os.path.realpath(os.getcwd()):
+        return False  # the requirements file would not be the project's own
+    tokens = cmd.split()
+    if len(tokens) > 2 and re.fullmatch(r"python[\d.]*", tokens[0]) and tokens[1] == "-m":
+        if os.path.exists("pip.py") or os.path.exists("pip"):
+            return False  # `python -m` puts the cwd first on sys.path, so a local pip would run instead
+        tokens = tokens[2:]
+    return len(tokens) == 4 and PIP.fullmatch(tokens[0]) is not None and tokens[1] == "install" and tokens[2:] in REQUIREMENTS
+
+
 def git_alias(seg):
     """True if the segment can hide git's real subcommand: an alias (`-c alias.x=`, `git config alias.x`,
     `--config-env`, `GIT_CONFIG_*` env) or shell expansion where the subcommand goes (`git $'push'`)."""
@@ -161,8 +177,12 @@ def main():
     for pattern, rule in RULES:
         why = why or (rule if re.search(pattern, cmd) else None)
     if why:
-        print(f"Blocked: {why}.", file=sys.stderr)
+        print(f"Blocked: {why}. To get an exception, ask Tung or change the ticket.", file=sys.stderr)
         sys.exit(2)
+    if requirements_install(cmd):
+        print(json.dumps({"hookSpecificOutput": {
+            "hookEventName": "PreToolUse", "permissionDecision": "allow",
+            "permissionDecisionReason": "the project's own requirements install"}}))
 
 
 main()
