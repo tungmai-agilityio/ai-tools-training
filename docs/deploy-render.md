@@ -28,7 +28,7 @@ Both are free web services with auto-deploy from their branch. Production holds 
 - Open `https://<service>.onrender.com` (the URL is shown on the service in the dashboard). After 15 minutes idle the first load takes about a minute.
 - Data resets on every restart, spin-down or redeploy, on both services (free plan, `DB_PATH=/tmp/clinic.db`). Startup reseeds the admin; staging also reseeds the demo appointments (`DEMO_SEED=1`, only while there are none). Production data is therefore not durable; see ADR-0005.
 - Sign in with the seeded admin and change the password when asked (it resets with the data). There is no `ADMIN_TOKEN`.
-- Every merge to `develop` redeploys staging and every merge to `main` redeploys production; each wipes that service's data.
+- Every merge to `develop` redeploys staging and every merge to `main` redeploys production; each wipes that service's data. The Events tab shows the deploy with trigger `commit`.
 
 ## If a merge does not deploy
 Open the service's Events tab and look for a deploy with trigger `commit`. If there is none, Render received no push event: check that the Render GitHub app has access to this repo, that Auto-Deploy is on for the right branch, then re-save the repo link under Settings > Build & Deploy. Use Manual Deploy meanwhile.
