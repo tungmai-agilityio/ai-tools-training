@@ -18,6 +18,6 @@ Usage: `/release S-NNN` (the sprint is required). Reference: `docs/references/gi
 
 **Ship**
 4. **Go-ahead →** open the PR: `gh pr create --head develop --base main --title "release: vX.Y.Z" --body-file <body>`. The body has: summary and sprint goal; **Verification evidence** (ticket → issue → PR → state table, test and CI results for the head SHA); the notes (Features, Fixes); **Deploy checklist** (the Deploy notes, as tick boxes); **Known issues and carry-over**. Never delete `develop` on merge.
-5. After the merge, **go-ahead →** push an annotated `vX.Y.Z` tag on `origin/main`, then `gh release create vX.Y.Z --notes-file docs/releases/vX.Y.Z.md --verify-tag`.
+5. After the merge, **go-ahead →** push an annotated `vX.Y.Z` tag on `origin/main`, which triggers `.github/workflows/release.yml` to draft the release from `docs/releases/vX.Y.Z.md`. Review the draft, then publish it with `gh release edit vX.Y.Z --draft=false`.
 6. Run `/release-notes vX.Y.Z S-NNN` for the client-facing page.
 7. Report the version, PR link, tag, release and client page, plus the deploy notes; offer `/create-ticket` for any non-blocking problems.
