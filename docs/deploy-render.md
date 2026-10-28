@@ -31,7 +31,7 @@ Both are free web services with auto-deploy from their branch. Production holds 
 - Every merge to `develop` redeploys staging and every merge to `main` redeploys production; each wipes that service's data. The Events tab shows the deploy with trigger `commit`.
 
 ## If a merge does not deploy
-Open the service's Events tab and look for a deploy with trigger `commit`. If there is none, Render received no push event: check that the Render GitHub app has access to this repo, that Auto-Deploy is on for the right branch, then re-save the repo link under Settings > Build & Deploy. Use Manual Deploy meanwhile.
+Open the service's Events tab and look for a deploy with trigger `commit`. If there is none, Render received no push event: check that the Render GitHub app is installed on the repo owner and has access to this repo (a service created from a public repo URL has no webhook), that Auto-Deploy is on for the right branch, then re-save the repo link under Settings > Build & Deploy. Use Manual Deploy meanwhile.
 
 ## Smoke test result (2026-10-28)
 Service: `https://ai-tools-training.onrender.com/`. Passed: `/health` 200; `/` and static files over HTTPS; CSP header present; `/appointments` 401 without a session; wrong login 401; admin sign-in works; the seeded demo appointments are listed (a maintainer). Not yet verified: wake time after 15 minutes idle, and the data reset after a spin-down.
