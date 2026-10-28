@@ -10,9 +10,9 @@ Fake data only. Never put real client or patient data in this repo.
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+make install
 cp .env.example .env
-uvicorn app.main:app --reload
+make run
 ```
 
 `.env` is read at startup, so there is nothing to source first.
@@ -36,11 +36,9 @@ Set these in `.env` before the first start: the app loads that file itself, and 
 | `ADMIN_PASSWORD` | 12+ characters | The first admin must change it at first sign-in. |
 | `COOKIE_SECURE` | `true` | Set to `false` only for plain-http local demos. |
 
-**Sessions and lockout.** Login sets an 8-hour `HttpOnly`, `SameSite=Strict` cookie; five failed logins lock a username for 15 minutes.
+Sessions, lockout and roles are in [docs/references/api.md](docs/references/api.md).
 
 **Accounts.** Create an admin or reset its password without putting it in `.env` (works when users already exist): `python scripts/seed_admin.py USERNAME` prompts for the password. Restart the server afterwards. Admins manage accounts from the web app.
-
-Clinic holidays, doctor time off and revenue reports are handled through the API; the admin-only ones need an administrator login. The web app has a Revenue screen for administrators.
 
 Appointments persist in SQLite (`DB_PATH`, default `data/clinic.db`); delete the file to start fresh. To fill the list with demo data, run:
 
@@ -51,7 +49,7 @@ python scripts/seed_demo.py
 ## Test it
 
 ```bash
-pytest
+make test
 ```
 
 Optional browser smoke test for the web app (dev-only; skipped when Playwright is missing):
@@ -82,7 +80,8 @@ cover behaviour that already works.
 | `docs/decisions/` | ADR and DDR records |
 | `plans/` | Markdown tickets, sprints and feature docs (source of truth for planned work); `archive/` holds the read-only tickets T-001 to T-017 |
 | `.github/` | Issue templates (feature, bug, chore), PR template, workflows |
-| `.claude/` | Claude Code config for this repo. Skills: `/create-ticket` → `/sprint-prepare` → `/push-tickets` → per ticket `/plan-work` → `/implement-ticket` → `/pr` → `/review-pr`, plus `/sync-tickets`; 3 subagents (business-analyst, planner, code-reviewer); commands; hooks that block forbidden Bash commands, ruff-fix edited `.py` files and notify on finish (`settings.json`). With `.mcp.json` (Playwright MCP), it loads when Claude Code is opened at the repo root |
+| `.claude/` | Claude Code config: skills (the workflow in `CLAUDE.md`), subagents, commands, hooks and permissions (`settings.json`). Loads when Claude Code is opened at the repo root, with `.mcp.json` (Playwright MCP) |
+| `Makefile` | `install`, `build`, `run`, `test`, `lint` |
 
 ## Rules of the practice
 

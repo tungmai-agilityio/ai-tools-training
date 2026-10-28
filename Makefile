@@ -1,10 +1,13 @@
-.PHONY: install build test lint
+.PHONY: install build run test lint
 
 install:
 	python -m pip install -r requirements-dev.txt
 
 build:
 	python -m pip install -r requirements.txt
+
+run:
+	uvicorn app.main:app --reload
 
 test:
 	pytest -q
