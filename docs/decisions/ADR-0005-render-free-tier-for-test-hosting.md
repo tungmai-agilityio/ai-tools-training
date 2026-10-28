@@ -1,8 +1,8 @@
 # ADR-0005: Host the test site on Render's free tier, keep SQLite
 
-**Status:** Proposed  **Date:** 2026-10-27  **Deciders:** Tung  **Issue:** TBD
+**Status:** Accepted  **Date:** 2026-10-27  **Deciders:** Tung  **Issue:** TBD
 
-> Claude-assisted draft. A human must review and edit before it is Accepted.
+> Claude-assisted draft, accepted by Tung on 2026-10-28.
 
 ## Context
 We want a public HTTPS URL so Claude in Chrome can test the app. The app is one FastAPI process that serves `app/static/index.html` and keeps appointments in memory, written through to SQLite (`app/store.py`). Auth (ADR-0002, ADR-0003) uses a Secure/HttpOnly/SameSite=Strict cookie and a `script-src 'self'` CSP, so HTTPS and a single origin matter. ADR-0003 already retires `ADMIN_TOKEN` and seeds the first admin from `ADMIN_USERNAME` and `ADMIN_PASSWORD`. Data is fake and may reset.
@@ -24,4 +24,4 @@ Free-tier terms were checked on 2026-10-27 and change often; recheck at signup.
 ## Consequences
 - Good: cheap, repeatable, matches local behaviour; no secrets in the repo.
 - Bad / ceiling: cold starts and resets (the seeded admin must change the password after every reset). Revisit if we need several instances or data that survives restarts; then write an ADR on a persistent volume or Postgres.
-- Follow-up: ticket T-028; deploy steps in `docs/deploy-render.md`; depends on the auth tickets (T-019 to T-021).
+- Follow-up: ticket T-028; deploy steps in `docs/deploy-render.md`; `render.yaml` in the repo root. Auth tickets T-019 to T-023 have landed.

@@ -9,26 +9,21 @@ if it is still early enough. Appointments persist across restarts (SQLite).
 """
 import os
 import sys
-from datetime import date, datetime, timedelta
-from zoneinfo import ZoneInfo
+from datetime import datetime
+from pathlib import Path
 
 import httpx
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from app.demo import TIMES, TZ, next_weekday  # noqa: E402
+
 BASE = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8000"
-TZ = ZoneInfo("America/New_York")  # clinic time
-
-
-def next_weekday(after: date) -> date:
-    d = after + timedelta(days=1)
-    while d.weekday() >= 5:
-        d += timedelta(days=1)
-    return d
 
 
 def main() -> None:
     day = next_weekday(datetime.now(TZ).date())
-    times = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-             "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"]
+    times = TIMES
     with httpx.Client(base_url=BASE, timeout=10) as c:
         login = c.post("/auth/login", json={"username": os.getenv("DEMO_USERNAME", ""), "password": os.getenv("DEMO_PASSWORD", "")})
         if login.status_code != 200 or login.json()["must_change_password"]:

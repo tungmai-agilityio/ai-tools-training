@@ -21,6 +21,8 @@ ENV_FILE = r"(?<![\w.])\.env(?!\.example)\b"
 NO_ENV = "don't commit `.env`"
 NO_PIP = "no new dependencies; edit requirements.txt only if the ticket says so"
 PIP = re.compile(r"pip(\d+(\.\d+)?)?")
+# the only pip installs the project allows: its own requirement files
+REQUIREMENTS = (["-r", "requirements.txt"], ["-r", "requirements-dev.txt"])
 # raw-text rules run on every command (they also catch quoted `sh -c`/`$(...)` text); the token checks in main()
 # add the forms they miss, such as `git -C . add .env` and `pip --quiet install x`
 RULES = [
@@ -33,15 +35,16 @@ CONTINUATION = re.compile(r"(?<!\\)((?:\\\\)*)\\\n")
 
 NO_ALIAS = "no git aliases: they hide the real subcommand from this check"
 NO_EXPANSION = "no `$` or backticks in a git push: write the values out"
+NO_CLAUDE_BRANCH = "never name a branch `claude/*`"
 NO_COMMENT = "no `#` comments in a command that pushes or installs: remove them"
 
 
 def pip_install(seg):
-    """True if the segment runs `pip [opts] install` with anything but exactly `-r requirements.txt`."""
+    """True if the segment runs `pip [opts] install` with anything but exactly a project requirements file."""
     for k, tok in enumerate(seg):
         if PIP.fullmatch(os.path.basename(tok)) and "install" in seg[k + 1:]:
             j = seg.index("install", k + 1)
-            return seg[j + 1:] != ["-r", "requirements.txt"]
+            return seg[j + 1:] not in REQUIREMENTS
     return False
 
 
@@ -145,6 +148,9 @@ def main():
             added = git_args(seg, "add") or []
             why = why or (NO_ENV if any(re.search(ENV_FILE, a) for a in added) else None)
             why = why or (NO_PIP if pip_install(seg) else None)
+            for sub in ("checkout", "switch", "branch"):
+                if any(a.removeprefix("refs/heads/").startswith("claude/") for a in git_args(seg, sub) or []):
+                    why = why or NO_CLAUDE_BRANCH
     except Exception:  # unparseable or a hook bug: only exit code 2 blocks, so fail closed for anything push-like
         if re.search(r"\bgit\b.*\bpush\b", cmd, re.S):
             why = "could not parse this git push; simplify the command"
