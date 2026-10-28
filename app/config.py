@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     admin_password: str = ""
     # Set COOKIE_SECURE=false only for plain-http local demos.
     cookie_secure: bool = True
+    # DEMO_SEED=1 books demo appointments at startup while none exist (hosted test site).
+    demo_seed: bool = False
 
 
 settings = Settings()
@@ -35,6 +37,7 @@ AUTH_SECRET = settings.auth_secret
 ADMIN_USERNAME = settings.admin_username
 ADMIN_PASSWORD = settings.admin_password
 COOKIE_SECURE = settings.cookie_secure
+DEMO_SEED = settings.demo_seed
 
 AUTH_SECRET_MIN_LENGTH = 32
 SESSION_COOKIE = "clinic_session"
