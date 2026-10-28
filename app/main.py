@@ -7,7 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import auth, config
+from app import auth, config, demo
 from app.auth_routes import router as auth_router
 from app.errors import DomainError
 from app.routes import router
@@ -19,6 +19,8 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     auth.seed_admin()
+    if config.DEMO_SEED:
+        demo.seed_demo_appointments()
     yield
 
 
