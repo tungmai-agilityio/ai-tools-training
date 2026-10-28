@@ -1,11 +1,11 @@
 # ADR-0001: Keep the same-origin vanilla frontend; React (Vite) is the path when we outgrow it
 
-> Claude-assisted; decisions confirmed by Tung on 2026-10-27.
+> Claude-assisted; decisions confirmed by the maintainers on 2026-10-27.
 
-**Status:** Accepted  **Date:** 2026-10-27  **Deciders:** Tung  **Issue:** none yet
+**Status:** Accepted  **Date:** 2026-10-27  **Deciders:** Maintainers  **Issue:** none yet
 
 ## Context
-Tung asked whether to split the frontend out into Next.js or React. What is true today:
+A maintainer asked whether to split the frontend out into Next.js or React. What is true today:
 
 - The whole UI is one file, `app/static/index.html` (~1,000 lines, inline CSS and vanilla JS, four hash-routed screens: Book, Appointments, Today, Revenue). FastAPI serves it at `/` and `/static` (`app/main.py:13-19`). Same origin, so there is no CORS config and no build step.
 - All API calls go through one helper, `api()` (`app/static/index.html:572`). The only auth today is the shared `X-Admin-Token` header for admin routes (`app/routes.py:69`), typed by the user on the Revenue screen.
@@ -16,7 +16,7 @@ Tung asked whether to split the frontend out into Next.js or React. What is true
 ## Decision
 We keep the frontend as same-origin static files served by FastAPI and build the authentication UI in the existing `index.html`. We do not adopt Next.js. If the UI outgrows one file (signals below), we migrate to a React + TypeScript SPA built with Vite, whose `dist/` output FastAPI serves from the same origin, so the deployment, auth and security model stay as they are. That migration would be its own ticketed piece of work, done screen by screen after authentication ships, not during it.
 
-Because the auth UI lands in a file that writes HTML with `innerHTML`, it ships with these guards (confirmed by Tung, 2026-10-27):
+Because the auth UI lands in a file that writes HTML with `innerHTML`, it ships with these guards (confirmed by a maintainer, 2026-10-27):
 - The session token is never stored in `localStorage` or `sessionStorage`. It travels in an `HttpOnly`, `SameSite=Strict` cookie set by FastAPI, with a CSRF check on state-changing routes.
 - FastAPI sends a `Content-Security-Policy` header with `script-src 'self'`, which blocks inline and third-party scripts. Both inline scripts move to static files: the theme script (`app/static/index.html:8`) stays a synchronous `<script src>` in `<head>` so the theme does not flash, and the main app script (`app/static/index.html:505`) moves too. The policy covers scripts only; the inline `<style>` block and `style=` attributes stay, so `style-src` allows `'unsafe-inline'` for now.
 - Admin routes move off the `X-Admin-Token` header (`app/routes.py:69`) onto the same login session, so the UI has one auth path.
@@ -34,8 +34,8 @@ Because the auth UI lands in a file that writes HTML with `innerHTML`, it ships 
 - Good: the authentication feature is not blocked or coupled to a framework migration; security review stays on one origin and one auth path.
 - Bad / ceiling: the single file keeps growing. Revisit and move to the React + Vite option when any of these hold: the file passes ~1,500 lines or 6 screens; two parallel tickets regularly conflict in `index.html`; an XSS finding comes from a missed `esc()`; or the team wants component-level tests. Re-check these signals when the auth screens land.
 - Migration cost not to forget: React + Vite brings a large transitive npm dependency set. If we migrate, the new dependencies need approval per `CLAUDE.md`, the lockfile is committed, and `npm audit` (or an equivalent) runs in CI.
-- Follow-up: link it from the authentication spec so the login UI is built in `index.html`. If Tung prefers to migrate, draft tickets for the React + Vite option (scaffold and build pipeline, typed API client, port screens one per ticket, auth screens, CI and release changes, retire the old file).
+- Follow-up: link it from the authentication spec so the login UI is built in `index.html`. If the maintainers prefer to migrate, draft tickets for the React + Vite option (scaffold and build pipeline, typed API client, port screens one per ticket, auth screens, CI and release changes, retire the old file).
 
-## Open questions for Tung
+## Open questions for the maintainers
 - Is there a driver beyond this app's size (team skills, a later patient-facing portal, a separate frontend team)? A patient portal with public pages would be the case where Next.js earns a second look.
 - Would a Node toolchain in CI and release be acceptable if we later move to React + Vite?

@@ -1,8 +1,8 @@
 # ADR-0003: Two roles, deny by default, and retire the shared admin token
 
-> Claude-assisted draft for Tung's edit. Decisions confirmed by Tung on 2026-10-27.
+> Claude-assisted draft for maintainer edit. Decisions confirmed by the maintainers on 2026-10-27.
 
-**Status:** Accepted  **Date:** 2026-10-27  **Deciders:** Tung  **Issue:** none yet (T-020, T-021)
+**Status:** Accepted  **Date:** 2026-10-27  **Deciders:** Maintainers  **Issue:** none yet (T-020, T-021)
 
 ## Context
 Today booking and lifecycle routes are open, while holidays, time off, delete and the revenue report each check `x_admin_token` themselves (`app/routes.py:145`, `:156`, `:182`, `:194`, `:418`) or use `require_admin` (`:435`). Patient names are readable through `GET /patients` and `GET /appointments`. The client chose staff and admins only, admin-managed accounts, and no shared token. Business rules are in `docs/business-rules.md`; failures raise `DomainError`, not `HTTPException`.

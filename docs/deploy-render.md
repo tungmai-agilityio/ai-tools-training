@@ -23,4 +23,4 @@
 - Every merge to `develop` redeploys and wipes the data.
 
 ## Smoke test result (2026-10-28)
-Service: `https://ai-tools-training.onrender.com/`. Passed: `/health` 200; `/` and static files over HTTPS; CSP header present; `/appointments` 401 without a session; wrong login 401; admin sign-in works; the seeded demo appointments are listed (Tung). Not yet verified: wake time after 15 minutes idle, and the data reset after a spin-down.
+Service: `https://ai-tools-training.onrender.com/`. Passed: `/health` 200; `/` and static files over HTTPS; CSP header present; `/appointments` 401 without a session; wrong login 401; admin sign-in works; the seeded demo appointments are listed (a maintainer). Not yet verified: wake time after 15 minutes idle, and the data reset after a spin-down.
