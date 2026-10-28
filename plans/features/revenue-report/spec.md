@@ -1,6 +1,6 @@
 # Spec: Revenue report (T-015)
 
-**Author:** Tung Mai  **Status:** Draft  **PRD:** `plans/archive/T-015.md`  **Last updated:** 2026-10-21
+**Author:** Maintainers  **Status:** Draft  **PRD:** `plans/archive/T-015.md`  **Last updated:** 2026-10-21
 
 > A Spec says **how**. It must be reviewable before any code is written.
 

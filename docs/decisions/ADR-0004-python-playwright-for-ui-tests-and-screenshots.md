@@ -1,11 +1,11 @@
 # ADR-0004: Python Playwright runs the UI tests and captures screenshots, in CI on every PR
 
-> Claude-assisted draft for Tung to edit. Nothing is installed or implemented by this record. Scope (E2E tests + screenshots in CI), the required-check rule and Chromium only confirmed by Tung on 2026-10-27.
+> Claude-assisted draft for maintainer edit. Nothing is installed or implemented by this record. Scope (E2E tests + screenshots in CI), the required-check rule and Chromium only confirmed by a maintainer on 2026-10-27.
 
-**Status:** Accepted  **Date:** 2026-10-27  **Deciders:** Tung  **Issue:** none yet
+**Status:** Accepted  **Date:** 2026-10-27  **Deciders:** Maintainers  **Issue:** none yet
 
 ## Context
-Tung asked whether new screens and UI changes should come with screenshots, and whether to integrate Playwright. What is true today:
+A maintainer asked whether new screens and UI changes should come with screenshots, and whether to integrate Playwright. What is true today:
 
 - Playwright is already in the project, in Python and optional. `requirements-dev.txt` pins `playwright>=1.45`, and `tests/test_ui_browser.py` has four smoke tests (booking flow, no sideways scroll on a phone for each screen, Revenue defaults, wrong admin token). They start uvicorn in a thread, freeze the browser clock (`page.clock.set_fixed_time`) and use a far-away browser timezone. They skip when Playwright or Chromium is missing, so plain `pytest` never runs them unless a developer set them up.
 - `.mcp.json` registers the Playwright MCP server (`npx @playwright/mcp`), so Claude can drive a browser interactively. That is a dev aid, not a test suite.
@@ -17,7 +17,7 @@ Tung asked whether new screens and UI changes should come with screenshots, and 
 ## Decision
 We keep Playwright for Python as the one browser tool and make it a real part of the suite:
 
-1. **CI runs the whole suite on every PR to `develop`**, browser tests included, in Chromium only (Tung, 2026-10-27; add WebKit if reception uses iPads or Macs). In CI a missing browser fails the run instead of skipping (an env flag such as `REQUIRE_BROWSER=1`); locally the tests stay skippable so `pytest` works on a fresh clone. The job reports only for its first week; after a week with no flaky run it becomes a required check on `develop` (Tung, 2026-10-27).
+1. **CI runs the whole suite on every PR to `develop`**, browser tests included, in Chromium only (a maintainer, 2026-10-27; add WebKit if reception uses iPads or Macs). In CI a missing browser fails the run instead of skipping (an env flag such as `REQUIRE_BROWSER=1`); locally the tests stay skippable so `pytest` works on a fresh clone. The job reports only for its first week; after a week with no flaky run it becomes a required check on `develop` (2026-10-27).
 2. **Screenshots are a by-product of the browser tests**, not a separate tool. A small fixture saves named PNGs of each screen a test reaches, at desktop (1280x800) and phone (375x812) sizes, into `test-artifacts/screenshots/` (gitignored). CI uploads that folder as a workflow artifact kept for 14 days; the Artifact keeps the lasting "As built" copies. Screenshots are evidence for humans; tests never compare pixels. Screenshots show fake data only, and password and admin-token inputs are empty or masked (`mask=`) before capture, since CI artifacts can be downloaded by anyone who can see the repo.
 3. **Where screenshots go:**
    - **PR:** the PR's Evidence section links the CI artifact and embeds the screens the change touches (the author or Claude adds them). PNGs are never committed to the repo.

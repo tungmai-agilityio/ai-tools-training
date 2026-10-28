@@ -177,7 +177,7 @@ def main():
     for pattern, rule in RULES:
         why = why or (rule if re.search(pattern, cmd) else None)
     if why:
-        print(f"Blocked: {why}. To get an exception, ask Tung or change the ticket.", file=sys.stderr)
+        print(f"Blocked: {why}. To get an exception, ask a maintainer or change the ticket.", file=sys.stderr)
         sys.exit(2)
     if requirements_install(cmd):
         print(json.dumps({"hookSpecificOutput": {

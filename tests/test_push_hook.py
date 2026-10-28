@@ -185,7 +185,7 @@ def test_nothing_else_gets_an_allow(tmp_path, cmd):
 def test_every_block_names_the_route_to_approval(tmp_path, cmd):
     run = _run(cmd, _repo(tmp_path, "feat/T-015"))
     assert run.returncode == 2
-    assert "Blocked:" in run.stderr and "ask Tung" in run.stderr
+    assert "Blocked:" in run.stderr and "ask a maintainer" in run.stderr
 
 
 def test_no_allow_outside_the_project_root(tmp_path):

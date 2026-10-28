@@ -1,8 +1,8 @@
 # ADR-0005: Host the test site on Render's free tier, keep SQLite
 
-**Status:** Accepted  **Date:** 2026-10-27  **Deciders:** Tung  **Issue:** TBD
+**Status:** Accepted  **Date:** 2026-10-27  **Deciders:** Maintainers  **Issue:** TBD
 
-> Claude-assisted draft, accepted by Tung on 2026-10-28.
+> Claude-assisted draft, accepted by the maintainers on 2026-10-28.
 
 ## Context
 We want a public HTTPS URL so Claude in Chrome can test the app. The app is one FastAPI process that serves `app/static/index.html` and keeps appointments in memory, written through to SQLite (`app/store.py`). Auth (ADR-0002, ADR-0003) uses a Secure/HttpOnly/SameSite=Strict cookie and a `script-src 'self'` CSP, so HTTPS and a single origin matter. ADR-0003 already retires `ADMIN_TOKEN` and seeds the first admin from `ADMIN_USERNAME` and `ADMIN_PASSWORD`. Data is fake and may reset.
