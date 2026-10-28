@@ -25,28 +25,11 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
-            Do a security-focused review of this pull request.
+            Do a security-focused review of this pull request. Follow `REVIEW.md`: run the Security
+            pass first, then note Bugs and Compliance findings, checking against `CLAUDE.md`,
+            `docs/references/code-conventions.md` and `docs/business-rules.md`.
 
-            Prioritise exploitable issues introduced by the diff:
-            - Authentication and authorization, especially `auth.current_user` on every route and
-              `auth.require_role("admin")` on admin and destructive endpoints (signed session cookie, fails closed when `AUTH_SECRET` is unset).
-            - Injection: SQL in `app/store.py` (parameterized queries only), command execution,
-              path traversal, SSRF.
-            - XSS: every API value rendered in `app/static/index.html` must go through `esc()`;
-              no `innerHTML` built from raw data.
-            - Secrets and data exposure: no `.env`, tokens, real patient data, or secrets in logs.
-            - Input validation and unsafe deserialization in the pydantic models and route parameters.
-            - Error responses that leak internals, permissive CORS or debug settings.
-            - Dependency changes, and anything that weakens an existing control.
-
-            Check the findings against `CLAUDE.md`, `REVIEW.md`, `docs/references/code-conventions.md`
-            and `docs/business-rules.md`. Also note correctness bugs, missing tests and money/time
-            convention breaks (integer cents, timezone-aware UTC, clinic time), but rank security first.
-
-            Report one finding per line as:
-            `[critical|high|medium|low] path:line — issue — exploit path — fix`
-
-            Use inline comments for specific lines and one summary comment for everything else.
-            Skip style nits a linter catches. Do not change code, commit or push.
+            Report in the `REVIEW.md` Findings Format. Use inline comments for specific lines and one
+            summary comment for everything else. Do not change code, commit or push.
           claude_args: |
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
