@@ -1,7 +1,7 @@
-# Render Blueprint for the free test site. Secrets (sync: false) are entered in the dashboard, never here. See docs/deploy-render.md.
+# Render Blueprint: staging (develop) and production (main), both on the free plan. Secrets (sync: false) are entered in the dashboard, never here. See docs/deploy-render.md.
 services:
   - type: web
-    name: clinic-booking-test
+    name: clinic-booking-stag
     runtime: python
     plan: free
     branch: develop
@@ -14,6 +14,22 @@ services:
       - {key: DB_PATH, value: /tmp/clinic.db}
       - {key: CLINIC_TIMEZONE, value: America/New_York}
       - {key: DEMO_SEED, value: "1"}
+      - {key: AUTH_SECRET, sync: false}
+      - {key: ADMIN_USERNAME, sync: false}
+      - {key: ADMIN_PASSWORD, sync: false}
+  - type: web
+    name: clinic-booking
+    runtime: python
+    plan: free
+    branch: main
+    autoDeploy: true
+    buildCommand: python -m pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*'
+    healthCheckPath: /health
+    envVars:
+      - {key: PYTHON_VERSION, value: 3.12.8}
+      - {key: DB_PATH, value: /tmp/clinic.db}
+      - {key: CLINIC_TIMEZONE, value: America/New_York}
       - {key: AUTH_SECRET, sync: false}
       - {key: ADMIN_USERNAME, sync: false}
       - {key: ADMIN_PASSWORD, sync: false}
