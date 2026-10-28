@@ -1,8 +1,8 @@
 # DDR-0001: Lock a username for 15 minutes after 5 failed logins
 
-> Claude-assisted draft for Tung's edit. Decisions confirmed by Tung on 2026-10-27.
+> Claude-assisted draft for maintainer edit. Decisions confirmed by the maintainers on 2026-10-27.
 
-**Status:** Accepted  **Date:** 2026-10-27  **Deciders:** Tung  **Ticket:** T-019, T-020
+**Status:** Accepted  **Date:** 2026-10-27  **Deciders:** Maintainers  **Ticket:** T-019, T-020
 
 ## Context
 Staff sign in with a username and password on shared clinic computers. Without a limit, passwords can be guessed. A permanent lock could leave the only admin locked out. The sign-in screen must not reveal whether a username exists.

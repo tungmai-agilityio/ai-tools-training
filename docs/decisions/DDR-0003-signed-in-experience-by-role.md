@@ -1,8 +1,8 @@
 # DDR-0003: Show the signed-in user and hide what their role cannot do
 
-> Claude-assisted draft for Tung's edit. Decisions confirmed by Tung on 2026-10-27.
+> Claude-assisted draft for maintainer edit. Decisions confirmed by the maintainers on 2026-10-27.
 
-**Status:** Accepted  **Date:** 2026-10-27  **Deciders:** Tung  **Ticket:** T-022
+**Status:** Accepted  **Date:** 2026-10-27  **Deciders:** Maintainers  **Ticket:** T-022
 
 ## Context
 The UI is one page, `app/static/index.html`, with Book, Appointments, Today and Revenue screens. Staff and admins now see different things. The UI draft (Artifact "Clinic Login UI Draft") has five boards: sign-in, staff view, users, revenue, and change/reset password.

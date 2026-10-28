@@ -1,6 +1,6 @@
 # Plan: Browser E2E tests and screenshots in CI (T-024 to T-027)
 
-**Author:** Claude (draft, for Tung to edit)  **Status:** Approved by Tung 2026-10-27  **Decisions:** ADR-0004 (Accepted)
+**Author:** Claude (draft, for maintainer edit)  **Status:** Approved 2026-10-27  **Decisions:** ADR-0004 (Accepted)
 One approval covers all four tickets: per-ticket `/plan-work` is skipped, each ticket's `## Plan` points here.
 
 ## Context
