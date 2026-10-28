@@ -1,93 +1,90 @@
-# ai-tools-training
+# Clinic Booking: practice project
 
+A small appointment-booking API for a medical clinic. It is the shared practice
+project for the AI Tools training (Track 0: Shared Fundamentals). Use it to
+practice the full loop: read an issue, reproduce, fix, open a PR, review, merge.
 
+Fake data only. Never put real client or patient data in this repo.
 
-## Getting started
+## Run it
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://gitlab.asoft-python.com/tung.mai/ai-tools-training.git
-git branch -M main
-git push -uf origin main
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+make install
+cp .env.example .env
+make run
 ```
 
-## Integrate with your tools
+`.env` is read at startup, so there is nothing to source first.
 
-* [Set up project integrations](https://gitlab.asoft-python.com/tung.mai/ai-tools-training/-/settings/integrations)
+Then open:
 
-## Collaborate with your team
+- http://127.0.0.1:8000/ for the web app (book, appointment list, today's schedule)
+- http://127.0.0.1:8000/docs for the raw API (Swagger)
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+Every endpoint, the session and role rules, and the business checks are listed in
+[docs/references/api.md](docs/references/api.md).
 
-## Test and Deploy
+### Login settings
 
-Use the built-in continuous integration in GitLab.
+Set these in `.env` before the first start: the app loads that file itself, and variables already in the environment take precedence.
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+| Variable | Value | What it does |
+|---|---|---|
+| `AUTH_SECRET` | random string, 32+ characters | Signs session cookies. Empty refuses every login; shorter stops startup. |
+| `ADMIN_USERNAME` | e.g. `admin` | The first admin, seeded only while no users exist. |
+| `ADMIN_PASSWORD` | 12+ characters | The first admin must change it at first sign-in. |
+| `COOKIE_SECURE` | `true` | Set to `false` only for plain-http local demos. |
 
-***
+Sessions, lockout and roles are in [docs/references/api.md](docs/references/api.md).
 
-# Editing this README
+**Accounts.** Create an admin or reset its password without putting it in `.env` (works when users already exist): `python scripts/seed_admin.py USERNAME` prompts for the password. Restart the server afterwards. Admins manage accounts from the web app.
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+Appointments persist in SQLite (`DB_PATH`, default `data/clinic.db`); delete the file to start fresh. To fill the list with demo data, run:
 
-## Suggestions for a good README
+```bash
+python scripts/seed_demo.py
+```
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+## Test it
 
-## Name
-Choose a self-explaining name for your project.
+```bash
+make test
+```
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+Browser tests run in CI on every PR and save desktop and phone screenshots (see `docs/references/testing-conventions.md`). Locally they are skipped when Playwright is missing:
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+```bash
+pip install -r requirements-dev.txt && playwright install chromium
+REQUIRE_BROWSER=1 pytest tests/test_ui_browser.py   # screenshots land in test-artifacts/screenshots/
+```
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+The suite is green on a fresh clone. Green does not mean bug-free: the tests only
+cover behaviour that already works.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+## Layout
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+| Path | What it is |
+|---|---|
+| `app/routes.py` | HTTP endpoints and the appointment lifecycle |
+| `app/scheduling.py` | Slot generation, booking validation, overlap check, holiday and time-off checks |
+| `app/static/index.html` | The frontend: one HTML file, vanilla JS, calls the API with `fetch` |
+| `app/fees.py` | Consultation, late-cancel and no-show fees (integer cents) |
+| `app/store.py` | Seed doctors/patients; appointments, holidays and time off written through to SQLite |
+| `app/config.py` | Business hours and settings read from the environment |
+| `scripts/seed_demo.py` | Books demo appointments through the API |
+| `data/seed.json` | Doctors and patients loaded at startup |
+| `docs/business-rules.md` | What the clinic says the system should do |
+| `docs/references/` | API reference, code, git and testing conventions |
+| `docs/templates/` | PRD, spec, ADR, DDR, test plan, test and status report templates |
+| `docs/decisions/` | ADR and DDR records |
+| `plans/` | Markdown tickets, sprints and feature docs (source of truth for planned work); `archive/` holds the read-only tickets T-001 to T-017 |
+| `.github/` | Issue templates (feature, bug, chore), PR template, workflows |
+| `.claude/` | Claude Code config: skills (the workflow in `CLAUDE.md`), subagents, commands, hooks and permissions (`settings.json`). Loads when Claude Code is opened at the repo root, with `.mcp.json` (Playwright MCP) |
+| `Makefile` | `install`, `build`, `run`, `test`, `lint` |
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+## Rules of the practice
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+1. One issue, one branch, one PR.
+2. A bug fix needs a test that failed before and passes after.
+3. AI output is a proposal until you have run it.

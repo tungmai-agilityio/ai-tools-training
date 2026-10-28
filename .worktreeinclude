@@ -1,0 +1,8 @@
+# Local environment configuration
+.env
+.env.local
+.env.development.local
+
+# Local Claude Code settings
+.claude/settings.local.json
+.github/

@@ -1,0 +1,12 @@
+{
+  "doctors": [
+    {"id": 1, "name": "Dr. James Carter", "specialty": "General practice", "fee_cents": 15000},
+    {"id": 2, "name": "Dr. Emily Brooks", "specialty": "Pediatrics", "fee_cents": 12997},
+    {"id": 3, "name": "Dr. Sarah Mitchell", "specialty": "Dermatology", "fee_cents": 15000}
+  ],
+  "patients": [
+    {"id": 1, "name": "Alice Johnson", "insured": true},
+    {"id": 2, "name": "Ben Lewis", "insured": false},
+    {"id": 3, "name": "Chloe Parker", "insured": true}
+  ]
+}

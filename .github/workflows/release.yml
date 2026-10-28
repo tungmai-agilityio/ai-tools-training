@@ -1,0 +1,23 @@
+name: release
+
+# A pushed vX.Y.Z tag drafts the GitHub release from docs/releases/<tag>.md.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          notes="docs/releases/$TAG.md"
+          [ -f "$notes" ] && src=(--notes-file "$notes") || src=(--generate-notes)
+          gh release create "$TAG" --draft --verify-tag --title "$TAG" "${src[@]}"
