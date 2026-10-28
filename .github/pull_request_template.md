@@ -24,7 +24,7 @@ pytest
 Manual: <steps in the UI or `/docs`, with the expected result>
 
 ## Evidence
-<Test output before (failing) and after (passing); screenshots for UI changes.>
+<Test output before (failing) and after (passing); for UI changes, the changed screens at desktop and phone size plus a link to the CI `screenshots` artifact.>
 
 ## Checklist
 - [ ] Branch `feat|fix|chore|docs/...` from `develop`, one commit, rebased on latest `develop`

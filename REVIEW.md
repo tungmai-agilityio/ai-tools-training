@@ -47,6 +47,7 @@ Source of truth: `docs/business-rules.md`. Conventions: `docs/references/`.
 **Tests (`Bugs`)**
 - Bug fixes ship a regression test that fails before the fix. New routes have a `TestClient` test. Cover success, failure, authorization and edge cases (30 vs 60 minute slots, odd-cent rounding, insured vs uninsured).
 - Flag skipped, deleted or weakened tests.
+- A UI change without desktop and phone screenshots in the PR Evidence is a nit (Medium); compare them with the feature's UI-design Artifact.
 
 **Scope and spec (`Compliance`)**
 - Follow the issue's acceptance criteria and test cases; keep the PR to that one issue.

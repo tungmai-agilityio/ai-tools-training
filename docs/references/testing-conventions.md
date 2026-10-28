@@ -21,7 +21,15 @@
 | Slots, hours, timezones | `tests/test_scheduling.py` |
 | SQLite persistence | `tests/test_persistence.py` |
 | HTML served, frontend wiring | `tests/test_frontend.py` |
-| Browser smoke (optional, Playwright) | `tests/test_ui_browser.py` |
+| Browser tests and screenshots (Playwright) | `tests/test_ui_browser.py` |
+
+## Browser tests and screenshots
+`tests/test_ui_browser.py` drives the real app in Chromium (Playwright). The `tests` workflow runs it on every PR with `REQUIRE_BROWSER=1`, so a missing browser fails instead of skipping. Decision: ADR-0004.
+
+- **Deterministic.** Clock frozen with `page.clock.set_fixed_time(FIXED_NOW)`, browser timezone `Asia/Ho_Chi_Minh`, store reset per test, web-first `expect` and no sleeps. Fake data only.
+- **Screenshots.** Call the `snap(name)` fixture at each state worth showing. It saves `<test>-<name>-desktop.png` (1280x800) and `-phone.png` (375x812) to `test-artifacts/screenshots/` and masks password and token inputs. The folder is git-ignored; CI uploads it as the `screenshots` artifact for 14 days.
+- **CSP.** Any Content Security Policy violation on the console fails the test. Never bypass the CSP.
+- **Run.** Set up with `requirements-dev.txt` and `playwright install chromium`, then `REQUIRE_BROWSER=1 pytest tests/test_ui_browser.py`.
 
 ## Edge cases to always consider
 DST switch days, the 12:00–13:00 lunch break, 30 vs 60 minute slots, exactly-24h cancellation, weekends,
