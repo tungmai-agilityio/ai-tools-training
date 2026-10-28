@@ -10,13 +10,13 @@ Scope: `git diff develop...HEAD` plus uncommitted changes, unless given another 
 
 Never print the value of a real secret; give its location only.
 
-Work through REVIEW.md's review priorities and Clinic Booking Rules, and honour its Review Standards. Run `pytest`, and verify every acceptance criterion and test case in the ticket against the code and test evidence.
+Work through REVIEW.md's review passes and Clinic Booking Rules, and honour its Review Standards. Run `pytest`, and verify every acceptance criterion and test case in the ticket against the code and test evidence.
 
 Verify every finding against the code before reporting, and drop anything not backed up by evidence.
 
 Output:
-- **Findings:** ranked Critical → High → Medium → Low (REVIEW.md scale), one per line:
-  `[severity] path:line — problem — concrete failure case — suggested fix`
+- **Findings:** ranked Critical → High → Medium → Low (REVIEW.md scale), tagged with their pass, capped at five Medium/Low nits with the rest summarized as a count, one per line:
+  `[severity] [pass] path:line — problem — concrete failure case — suggested fix`
 - **Acceptance criteria and test cases:** table with `AC/TC | result (pass / fail / manual) | evidence`
 - **Pytest:** summary line
 - **Verdict:** **approve**, **approve with nits**, or **changes needed**

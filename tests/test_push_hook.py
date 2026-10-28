@@ -38,6 +38,9 @@ ALLOWED_ON_FEATURE = [
 ]
 
 BLOCKED_ANYWHERE = [
+    "git checkout -b claude/foo",
+    "git switch -c claude/foo",
+    "git branch claude/foo",
     "git push --force origin feat/T-015",
     "git push -f origin feat/T-015",
     "git push -uf origin feat/T-015",

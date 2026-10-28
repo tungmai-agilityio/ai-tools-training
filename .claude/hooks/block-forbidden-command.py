@@ -35,6 +35,7 @@ CONTINUATION = re.compile(r"(?<!\\)((?:\\\\)*)\\\n")
 
 NO_ALIAS = "no git aliases: they hide the real subcommand from this check"
 NO_EXPANSION = "no `$` or backticks in a git push: write the values out"
+NO_CLAUDE_BRANCH = "never name a branch `claude/*`"
 NO_COMMENT = "no `#` comments in a command that pushes or installs: remove them"
 
 
@@ -147,6 +148,9 @@ def main():
             added = git_args(seg, "add") or []
             why = why or (NO_ENV if any(re.search(ENV_FILE, a) for a in added) else None)
             why = why or (NO_PIP if pip_install(seg) else None)
+            for sub in ("checkout", "switch", "branch"):
+                if any(a.removeprefix("refs/heads/").startswith("claude/") for a in git_args(seg, sub) or []):
+                    why = why or NO_CLAUDE_BRANCH
     except Exception:  # unparseable or a hook bug: only exit code 2 blocks, so fail closed for anything push-like
         if re.search(r"\bgit\b.*\bpush\b", cmd, re.S):
             why = "could not parse this git push; simplify the command"
