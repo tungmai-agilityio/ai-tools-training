@@ -61,11 +61,19 @@ jobs:
             cause**, **Next step**. Plain Markdown, under 200 words, no secrets, tokens, links or @mentions.
             Write only that file; do nothing else.
 
+      # Diagnostics: which tool calls (if any) the allow list refused. Tool names and paths only, no file contents.
+      - name: Show denied tool calls
+        if: always()
+        run: |
+          jq -c '[.[] | select(.type == "result") | .permission_denials[]? | {tool: .tool_name, path: (.tool_input.file_path // .tool_input.path // null)}]' \
+            "$RUNNER_TEMP/claude-execution-output.json" || true
+          ls -la triage.md failed.log || true
+
       - name: Post the triage comment
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          [ -f triage.md ] && [ ! -L triage.md ] && [ -s triage.md ] || exit 0  # a plain file only, never a symlink
+          [ -f triage.md ] && [ ! -L triage.md ] && [ -s triage.md ] || { echo "no triage.md was written" >&2; exit 1; }  # a plain file only, never a symlink
           # a denylist, not the security boundary: Claude can only read failed.log and write triage.md
           if grep -Eiq 'gh[pousr]_[A-Za-z0-9]{20,}|github_pat_|sk-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|BEGIN [A-Z ]*PRIVATE KEY' triage.md; then
             echo "triage.md looks like it contains a secret; not posting" >&2
