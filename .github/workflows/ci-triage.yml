@@ -75,9 +75,9 @@ jobs:
           { echo '<!-- ci-triage -->'; head -c 4000 triage.md | sed -e 's/@/(at)/g' -e 's#https\{0,1\}://[^ )]*#[link removed]#g'; } > comment.md
           # update only our own earlier comment (found by the marker), never another bot's
           id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" --paginate \
-            --jq '[.[] | select(.body | contains("<!-- ci-triage -->"))][0].id // empty' | head -n 1)
-          if [ -n "$id" ]; then
-            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -F body=@comment.md > /dev/null
+            --jq '[.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- ci-triage -->")))][0].id // empty' | head -n 1)
+          if [ -n "$id" ] && gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -F body=@comment.md > /dev/null; then
+            :
           else
             gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file comment.md
           fi
