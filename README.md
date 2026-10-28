@@ -52,11 +52,11 @@ python scripts/seed_demo.py
 make test
 ```
 
-Optional browser smoke test for the web app (dev-only; skipped when Playwright is missing):
+Browser tests run in CI on every PR and save desktop and phone screenshots (see `docs/references/testing-conventions.md`). Locally they are skipped when Playwright is missing:
 
 ```bash
 pip install -r requirements-dev.txt && playwright install chromium
-pytest tests/test_ui_browser.py
+REQUIRE_BROWSER=1 pytest tests/test_ui_browser.py   # screenshots land in test-artifacts/screenshots/
 ```
 
 The suite is green on a fresh clone. Green does not mean bug-free: the tests only
