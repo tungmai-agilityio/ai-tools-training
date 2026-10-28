@@ -1,4 +1,4 @@
-# ADR-0005: Host the test site on Render's free tier, keep SQLite
+# ADR-0005: Host staging and production on Render's free tier, keep SQLite
 
 **Status:** Accepted  **Date:** 2026-10-27  **Deciders:** Maintainers  **Issue:** TBD
 
@@ -8,7 +8,7 @@
 We want a public HTTPS URL so Claude in Chrome can test the app. The app is one FastAPI process that serves `app/static/index.html` and keeps appointments in memory, written through to SQLite (`app/store.py`). Auth (ADR-0002, ADR-0003) uses a Secure/HttpOnly/SameSite=Strict cookie and a `script-src 'self'` CSP, so HTTPS and a single origin matter. ADR-0003 already retires `ADMIN_TOKEN` and seeds the first admin from `ADMIN_USERNAME` and `ADMIN_PASSWORD`. Data is fake and may reset.
 
 ## Decision
-We deploy to a Render free web service from GitHub, with SQLite at `DB_PATH=/tmp/clinic.db`. The disk resets on restart, so each start reseeds the admin (ADR-0003 behaviour, from Render secrets) and, when `DEMO_SEED=1`, the demo data. No `ADMIN_TOKEN` is set. We do not move to Postgres.
+We deploy two Render free web services from GitHub: `clinic-booking-stag` from `develop` and `clinic-booking` from `main`, each with SQLite at `DB_PATH=/tmp/clinic.db`. The disk resets on restart, so each start reseeds the admin (ADR-0003 behaviour, from Render secrets). Staging also sets `DEMO_SEED=1` to reseed the demo data; production leaves it off. No `ADMIN_TOKEN` is set. We do not move to Postgres.
 
 ## Options considered
 | Option | Pros | Cons |
@@ -23,5 +23,5 @@ Free-tier terms were checked on 2026-10-27 and change often; recheck at signup.
 
 ## Consequences
 - Good: cheap, repeatable, matches local behaviour; no secrets in the repo.
-- Bad / ceiling: cold starts and resets (the seeded admin must change the password after every reset). Revisit if we need several instances or data that survives restarts; then write an ADR on a persistent volume or Postgres.
-- Follow-up: ticket T-028; deploy steps in `docs/deploy-render.md`; `render.yaml` in the repo root. Auth tickets T-019 to T-023 have landed.
+- Bad / ceiling: production data is not durable (accepted for now, since all data is fake); cold starts and resets (the seeded admin must change the password after every reset). Revisit if we need several instances or data that survives restarts; then write an ADR on a paid plan with a persistent disk, or Postgres.
+- Follow-up: ticket T-028; deploy steps in `docs/deploy-render.md`; `render.yaml` in the repo root (both services). Auth tickets T-019 to T-023 have landed.
