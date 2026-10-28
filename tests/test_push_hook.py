@@ -34,6 +34,7 @@ ALLOWED_ON_FEATURE = [
     "git status && git push -u origin feat/T-015",
     'gh pr create --body "never git push --force or git push -f"',
     "pip install -r requirements.txt",
+    "pip install -r requirements-dev.txt",
 ]
 
 BLOCKED_ANYWHERE = [
@@ -90,6 +91,7 @@ BLOCKED_ANYWHERE = [
     "git push origin `echo --force` feat/T-015",
     "git add $'.env'",
     "pip install -r requirements.txt evilpkg",
+    "pip install -r requirements-dev.txt evilpkg",
     "pip install -r /tmp/other.txt",
     "echo a#b; git push --force origin develop",
     "git $'push' --force origin develop",
