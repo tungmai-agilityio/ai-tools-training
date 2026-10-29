@@ -1,4 +1,4 @@
-name: Deploy production
+name: Deploy Production
 
 # Production redeploys only through this run: render.yaml sets autoDeploy: false for clinic-booking.
 # The job targets the `production` environment, so its required reviewer approves before any step runs.

@@ -1,5 +1,5 @@
 
-name: Tests
+name: CI
 
 # The `tests` job is a required check, so it must report on every PR. Docs and planning files cannot change a test
 # result, so when only these files change the job passes in seconds (scripts/ci_needs_tests.sh decides; only an explicit
@@ -43,6 +43,11 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: requirements*.txt
+
+      # compileall needs no dependencies: fail on a syntax error before the slow install
+      - name: Lint
+        if: steps.scope.outputs.full != 'false'
+        run: make lint
 
       - name: Install dependencies
         if: steps.scope.outputs.full != 'false'
