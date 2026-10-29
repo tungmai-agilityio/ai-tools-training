@@ -7,9 +7,10 @@ Usage: `/release S-NNN` (the sprint is required). Reference: `docs/references/gi
 
 **Verify** on an up-to-date `develop`; stop at the first failure and report what blocks:
 - The tree is clean. `develop`'s head has green CI (`gh run list --branch develop`; `main` has no CI) and `pytest` passes locally.
-- Run `python3 scripts/tickets.py sync --sprint S-NNN` (dry run, read-only; add `--issues-json` without a `GH_TOKEN`). Every ticket in `plans/sprints/S-NNN.md` needs its issue closed, its PR merged into `develop`, and its acceptance criteria and test cases passing (`/qa-report` on `develop` gives the evidence). Any other ticket **blocks** the release unless the user names it as carry-over.
+- Run `python3 scripts/tickets.py sync --sprint S-NNN` (dry run, read-only; add `--issues-json` without a `GH_TOKEN`). Every ticket in `plans/sprints/S-NNN.md` needs its issue closed, its PR merged into `develop`, and its acceptance criteria and test cases passing (`/qa-report` on `develop` gives the evidence). Any other ticket **blocks** the release unless the user names it as carry-over. A ticket with no issue cannot be checked this way: ask the user to name it as carry-over or to create its issue first (`/push-tickets`).
+- First release (no tag on `origin/main`): there is no baseline, so `develop` → `main` ships everything on `develop`. List every merged PR in the notes, not only the sprint's.
 - PRs merged since the last tag that belong to no sprint ticket are listed as **extra** in the notes and PR: `develop` → `main` ships them too.
-- No OPEN QUESTION decided in `app/` since the last tag. `.env.example` lists every env var read in `app/`; a new one needs a deploy note.
+- No OPEN QUESTION decided in `app/` since the last tag. `.env.example` must list every setting in `app/config.py`; a missing one blocks the release, and a new one needs a deploy note.
 
 **Notes**
 1. Last tag: `git describe --tags --abbrev=0 origin/main` (none → `v0.1.0`). Any `feat` bumps the minor version, otherwise the patch; no major bump before `v1.0.0`.
