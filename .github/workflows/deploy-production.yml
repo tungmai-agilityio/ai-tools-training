@@ -1,0 +1,63 @@
+name: Deploy production
+
+# Production redeploys only through this run: render.yaml sets autoDeploy: false for clinic-booking.
+# The job targets the `production` environment, so its required reviewer approves before any step runs.
+# Dispatch it from `main`: the environment's deployment branch policy allows only main, and the run uses
+# main's script to deploy the ref given as input, so the tooling is always released code.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Tag or commit on main to deploy
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# deploys queue instead of racing; a third dispatch cancels the one still waiting for approval
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.APP_URL }}
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v7
+        with:
+          ref: main  # the environment only allows main; the input ref is resolved by the next step, never checked out
+          fetch-depth: 0  # the guard resolves the input ref and checks it is on main
+          persist-credentials: false
+
+      - name: Resolve the ref and check it is on main
+        id: target
+        env:
+          REF: ${{ inputs.ref }}
+        run: |
+          sha=$(bash scripts/check_release_ref.sh "$REF")
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "main=$(git rev-parse refs/remotes/origin/main)" >> "$GITHUB_OUTPUT"
+          echo "ahead=$(git rev-list --count "$sha..refs/remotes/origin/main")" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger the deploy and verify it
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          COMMIT_SHA: ${{ steps.target.outputs.sha }}
+          MAIN_SHA: ${{ steps.target.outputs.main }}
+          MAIN_AHEAD: ${{ steps.target.outputs.ahead }}
+          TIMEOUT_SECONDS: "1200"
+        run: python3 scripts/deploy_production.py
+
+      # the step summary is not published when the job is cancelled, so a red run must still explain itself
+      - name: Note a missing summary
+        if: always()
+        run: |
+          [ -s "$GITHUB_STEP_SUMMARY" ] || echo "The deploy script wrote no summary; see the log above." >> "$GITHUB_STEP_SUMMARY"

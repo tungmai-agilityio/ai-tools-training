@@ -110,4 +110,5 @@ the clinic-local date of the appointment's start. The web app shows it on the Re
 
 ## Health
 
-`GET /health` (public) returns `{"status": "ok", "timezone": "<CLINIC_TIMEZONE>"}`.
+`GET /health` (public) returns `{"status": "ok", "timezone": "<CLINIC_TIMEZONE>", "commit": "<RENDER_GIT_COMMIT>"}`.
+`commit` is the commit Render is running; it is `null` when the variable is unset, for example locally.
