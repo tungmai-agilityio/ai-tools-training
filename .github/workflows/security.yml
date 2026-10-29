@@ -1,0 +1,48 @@
+name: Claude Security Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened] # advisory comments only, not a required check
+
+permissions:
+  contents: read
+
+# a newer push replaces a review still running for the same PR
+concurrency:
+  group: security-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    # fork PRs get no secrets; a skipped review is better than a failing advisory run
+    if: >-
+      !github.event.pull_request.draft &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read # review only: it cannot push to the PR branch
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          track_progress: true
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Do a security-focused review of this pull request. Follow `REVIEW.md`: run the Security
+            pass first, then note Bugs and Compliance findings, checking against `CLAUDE.md`,
+            `docs/references/code-conventions.md` and `docs/business-rules.md`.
+
+            Report in the `REVIEW.md` Findings Format. Use inline comments for specific lines and one
+            summary comment for everything else. Do not change code, commit or push.
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
