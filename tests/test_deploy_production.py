@@ -13,7 +13,7 @@ SECRET = "SECRETVALUE"
 COMMIT = "a" * 40
 OLD = "b" * 40
 ENV_KEYS = ("RENDER_DEPLOY_HOOK_URL", "APP_URL", "COMMIT_SHA", "TIMEOUT_SECONDS",
-            "MAIN_SHA", "MAIN_AHEAD", "GITHUB_STEP_SUMMARY")
+            "MAIN_SHA", "MAIN_AHEAD", "GITHUB_STEP_SUMMARY", "DEPLOY_LABEL", "ACTOR", "SUMMARY_HINT")
 
 
 class _State:
@@ -195,12 +195,49 @@ def test_main_deploys_polls_and_verifies(render, monkeypatch, tmp_path, capsys):
                 env={"MAIN_SHA": "c" * 40, "MAIN_AHEAD": "2"}) == 0
 
     text = summary.read_text()
+    assert text.startswith("## Production deploy")  # the deploy default, unchanged by T-035
     assert "verified" in text
     assert COMMIT in text and "dep-1" in text and "2 commits ahead" in text
     assert render.url in text  # AC-4: the summary names the deployed URL
     assert "https://dashboard.render.com/web/srv-test123/deploys/dep-1" in text
     assert any(method == "POST" for method, _ in render.calls)
     assert SECRET not in text + capsys.readouterr().out
+
+
+ROLLBACK_ENV = {
+    "DEPLOY_LABEL": "Rollback (production)",
+    "ACTOR": "maintainer",
+    "SUMMARY_HINT": "Redeploy manually in Render, then revert the bad commit in a PR.",
+}
+
+
+def test_main_writes_a_rollback_summary(render, monkeypatch, tmp_path):
+    render.health_queue = [{"commit": OLD}, {"commit": COMMIT}, {"commit": COMMIT}]
+    summary = tmp_path / "summary.md"
+
+    assert _run(deploy.main, monkeypatch, render, summary, env=ROLLBACK_ENV) == 0
+
+    text = summary.read_text()
+    assert text.startswith("## Rollback (production)")
+    assert "| Started by | maintainer |" in text
+    assert "dep-1" in text  # AC-3: the summary names the restored deploy id
+    assert "https://dashboard.render.com/web/srv-test123/deploys/dep-1" in text
+    assert ROLLBACK_ENV["SUMMARY_HINT"] in text
+    assert SECRET not in text
+
+
+def test_a_failed_rollback_summary_keeps_the_hint(render, monkeypatch, tmp_path):
+    render.health_queue = [{"commit": COMMIT}]
+    render.index_status = 500
+    summary = tmp_path / "summary.md"
+
+    assert _run(deploy.main, monkeypatch, render, summary, env=ROLLBACK_ENV) == 1
+
+    text = summary.read_text()
+    assert text.startswith("## Rollback (production)")
+    assert "**Result:** failed" in text
+    assert "/ 500" in text
+    assert ROLLBACK_ENV["SUMMARY_HINT"] in text
 
 
 def test_main_reports_a_commit_that_is_already_live(render, monkeypatch, tmp_path):

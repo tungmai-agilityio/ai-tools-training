@@ -1,8 +1,8 @@
-"""Trigger the Render deploy hook for one commit and verify it is live (T-034).
+"""Trigger the Render deploy hook for one commit and verify it is live (T-034, T-035).
 
 Inputs come from the environment so the hook URL stays a secret: RENDER_DEPLOY_HOOK_URL, APP_URL,
-COMMIT_SHA, TIMEOUT_SECONDS, and optionally MAIN_SHA/MAIN_AHEAD for the summary. Nothing printed or
-raised here contains the hook URL.
+COMMIT_SHA, TIMEOUT_SECONDS, and optionally MAIN_SHA/MAIN_AHEAD for the summary. A rollback run also sets
+DEPLOY_LABEL, ACTOR and SUMMARY_HINT. Nothing printed or raised here contains the hook URL.
 """
 
 from __future__ import annotations
@@ -25,6 +25,9 @@ VERIFY_DELAY = 2
 MIN_TIMEOUT = 60
 MAX_TIMEOUT = 1800
 USER_AGENT = "clinic-booking-deploy/1"
+DEFAULT_LABEL = "Production deploy"
+DEFAULT_HINT = ("Rollback: dispatch `Deploy production` with an earlier tag or commit, or follow the rollback "
+                "steps in `docs/deploy-render.md`.")
 
 
 class DeployError(RuntimeError):
@@ -165,6 +168,8 @@ def _summary(state: dict) -> str:
     rows = [("Target commit", f"`{state['target']}`" if state.get("target") else "unknown")]
     if state.get("app_url"):
         rows.append(("Service", state["app_url"]))
+    if state.get("actor"):
+        rows.append(("Started by", state["actor"]))
     if state.get("main_sha"):
         ahead = state.get("main_ahead")
         suffix = "" if ahead in (None, "", "0") else f" ({ahead} commits ahead)"
@@ -189,13 +194,12 @@ def _summary(state: dict) -> str:
         rows.append(("`/` and `/health`", ", ".join(f"{path} {code}" for path, code in state["codes"].items())))
     if state.get("elapsed") is not None:
         rows.append(("Duration", f"{state['elapsed']:.0f}s"))
-    lines = ["## Production deploy", "", f"**Result:** {state.get('result', 'failed')}", "",
+    lines = [f"## {state.get('label', DEFAULT_LABEL)}", "", f"**Result:** {state.get('result', 'failed')}", "",
              "| Item | Value |", "|---|---|"]
     lines += [f"| {key} | {value} |" for key, value in rows]
     if state.get("error"):
         lines += ["", f"**Failure:** {state['error']}"]
-    lines += ["", "Rollback: dispatch `Deploy production` with an earlier tag or commit, or follow the rollback "
-                  "steps in `docs/deploy-render.md`."]
+    lines += ["", state.get("hint", DEFAULT_HINT)]
     return "\n".join(lines) + "\n"
 
 
@@ -219,6 +223,9 @@ def main(argv: list[str] | None = None) -> int:
     state: dict = {}
     started = time.monotonic()
     result = 0
+    state["label"] = os.environ.get("DEPLOY_LABEL", "").strip() or DEFAULT_LABEL
+    state["actor"] = os.environ.get("ACTOR", "").strip() or None
+    state["hint"] = os.environ.get("SUMMARY_HINT", "").strip() or DEFAULT_HINT
     try:
         hook, app_url, commit, timeout = _config()
         state["target"] = commit
