@@ -1,6 +1,6 @@
 # Plan: Revenue chart and screen layout (proposed T-032, T-033)
 
-**Author:** Claude (draft, for Tung to edit)  **Status:** Approved by Tung 2026-10-29 (one approval covers T-032 and T-033; per-ticket `/plan-work` is skipped)  **Decisions:** ADR-0001, ADR-0004, DDR-0003
+**Author:** Claude (draft, for Tung to edit)  **Status:** Implemented (T-032 and T-033 closed; approved 2026-10-29) (one approval covers T-032 and T-033; per-ticket `/plan-work` is skipped)  **Decisions:** ADR-0001, ADR-0004, DDR-0003
 **Design:** [UI design Artifact](https://claude.ai/artifact/VaAYYy7WoVCPzw2wEwS6jp), board 4 "Admin: Revenue report", board 6 "As built"
 **Related:** `plans/features/revenue-report/spec.md` (T-015, API), `plans/archive/T-015.md`, `plans/archive/T-016.md` (current screen)
 
