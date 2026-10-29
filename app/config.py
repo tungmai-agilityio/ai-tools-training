@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     cookie_secure: bool = True
     # DEMO_SEED=1 books demo appointments at startup while none exist (hosted test site).
     demo_seed: bool = False
+    # Set by Render to the commit it is running; /health reports it so a deploy can be verified.
+    render_git_commit: str | None = None
 
 
 settings = Settings()
@@ -38,6 +40,7 @@ ADMIN_USERNAME = settings.admin_username
 ADMIN_PASSWORD = settings.admin_password
 COOKIE_SECURE = settings.cookie_secure
 DEMO_SEED = settings.demo_seed
+RENDER_GIT_COMMIT = (settings.render_git_commit or "").strip() or None
 
 AUTH_SECRET_MIN_LENGTH = 32
 SESSION_COOKIE = "clinic_session"

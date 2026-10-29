@@ -50,8 +50,8 @@ def domain_error_handler(_: Request, exc: DomainError) -> JSONResponse:
 
 @app.get("/health")
 def health():
-    """Liveness / readiness probe returning the service status and configured timezone."""
-    return {"status": "ok", "timezone": config.CLINIC_TIMEZONE}
+    """Liveness / readiness probe returning the service status, configured timezone and running commit."""
+    return {"status": "ok", "timezone": config.CLINIC_TIMEZONE, "commit": config.RENDER_GIT_COMMIT}
 
 
 DOCS_PATHS = {"/docs", "/redoc", "/docs/oauth2-redirect"}  # Swagger needs a CDN script and an inline one
