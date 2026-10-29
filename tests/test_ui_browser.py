@@ -155,7 +155,7 @@ def _run_revenue(page, frm="2026-10-12", to="2026-10-16"):
     page.goto("/#revenue")
     page.fill("#rev-from", frm)
     page.fill("#rev-to", to)
-    page.get_by_role("button", name="Run report").click()
+    page.get_by_role("button", name="Show report").click()
     return page.get_by_role("img", name=re.compile("Stacked bars of revenue per day"))
 
 
@@ -198,9 +198,40 @@ def test_revenue_chart_on_a_long_range_scrolls_inside_its_card_not_the_page(page
     assert page.evaluate("document.documentElement.scrollWidth") <= 375
 
 
+def _box(page, selector):
+    return page.locator(selector).bounding_box()
+
+
+def test_revenue_screen_follows_the_design_layout_on_desktop_and_phone(page, snap):  # T-033 TC-3, TC-4
+    row = {"date": "2026-10-13", "consultation_cents": 261000, "penalty_cents": 4200, "total_cents": 265200}
+    totals = {"consultation_cents": 261000, "penalty_cents": 4200, "total_cents": 265200}
+    doctors = [{"doctor_id": 1, "doctor_name": "Dr. James Carter", **totals}]
+    page.route("**/reports/revenue*", lambda route: route.fulfill(json={
+        "from_date": "2026-10-12", "to_date": "2026-10-16", "totals": totals, "by_doctor": doctors, "by_day": [row]}))
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _run_revenue(page)
+    stats = page.locator("#rev-results .cb-stat")
+    sync_api.expect(stats).to_have_count(3)
+    sync_api.expect(stats.nth(0)).to_contain_text("Total revenue")
+    sync_api.expect(stats.nth(0)).to_contain_text("$2,652.00")
+    sync_api.expect(stats.nth(1)).to_contain_text("Consultations")
+    sync_api.expect(stats.nth(1)).to_contain_text("Completed visits")
+    sync_api.expect(stats.nth(2)).to_contain_text("Penalties")
+    sync_api.expect(stats.nth(2)).to_contain_text("No-shows and late cancels")
+    sync_api.expect(page.locator("header.cb-pagehead #rev-form")).to_have_count(1)  # the range is in the page header
+    sync_api.expect(page.locator("#screen-revenue header")).to_contain_text("Each visit counts on the day it was scheduled")
+    chart, doctor = _box(page, ".cb-chartcard"), _box(page, "#rev-results section:has-text('By doctor')")
+    assert doctor["x"] > chart["x"] + chart["width"] - 1 and abs(doctor["y"] - chart["y"]) < 4  # side by side
+    snap("layout")
+    page.set_viewport_size({"width": 375, "height": 812})
+    chart, doctor = _box(page, ".cb-chartcard"), _box(page, "#rev-results section:has-text('By doctor')")
+    assert doctor["y"] > chart["y"] + chart["height"] - 1 and abs(doctor["x"] - chart["x"]) < 2  # stacked
+    assert page.evaluate("document.documentElement.scrollWidth") <= 375
+
+
 def test_revenue_without_money_shows_no_chart_only_the_empty_state(client, page):  # T-032 TC-3
     page.goto("/#revenue")
-    page.get_by_role("button", name="Run report").click()
+    page.get_by_role("button", name="Show report").click()
     sync_api.expect(page.locator("#rev-results")).to_contain_text("No revenue in this range")
     sync_api.expect(page.get_by_role("img", name=re.compile("Stacked bars"))).to_have_count(0)
 
@@ -208,7 +239,7 @@ def test_revenue_without_money_shows_no_chart_only_the_empty_state(client, page)
 def test_staff_opening_revenue_sees_administrators_only(page):
     page.route("**/reports/revenue*", lambda route: route.fulfill(status=403, json={"detail": "Administrator required"}))
     page.goto("/#revenue")
-    page.get_by_role("button", name="Run report").click()
+    page.get_by_role("button", name="Show report").click()
     sync_api.expect(page.locator("#rev-results")).to_contain_text("Administrators only")
     sync_api.expect(page.locator("#rev-from")).to_have_value("2026-10-01")
     storage = page.evaluate("[Object.keys(localStorage), Object.keys(sessionStorage)]")

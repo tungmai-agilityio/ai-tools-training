@@ -25,7 +25,7 @@ function esc(v) {
   d.textContent = String(v ?? "");
   return d.innerHTML.replace(/"/g, "&quot;").replace(/'/g, "&#39;"); // safe inside attributes too
 }
-const money = (cents) => "$" + (cents / 100).toFixed(2);
+const money = (cents) => "$" + Math.floor(cents / 100).toLocaleString("en-US") + "." + String(cents % 100).padStart(2, "0"); // integer maths, never a float
 const fmtDay = (iso) => new Date(iso).toLocaleDateString("en-GB", { timeZone: CLINIC_TZ, weekday: "short", day: "numeric", month: "short" });
 const fmtTime = (iso) => new Date(iso).toLocaleTimeString("en-US", { timeZone: CLINIC_TZ, hour: "numeric", minute: "2-digit" });
 const fmtWhen = (iso) => `${fmtDay(iso)}, ${fmtTime(iso)}`;
@@ -501,7 +501,7 @@ function revenueChart(days) {
 
 function renderRevenue(r) {
   const m = (c) => esc(money(c)), day = (k) => esc(fmtKey(k, { weekday: "short", day: "numeric", month: "short", year: "numeric" }));
-  const stat = (label, c) => `<div class="cb-stat"><span class="cb-stat__n">${m(c)}</span><span class="cb-muted">${label}</span></div>`;
+  const stat = (label, caption, c) => `<div class="cb-stat"><span class="cb-stat__n">${m(c)}</span><span class="cb-muted">${label}</span>${caption ? `<span class="cb-muted">${caption}</span>` : ""}</div>`;
   const rows = (list, name) => list.map((x) => `<tr><td data-col="who"><strong>${name(x)}</strong></td>` +
     [["consultation_cents", "Consultation"], ["penalty_cents", "Penalty"], ["total_cents", "Total"]].map(([k, label]) =>
       `<td data-col="fee" data-label="${label}" class="cb-num cb-right">${m(x[k])}</td>`).join("") + "</tr>");
@@ -513,13 +513,14 @@ function renderRevenue(r) {
     <div class="cb-legend"><span><i class="cb-swatch cb-swatch--cons"></i>Consultation</span><span><i class="cb-swatch cb-swatch--pen"></i>Penalty</span></div>
     <div class="cb-chart-scroll">${revenueChart(list)}</div>
     <details class="cb-astable"${phone ? " open" : ""}><summary>Show as table</summary>${table("Day", list, (d) => day(d.date))}</details></section>`;
+  const t = r.data.totals;
   $("rev-results").innerHTML = `<div class="cb-stack">
-    <p class="cb-muted">${day(r.from)} to ${day(r.to)} · run ${esc(fmtWhen(r.at))}.
-      Amounts are gross, counted on the scheduled day in clinic time; a deleted visit drops out.</p>
-    <div class="cb-stats">${stat("Consultation", r.data.totals.consultation_cents)}${stat("Penalty", r.data.totals.penalty_cents)}${stat("Total", r.data.totals.total_cents)}</div>
-    ${tbl("By doctor", "Doctor", r.data.by_doctor, (d) => esc(d.doctor_name))}
+    <p class="cb-muted">${day(r.from)} to ${day(r.to)} · run ${esc(fmtWhen(r.at))}. A deleted visit drops out of past totals.</p>
+    <div class="cb-stats">${stat("Total revenue", "", t.total_cents)}${stat("Consultations", "Completed visits", t.consultation_cents)}${stat("Penalties", "No-shows and late cancels", t.penalty_cents)}</div>
+    <div class="cb-revgrid">
     ${r.data.by_day.length ? byDay(r.data.by_day)
-      : `<section class="cb-card">${empty("No revenue in this range", "No completed visits or fees fall on these days.")}</section>`}</div>`;
+      : `<section class="cb-card">${empty("No revenue in this range", "No completed visits or fees fall on these days.")}</section>`}
+    ${tbl("By doctor", "Doctor", r.data.by_doctor, (d) => esc(d.doctor_name))}</div></div>`;
 }
 
 async function runRevenue() {

@@ -291,6 +291,11 @@
   @media (max-width: 1024px) { .cb-book { grid-template-columns: minmax(0, 1fr); } .cb-book__aside { position: static; } }
   
   /* Today: counts, timeline, list */
+  .cb-revform { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); }
+  .cb-revform .cb-field { min-width: 150px; }
+  .cb-revgrid { display: grid; gap: var(--space-5); align-items: start; }
+  @media (min-width: 1100px) { .cb-revgrid { grid-template-columns: minmax(0, 1fr) 440px; } .cb-revgrid .cb-table th, .cb-revgrid .cb-table td { padding-inline: var(--space-2); } }
+  #screen-revenue .cb-pagehead > div { flex: 1 1 360px; }
   .cb-chartcard > * + * { margin-top: var(--space-3); }
   .cb-chart-scroll { overflow-x: auto; }
   .cb-chart { display: block; font-size: 12px; }
@@ -525,22 +530,22 @@
 
     <!-- REVENUE -->
     <section id="screen-revenue" hidden>
-      <header class="cb-pagehead"><div><h1>Revenue</h1><p>Days in <span class="tzname"></span></p></div></header>
-      <div class="cb-stack">
-        <form class="cb-card" id="rev-form" novalidate>
-          <div class="cb-fields">
-            <div class="cb-field">
-              <label class="cb-field__label" for="rev-from">From</label>
-              <input class="cb-input" id="rev-from" type="date" aria-describedby="rev-msg">
-            </div>
-            <div class="cb-field">
-              <label class="cb-field__label" for="rev-to">To</label>
-              <input class="cb-input" id="rev-to" type="date" aria-describedby="rev-msg">
-            </div>
+      <header class="cb-pagehead">
+        <div><h1>Revenue</h1><p>Gross, in clinic time (<span class="tzname"></span>). Each visit counts on the day it was scheduled.</p></div>
+        <form class="cb-revform" id="rev-form" novalidate>
+          <div class="cb-field">
+            <label class="cb-field__label" for="rev-from">From</label>
+            <input class="cb-input" id="rev-from" type="date" aria-describedby="rev-msg">
           </div>
-          <p class="cb-field__hint" id="rev-msg" role="alert" style="margin:var(--space-3) 0"></p>
-          <div class="cb-form__actions"><button class="cb-btn cb-btn--primary" type="submit">Run report</button></div>
+          <div class="cb-field">
+            <label class="cb-field__label" for="rev-to">To</label>
+            <input class="cb-input" id="rev-to" type="date" aria-describedby="rev-msg">
+          </div>
+          <button class="cb-btn cb-btn--primary" type="submit">Show report</button>
         </form>
+      </header>
+      <p class="cb-field__hint" id="rev-msg" role="alert"></p>
+      <div class="cb-stack">
         <div id="rev-results" aria-live="polite"></div>
       </div>
     </section>
