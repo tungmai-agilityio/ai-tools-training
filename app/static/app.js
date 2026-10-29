@@ -467,20 +467,58 @@ function revenueRangeError(from, to) {
   return "";
 }
 
+// Axis step in cents: the smallest 1, 2 or 5 x 10^k dollars (at least $10) that keeps the axis to 5 steps or fewer.
+function chartStep(maxCents) {
+  for (let k = 1000; ; k *= 10) for (const m of [1, 2, 5]) if (Math.ceil(maxCents / (m * k)) <= 5) return m * k;
+}
+
+// Inline SVG, one stacked bar per day (consultation below, penalty above); "" when there is nothing to draw.
+// Cents become pixels only for geometry; every shown amount comes from the stored cents.
+function revenueChart(days) {
+  if (!days.length) return "";
+  const BAR = 30, PITCH = 48, LEFT = 48, TOP = 28, H = 180, base = TOP + H, labels = days.length <= 14;
+  const max = Math.max(...days.map((d) => d.total_cents)), step = chartStep(max), top = Math.max(step, Math.ceil(max / step) * step);
+  const w = LEFT + days.length * PITCH, h = base + 30, px = (c) => (c * H) / top, r = (n) => Math.round(n * 10) / 10;
+  const whole = (c) => "$" + (c / 100).toLocaleString("en-US");
+  let grid = "";
+  for (let v = 0; v <= top; v += step) {
+    const y = r(base - px(v));
+    grid += `<line class="c-grid" x1="${LEFT}" x2="${w}" y1="${y}" y2="${y}"/><text x="${LEFT - 8}" y="${y + 4}" text-anchor="end">${whole(v)}</text>`;
+  }
+  const bars = days.map((d, i) => {
+    const x = LEFT + (PITCH - BAR) / 2 + i * PITCH, hc = px(d.consultation_cents), hp = px(d.penalty_cents), gap = hc ? 2 : 0;
+    const name = fmtKey(d.date, { weekday: "short", day: "numeric", month: "short" });
+    return `<g><title>${esc(name)}: Consultation ${esc(money(d.consultation_cents))}, Penalty ${esc(money(d.penalty_cents))}, Total ${esc(money(d.total_cents))}</title>` +
+      (d.consultation_cents ? `<rect class="c-cons" x="${x}" y="${r(base - hc)}" width="${BAR}" height="${r(hc)}" rx="3"/>` : "") +
+      (d.penalty_cents ? `<rect class="c-pen" x="${x}" y="${r(base - hc - hp)}" width="${BAR}" height="${r(Math.max(hp - gap, 1))}" rx="3"/>` : "") +
+      (labels ? `<text class="c-tot" x="${x + BAR / 2}" y="${r(base - hc - hp - 6)}" text-anchor="middle">${esc(d.total_cents % 100 ? money(d.total_cents) : whole(d.total_cents))}</text>` : "") +
+      `<text x="${x + BAR / 2}" y="${base + 20}" text-anchor="middle">${esc(fmtKey(d.date, { weekday: "short", day: "numeric" }))}</text></g>`;
+  }).join("");
+  const span = `${fmtKey(days[0].date, { weekday: "long", day: "numeric", month: "long" })} to ${fmtKey(days[days.length - 1].date, { weekday: "long", day: "numeric", month: "long" })}`;
+  const totals = labels ? `Totals: ${days.map((d) => money(d.total_cents)).join(", ")}.` : "The totals are in the table below.";
+  return `<svg class="cb-chart" role="img" aria-label="${esc(`Stacked bars of revenue per day, ${span}. ${totals}`)}" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${grid}${bars}</svg>`;
+}
+
 function renderRevenue(r) {
   const m = (c) => esc(money(c)), day = (k) => esc(fmtKey(k, { weekday: "short", day: "numeric", month: "short", year: "numeric" }));
   const stat = (label, c) => `<div class="cb-stat"><span class="cb-stat__n">${m(c)}</span><span class="cb-muted">${label}</span></div>`;
   const rows = (list, name) => list.map((x) => `<tr><td data-col="who"><strong>${name(x)}</strong></td>` +
     [["consultation_cents", "Consultation"], ["penalty_cents", "Penalty"], ["total_cents", "Total"]].map(([k, label]) =>
       `<td data-col="fee" data-label="${label}" class="cb-num cb-right">${m(x[k])}</td>`).join("") + "</tr>");
-  const tbl = (title, first, list, name) => `<section class="cb-card"><h2 class="cb-h2">${title}</h2><table class="cb-table"><thead><tr><th>${first}</th>` +
-    `<th class="cb-right">Consultation</th><th class="cb-right">Penalty</th><th class="cb-right">Total</th></tr></thead><tbody>${rows(list, name).join("")}</tbody></table></section>`;
+  const table = (first, list, name) => `<table class="cb-table"><thead><tr><th>${first}</th>` +
+    `<th class="cb-right">Consultation</th><th class="cb-right">Penalty</th><th class="cb-right">Total</th></tr></thead><tbody>${rows(list, name).join("")}</tbody></table>`;
+  const tbl = (title, first, list, name) => `<section class="cb-card"><h2 class="cb-h2">${title}</h2>${table(first, list, name)}</section>`;
+  const phone = globalThis.matchMedia?.("(max-width: 768px)").matches; // the table is the main view on a phone, a toggle elsewhere
+  const byDay = (list) => `<section class="cb-card cb-chartcard"><h2 class="cb-h2">Revenue by day</h2>
+    <div class="cb-legend"><span><i class="cb-swatch cb-swatch--cons"></i>Consultation</span><span><i class="cb-swatch cb-swatch--pen"></i>Penalty</span></div>
+    <div class="cb-chart-scroll">${revenueChart(list)}</div>
+    <details class="cb-astable"${phone ? " open" : ""}><summary>Show as table</summary>${table("Day", list, (d) => day(d.date))}</details></section>`;
   $("rev-results").innerHTML = `<div class="cb-stack">
     <p class="cb-muted">${day(r.from)} to ${day(r.to)} · run ${esc(fmtWhen(r.at))}.
       Amounts are gross, counted on the scheduled day in clinic time; a deleted visit drops out.</p>
     <div class="cb-stats">${stat("Consultation", r.data.totals.consultation_cents)}${stat("Penalty", r.data.totals.penalty_cents)}${stat("Total", r.data.totals.total_cents)}</div>
     ${tbl("By doctor", "Doctor", r.data.by_doctor, (d) => esc(d.doctor_name))}
-    ${r.data.by_day.length ? tbl("By day", "Day", r.data.by_day, (d) => day(d.date))
+    ${r.data.by_day.length ? byDay(r.data.by_day)
       : `<section class="cb-card">${empty("No revenue in this range", "No completed visits or fees fall on these days.")}</section>`}</div>`;
 }
 
