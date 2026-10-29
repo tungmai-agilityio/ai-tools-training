@@ -129,6 +129,13 @@ if (html.includes("<b>x</b>") || !html.includes("&lt;b&gt;x&lt;/b&gt;")) throw n
 """)
 
 
+def test_money_shows_thousands_separators_and_two_decimals(client):  # T-033 TC-1, TC-2
+    _run_js(client, ["const money"], """
+const want = { 0: "$0.00", 1: "$0.01", 1250: "$12.50", 12000: "$120.00", 99999: "$999.99", 261000: "$2,610.00", 100000000: "$1,000,000.00" };
+for (const [cents, text] of Object.entries(want)) if (money(+cents) !== text) throw new Error(`${cents} -> ${money(+cents)}`);
+""")
+
+
 _CHART_JS = ["function esc", "const money", "const keyDate", "const fmtKey", "function chartStep", "function revenueChart"]
 _CHART_SETUP = """
 globalThis.document = { createElement: () => ({ set textContent(v) { this.innerHTML = String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); } }) };
