@@ -31,6 +31,10 @@ RULES = [
 ]
 # a backslash-newline joins lines only when the backslash itself is unescaped (an odd run of backslashes)
 CONTINUATION = re.compile(r"(?<!\\)((?:\\\\)*)\\\n")
+# an unparseable command is split on shell separators first; only a segment that starts with git and has push on the
+# same line counts, so prose such as `echo it's done and push later` no longer blocks
+UNPARSEABLE = re.compile(r"[ \t]*(?:[A-Za-z_]\w*=\S+[ \t]+)*(?:\S*/)?git\b[^\n]*\bpush\b")
+SEPARATORS = re.compile(r"&&|\|\||[;\n|]")
 
 
 NO_ALIAS = "no git aliases: they hide the real subcommand from this check"
@@ -168,7 +172,7 @@ def main():
                 if any(a.removeprefix("refs/heads/").startswith("claude/") for a in git_args(seg, sub) or []):
                     why = why or NO_CLAUDE_BRANCH
     except Exception:  # unparseable or a hook bug: only exit code 2 blocks, so fail closed for anything push-like
-        if re.search(r"\bgit\b.*\bpush\b", cmd, re.S):
+        if any(UNPARSEABLE.match(part) for part in SEPARATORS.split(cmd)):
             why = "could not parse this git push; simplify the command"
     if re.search(r"\bgit\b.*\bpush\b", cmd, re.S) and "`" in cmd:
         why = why or NO_EXPANSION  # an unquoted backtick splits off its body, so check the raw text
