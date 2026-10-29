@@ -26,7 +26,7 @@ MIN_TIMEOUT = 60
 MAX_TIMEOUT = 1800
 USER_AGENT = "clinic-booking-deploy/1"
 DEFAULT_LABEL = "Production deploy"
-DEFAULT_HINT = ("Rollback: dispatch `Deploy production` with an earlier tag or commit, or follow the rollback "
+DEFAULT_HINT = ("Rollback: dispatch `Deploy Production` with an earlier tag or commit, or follow the rollback "
                 "steps in `docs/deploy-render.md`.")
 
 

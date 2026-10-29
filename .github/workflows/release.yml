@@ -1,4 +1,4 @@
-name: release
+name: Release
 
 # A pushed vX.Y.Z tag drafts the GitHub release from docs/releases/<tag>.md.
 on:

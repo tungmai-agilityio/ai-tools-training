@@ -6,7 +6,7 @@
 | Service | Branch | Purpose | Auto-deploy | `DEMO_SEED` |
 |---|---|---|---|---|
 | `clinic-booking-stag` | `develop` | staging and browser testing | on (every merge) | `1` |
-| `clinic-booking` | `main` | production (releases, tagged `vX.Y.Z`) | off (`Deploy production` only) | unset (off) |
+| `clinic-booking` | `main` | production (releases, tagged `vX.Y.Z`) | off (`Deploy Production` only) | unset (off) |
 
 Both are free web services. Staging redeploys from `develop` by itself; production redeploys only through the approval-gated workflow below. Production holds no demo data: only the admin is seeded from the secrets.
 
@@ -27,7 +27,7 @@ Both are free web services. Staging redeploys from `develop` by itself; producti
 ## Production deploys (approval-gated)
 Production does not deploy when `main` moves: `render.yaml` sets `autoDeploy: false` for `clinic-booking` (Render's current name is `autoDeployTrigger: off`). It deploys only from GitHub:
 
-1. Actions → **Deploy production** → Run workflow, with **Use workflow from: `main`**. The `production` environment only allows deployments from `main`, so a run started from another branch is refused. The workflow first appears on `main` after the release that adds it. Enter a tag on `main` (for example `v0.1.0`) or a commit SHA on `main`.
+1. Actions → **Deploy Production** → Run workflow, with **Use workflow from: `main`**. The `production` environment only allows deployments from `main`, so a run started from another branch is refused. The workflow first appears on `main` after the release that adds it. Enter a tag on `main` (for example `v0.1.0`) or a commit SHA on `main`.
 2. The deploy job targets the GitHub Environment `production`, so it stops at "Waiting for approval". The required reviewer is the maintainer. Self-review prevention is off while there is one reviewer, so the approval records the same person who started the run.
 3. After approval the run calls the Render deploy hook with `ref=<commit>`, then polls production `/health` until it reports that commit (up to 20 minutes; the job times out at 30). It then requires `200` from both `/` and `/health`.
 4. Read the result in the run summary: target commit, service URL, `main` tip and how far ahead it is, deploy id with a Render dashboard link, the `/` and `/health` codes. The service's Events tab shows the deploy itself. Check that the service URL is the production one: the workflow cannot tell staging and production apart if `APP_URL` is wrong.
@@ -53,7 +53,7 @@ The script never prints the hook URL; a failed call reports only the HTTP status
 ## If a merge does not deploy
 **Staging:** open the service's Events tab and look for a deploy with trigger `commit`. If there is none, Render received no push event: check that the Render GitHub app is installed on the repo owner and has access to this repo (a service created from a public repo URL has no webhook), that Auto-Deploy is on for the right branch, then re-save the repo link under Settings > Build & Deploy. Use Manual Deploy meanwhile.
 
-**Production:** a merge to `main` deploys nothing by design. Dispatch **Deploy production** from `main` (above). The environment's branch policy refuses a run started from another branch.
+**Production:** a merge to `main` deploys nothing by design. Dispatch **Deploy Production** from `main` (above). The environment's branch policy refuses a run started from another branch.
 
 ## Rollback
 Rolling back redeploys an earlier commit; it does not revert git history. Use it when a deploy is bad and a fix cannot wait.
