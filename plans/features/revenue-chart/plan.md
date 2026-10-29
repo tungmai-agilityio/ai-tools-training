@@ -1,6 +1,6 @@
 # Plan: Revenue chart and screen layout (proposed T-032, T-033)
 
-**Author:** Claude (draft, for Tung to edit)  **Status:** Draft, not approved  **Decisions:** ADR-0001, ADR-0004, DDR-0003
+**Author:** Claude (draft, for Tung to edit)  **Status:** Approved by Tung 2026-10-29 (one approval covers T-032 and T-033; per-ticket `/plan-work` is skipped)  **Decisions:** ADR-0001, ADR-0004, DDR-0003
 **Design:** [UI design Artifact](https://claude.ai/artifact/VaAYYy7WoVCPzw2wEwS6jp), board 4 "Admin: Revenue report", board 6 "As built"
 **Related:** `plans/features/revenue-report/spec.md` (T-015, API), `plans/archive/T-015.md`, `plans/archive/T-016.md` (current screen)
 
@@ -110,4 +110,4 @@ Workflow once approved: `/create-ticket` for each, `/sprint-prepare` to place th
 3. ~~**Long ranges (more than about 14 days):**~~ **Decided (Tung, 2026-10-28): scroll sideways and drop per-bar labels.**
 4. ~~**Scope and timing:**~~ **Decided (Tung, 2026-10-28): add the tickets into S-002.** Sprint file and ticket `Sprint:` fields are edited only after plan approval, via `/sprint-prepare`; the Sprint ends 2026-11-13, so S-002 capacity needs a check then. Section 8's "outside S-002" wording is superseded.
 5. ~~**Money format:**~~ **Decided (Tung, 2026-10-28): change the shared `money()` helper.** T-033 updates every test string that asserts the old format.
-6. **Design fixes:** update board 4 with the validated penalty colour, seed doctor names and a phone and dark board (recommended).
+6. ~~**Design fixes:**~~ **Decided and done (Tung, 2026-10-29):** board 4 now has the seed doctor names, penalty `#b45309`, a "Show as table" disclosure; new board "4b Revenue on a phone (light and dark)" and a colour note. Boards 4b and the note were not rendered or screenshotted. Still to do after the build: board 6 "As built" screenshots, and the clickable option variants are skipped because every choice is now decided.
