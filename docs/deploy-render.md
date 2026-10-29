@@ -38,7 +38,7 @@ Names to create in GitHub → Settings → Environments → `production` (values
 
 | Name | Kind | Value |
 |---|---|---|
-| `RENDER_DEPLOY_HOOK_URL` | secret | the service's Deploy Hook from Render → Settings. It is a secret (the key is part of the URL): never print or commit it; use **Regenerate Hook** in Render if it is exposed. |
+| `RENDER_DEPLOY_HOOK_URL` | secret | the service's Deploy Hook from Render → Settings. It is a secret (the key is part of the URL): never print or commit it. Use **Regenerate Hook** in Render if it is exposed, then update it in **both** `production` and `production-rollback`. |
 | `APP_URL` | variable | the service URL, `https://<service>.onrender.com`. |
 
 The script never prints the hook URL; a failed call reports only the HTTP status. Keep the gate on the single job: an earlier job in the workflow would run before the approval. Deploys queue (`cancel-in-progress: false`); a third dispatch cancels the one still waiting for approval.
@@ -55,14 +55,21 @@ The script never prints the hook URL; a failed call reports only the HTTP status
 
 **Production:** a merge to `main` deploys nothing by design. Dispatch **Deploy production** from `main` (above). The environment's branch policy refuses a run started from another branch.
 
-## Rollback (manual until T-035)
-Rolling back re-deploys an earlier commit; it does not revert git history. Revert the bad commit in a normal PR afterwards.
+## Rollback
+Rolling back redeploys an earlier commit; it does not revert git history. Use it when a deploy is bad and a fix cannot wait.
 
-1. Pick a tag or commit on `main` that was healthy.
-2. Dispatch **Deploy production** with that ref and approve the run.
-3. Confirm the run summary and `/health` report that commit.
+1. Actions → **Rollback** → Run workflow, **Use workflow from: `develop`**, choose `production` or `staging`, and give a ref that was healthy: a release tag or commit on `main` for production, or a commit on `develop` for staging.
+2. Production runs through the `production-rollback` environment, which has no required reviewer, so the job starts immediately; staging uses the `staging` environment (no reviewer). Only people with write access to the repo can start a run, and the summary names who did.
+3. The run calls the deploy hook with that commit, polls `/health` until it reports it (up to 20 minutes; the job times out at 30), then requires `200` from `/` and `/health`. The summary names the restored commit and deploy ID with a dashboard link.
+4. If the run fails, the site was not verified: redeploy the last good commit in Render from the Events tab, then revert the bad commit in a normal PR.
 
-T-035 adds a `Rollback` workflow and rehearses it on staging. Data on the free plan resets on every deploy (ADR-0005).
+Rollback rebuilds from source; it is slower than reusing a Render build. Dispatching the commit that is already live reports "already live — nothing deployed (no-op)". A production rollback queues behind an in-progress production deploy (one deploy per service). Data on the free plan resets on every deploy (ADR-0005).
+
+Names to create: `production-rollback` — secret `RENDER_DEPLOY_HOOK_URL` (the production hook), variable `APP_URL` (the production URL), **no required reviewer**, branch policy `develop`. `staging` — its own `RENDER_DEPLOY_HOOK_URL` and `APP_URL`, no reviewer, branch policy `develop`. Values never go in the repo.
+
+A staging rollback is temporary: the next merge to `develop` redeploys staging from its branch (staging keeps auto-deploy).
+
+**Staging rehearsal:** pending — record the date, the two commits (A deployed, then B, then roll back to A), the duration and the outcome here after running it.
 
 ## Smoke test result (2026-10-28)
 Service: `https://ai-tools-training.onrender.com/`. Passed: `/health` 200; `/` and static files over HTTPS; CSP header present; `/appointments` 401 without a session; wrong login 401; admin sign-in works; the seeded demo appointments are listed (a maintainer). Not yet verified: wake time after 15 minutes idle, and the data reset after a spin-down.

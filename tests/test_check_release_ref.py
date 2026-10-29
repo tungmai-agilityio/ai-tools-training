@@ -1,4 +1,4 @@
-"""scripts/check_release_ref.sh resolves a ref and refuses anything that is not on main (T-034)."""
+"""scripts/check_release_ref.sh resolves a ref and refuses anything that is not on the requested branch (T-034, T-035)."""
 
 import subprocess
 from pathlib import Path
@@ -29,8 +29,9 @@ def _repos(tmp_path):
     return work, runner
 
 
-def _run(runner, ref):
-    return subprocess.run(["bash", str(SCRIPT), ref], cwd=runner, capture_output=True, text=True)
+def _run(runner, ref, branch=None):
+    command = ["bash", str(SCRIPT), ref] + ([branch] if branch else [])
+    return subprocess.run(command, cwd=runner, capture_output=True, text=True)
 
 
 def test_lightweight_tag_on_main_resolves_to_its_commit(tmp_path):
@@ -107,3 +108,48 @@ def test_padded_ref_is_trimmed(tmp_path):
 
     assert run.returncode == 0, run.stderr
     assert run.stdout.strip() == expected
+
+
+def test_ref_is_checked_against_the_requested_branch(tmp_path):
+    work, runner = _repos(tmp_path)
+    _git(work, "checkout", "-q", "-b", "develop")
+    (work / "b.txt").write_text("y\n")
+    _git(work, "add", "-A")
+    _git(work, "commit", "-q", "-m", "develop only")
+    _git(work, "push", "-q", "origin", "develop")
+    dev_sha = _git(work, "rev-parse", "develop")
+    assert dev_sha != _git(work, "rev-parse", "main")
+
+    accepted = _run(runner, dev_sha, "develop")
+    refused = _run(runner, dev_sha)  # defaults to main
+
+    assert accepted.returncode == 0, accepted.stderr
+    assert accepted.stdout.strip() == dev_sha
+    assert refused.returncode == 1
+    assert "not on main" in refused.stderr
+
+
+def test_tag_on_develop_is_refused_for_main(tmp_path):
+    work, runner = _repos(tmp_path)
+    _git(work, "checkout", "-q", "-b", "develop")
+    (work / "b.txt").write_text("y\n")
+    _git(work, "add", "-A")
+    _git(work, "commit", "-q", "-m", "develop only")
+    _git(work, "tag", "v0.3.0")
+    _git(work, "push", "-q", "origin", "develop", "--tags")
+
+    run = _run(runner, "v0.3.0")
+
+    assert run.returncode == 1
+    assert "not on main" in run.stderr
+
+
+def test_option_like_branch_is_refused_without_running_anything(tmp_path):
+    _, runner = _repos(tmp_path)
+    marker = tmp_path / "MARK"
+
+    run = _run(runner, "v0.1.0", f"--upload-pack=touch{marker}")
+
+    assert run.returncode == 1
+    assert "invalid branch" in run.stderr
+    assert not marker.exists()

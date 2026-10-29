@@ -21,7 +21,7 @@
 | Slots, hours, timezones | `tests/test_scheduling.py` |
 | SQLite persistence | `tests/test_persistence.py` |
 | Health probe | `tests/test_health.py` |
-| Deploy tooling: hook, ref guard, workflow config | `tests/test_deploy_production.py`, `tests/test_check_release_ref.py`, `tests/test_deploy_config.py` |
+| Deploy tooling: hook, ref guard, workflow config | `tests/test_deploy_production.py`, `tests/test_check_release_ref.py`, `tests/test_deploy_config.py`, `tests/test_rollback_config.py` |
 | HTML served, frontend wiring | `tests/test_frontend.py` |
 | Browser tests and screenshots (Playwright) | `tests/test_ui_browser.py` |
 

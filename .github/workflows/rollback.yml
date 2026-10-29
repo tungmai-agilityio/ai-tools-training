@@ -1,0 +1,70 @@
+name: Rollback
+
+# Restores an earlier commit by redeploying it through the Render hook; it does not revert git history.
+# Runs from develop so the tooling is reviewed code. The production path targets `production-rollback`, which has
+# no required reviewer: a rollback is the faster path (decided 2026-10-29) and the summary records who ran it.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Where to roll back
+        required: true
+        type: choice
+        default: staging
+        options: [staging, production]
+      ref:
+        description: Earlier tag or commit that was deployed successfully
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# one deploy per service: a production rollback shares the deploy-production queue instead of racing it
+# (Render runs one deploy at a time and answers 202 for the other, which would time the run out)
+concurrency:
+  group: ${{ inputs.environment == 'production' && 'deploy-production' || 'rollback-staging' }}
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment:
+      # production needs the no-reviewer `production-rollback`; staging has no reviewer either (T-036 AC-7)
+      name: ${{ inputs.environment == 'production' && 'production-rollback' || 'staging' }}
+      url: ${{ vars.APP_URL }}
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v7
+        with:
+          ref: develop  # the rollback tooling is the default branch's reviewed code, never the restored commit
+          fetch-depth: 0  # the guard resolves the input ref and checks it is on the target branch
+          persist-credentials: false
+
+      - name: Resolve the ref and check it is on the target branch
+        id: target
+        env:
+          REF: ${{ inputs.ref }}
+          BRANCH: ${{ inputs.environment == 'production' && 'main' || 'develop' }}
+        run: |
+          sha=$(bash scripts/check_release_ref.sh "$REF" "$BRANCH")
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger the rollback and verify it
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          COMMIT_SHA: ${{ steps.target.outputs.sha }}
+          ACTOR: ${{ github.actor }}
+          DEPLOY_LABEL: Rollback (${{ inputs.environment }})
+          SUMMARY_HINT: Redeploy manually in Render from the Events tab if this failed, then revert the bad commit in a PR.
+          TIMEOUT_SECONDS: "1200"
+        run: python3 scripts/deploy_production.py
+
+      # the step summary is not published when the job is cancelled, so a red run must still explain itself
+      - name: Note a missing summary
+        if: always()
+        run: |
+          [ -s "$GITHUB_STEP_SUMMARY" ] || echo "The rollback script wrote no summary; see the log above." >> "$GITHUB_STEP_SUMMARY"
