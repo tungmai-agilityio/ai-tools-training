@@ -1,6 +1,6 @@
 # Plan: Hooks as approval gates + CI/CD triage
 
-**Author:** Claude (draft, for maintainer edit)  **Status:** Draft
+**Author:** Claude (draft, for maintainer edit)  **Status:** Implemented (T-029 to T-031 closed). Gates for push, merge, tag, branch delete and data are planned in [approval-gates-rollback](../approval-gates-rollback/plan.md), which reverses the "leave pushes to the classifier" decision.
 Approved in plan mode, 2026-10-28. Draft, Claude-assisted, human-edited. No tickets created yet.
 
 ## Context
