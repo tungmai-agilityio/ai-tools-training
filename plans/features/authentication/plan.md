@@ -1,6 +1,6 @@
 # Plan: Authentication (T-019 to T-023, sprint S-002)
 
-**Author:** Claude (draft, for maintainer edit)  **Status:** Approved (2026-10-27)  **Spec:** [spec.md](spec.md)  **Sprint:** [S-002](../../sprints/S-002.md)  **Decisions:** ADR-0001 to ADR-0003, DDR-0001 to DDR-0003
+**Author:** Claude (draft, for maintainer edit)  **Status:** Implemented (T-019 to T-023 closed; approved 2026-10-27)  **Spec:** [spec.md](spec.md)  **Sprint:** [S-002](../../sprints/S-002.md)  **Decisions:** ADR-0001 to ADR-0003, DDR-0001 to DDR-0003
 
 One approval of this file covers the whole feature: the per-ticket `/plan-work` step is skipped, each ticket's `## Plan` section points here and is set to `**Plan:** Approved`. Requirement changes still go back to `/create-ticket`; anything outside this plan needs a new question to a maintainer.
 

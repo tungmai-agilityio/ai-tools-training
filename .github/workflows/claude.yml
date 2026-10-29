@@ -1,32 +1,43 @@
 name: Claude
+
+# Answer-only: `assistant` replies to @claude mentions on comments and reviews. It cannot edit files or push; do
+# fixes locally. Only owners, members and collaborators can start it. Issue bodies do not trigger it; comment instead.
+# The security review runs separately in security.yml.
 on:
   issue_comment:
     types: [created]
   pull_request_review_comment:
     types: [created]
-  issues:
-    types: [opened, assigned]
   pull_request_review:
     types: [submitted]
 
+permissions:
+  contents: read
+
 jobs:
-  claude:
+  assistant:
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association || github.event.review.author_association) &&
+      ((github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')))
     runs-on: ubuntu-latest
+    continue-on-error: true # an answer-only job must not fail the run, e.g. when the subscription usage limit is hit
+    timeout-minutes: 15
     permissions:
-      contents: write
+      contents: read
       pull-requests: write
       issues: write
-      id-token: write
       actions: read # lets Claude read CI results on PRs
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 1
+          persist-credentials: false
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          claude_args: >-
+            --allowedTools "Read,Glob,Grep,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*),Bash(gh issue view:*),Bash(gh run view:*)"
+            --disallowedTools "Edit,Write,WebFetch,WebSearch,Bash(git push:*)"

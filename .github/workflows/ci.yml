@@ -1,15 +1,14 @@
 
-name: Tests
+name: CI
 
-# Docs and planning files cannot change a test result, so a change to only these files skips the run.
-# Hooks (.claude/), workflows, scripts/, requirements and render.yaml still run it.
+# The `tests` job is a required check, so it must report on every PR. Docs and planning files cannot change a test
+# result, so when only these files change the job passes in seconds (scripts/ci_needs_tests.sh decides; only an explicit
+# full=false skips the tests, any doubt runs everything). Keep the job id `tests`, with no `name:` or matrix: the rulesets require that check name.
 on:
   pull_request:
-    branches: [develop]
-    paths-ignore: ["**.md", "docs/**", "plans/**", ".github/ISSUE_TEMPLATE/**"]
+    branches: [develop, main]
   push:
     branches: [develop]
-    paths-ignore: ["**.md", "docs/**", "plans/**", ".github/ISSUE_TEMPLATE/**"]
 
 permissions:
   contents: read
@@ -26,18 +25,36 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # the scope check diffs against the base commit
+
+      # on a PR the checkout is the merge commit, so HEAD^1 is the base tip and the diff is exactly the PR's change
+      - name: Decide whether the full run is needed
+        id: scope
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && 'HEAD^1' || github.event.before }}
+        shell: bash  # pipefail: a missing or broken script fails the step instead of silently skipping the tests
+        run: bash scripts/ci_needs_tests.sh "$BASE" HEAD | tee -a "$GITHUB_OUTPUT"
 
       - name: Set up Python
+        if: steps.scope.outputs.full != 'false'
         uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: requirements*.txt
 
+      # compileall needs no dependencies: fail on a syntax error before the slow install
+      - name: Lint
+        if: steps.scope.outputs.full != 'false'
+        run: make lint
+
       - name: Install dependencies
+        if: steps.scope.outputs.full != 'false'
         run: python -m pip install -r requirements-dev.txt
 
       - name: Cache Playwright browsers
+        if: steps.scope.outputs.full != 'false'
         uses: actions/cache@v6
         id: browsers
         with:
@@ -45,12 +62,13 @@ jobs:
           key: playwright-chromium-${{ hashFiles('requirements-dev.txt') }}
 
       - name: Install Chromium
-        if: steps.browsers.outputs.cache-hit != 'true'
+        if: steps.scope.outputs.full != 'false' && steps.browsers.outputs.cache-hit != 'true'
         run: playwright install chromium
 
       # The apt mirror once stalled this step for 643s of an 11m33s run (the other runs took ~25s), so cap each
       # attempt and retry once instead of waiting it out.
       - name: Install Chromium system dependencies
+        if: steps.scope.outputs.full != 'false'
         timeout-minutes: 6
         run: |
           for attempt in 1 2; do
@@ -59,10 +77,11 @@ jobs:
           exit 1
 
       - name: Run tests
+        if: steps.scope.outputs.full != 'false'
         run: pytest -q
 
       - name: Upload screenshots
-        if: always()
+        if: always() && steps.scope.outputs.full != 'false'
         uses: actions/upload-artifact@v7
         with:
           name: screenshots

@@ -116,7 +116,7 @@ globalThis.fetch = async () => ({ ok: false, status: 403, statusText: "Forbidden
 
 
 def test_revenue_report_renders_server_totals_and_escapes_doctor_names(client):
-    _run_js(client, ["function esc", "const money", "const CLINIC_TZ", "const fmtDay", "const fmtTime", "const fmtWhen", "const keyDate", "const fmtKey", "function renderRevenue"], """
+    _run_js(client, ["function esc", "const money", "const CLINIC_TZ", "const fmtDay", "const fmtTime", "const fmtWhen", "const keyDate", "const fmtKey", "function chartStep", "function revenueChart", "function renderRevenue"], """
 globalThis.document = { createElement: () => ({ set textContent(v) { this.innerHTML = String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); } }) };
 const out = {};
 globalThis.$ = () => out;
@@ -126,6 +126,64 @@ renderRevenue({ from: "2026-10-01", to: "2026-10-13", at: Date.UTC(2026, 9, 13, 
 const html = out.innerHTML;
 if (!html.includes("$399.97")) throw new Error("total not shown");
 if (html.includes("<b>x</b>") || !html.includes("&lt;b&gt;x&lt;/b&gt;")) throw new Error("doctor name not escaped");
+""")
+
+
+def test_money_shows_thousands_separators_and_two_decimals(client):  # T-033 TC-1, TC-2
+    _run_js(client, ["const money"], """
+const want = { 0: "$0.00", 1: "$0.01", 1250: "$12.50", 12000: "$120.00", 99999: "$999.99", 261000: "$2,610.00", 100000000: "$1,000,000.00" };
+for (const [cents, text] of Object.entries(want)) if (money(+cents) !== text) throw new Error(`${cents} -> ${money(+cents)}`);
+""")
+
+
+_CHART_JS = ["function esc", "const money", "const keyDate", "const fmtKey", "function chartStep", "function revenueChart"]
+_CHART_SETUP = """
+globalThis.document = { createElement: () => ({ set textContent(v) { this.innerHTML = String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); } }) };
+const day = (date, c, p) => ({ date, consultation_cents: c, penalty_cents: p, total_cents: c + p });
+const count = (s, re) => (s.match(re) || []).length;
+"""
+
+
+def test_revenue_chart_draws_one_stacked_bar_per_day_with_totals(client):  # T-032 TC-1, TC-2, TC-4
+    _run_js(client, _CHART_JS, _CHART_SETUP + """
+const svg = revenueChart([day("2026-10-12", 48000, 0), day("2026-10-13", 36000, 6000), day("2026-10-15", 42000, 12000)]);
+if (count(svg, /class="c-cons"/g) !== 3) throw new Error("consultation bars");
+if (count(svg, /class="c-pen"/g) !== 2) throw new Error("penalty segments only on days with a penalty");
+for (const t of ["$480", "$420", "$540"]) if (!svg.includes(`>${t}<`)) throw new Error("missing total label " + t);
+if (!svg.includes('role="img"') || !/aria-label="[^"]*\\$480[^"]*\\$420[^"]*\\$540/.test(svg)) throw new Error("aria-label");
+if (!svg.includes("Tue 13 Oct") ) throw new Error("day label");
+""")
+
+
+def test_revenue_chart_is_empty_without_days_and_drops_labels_on_long_ranges(client):  # TC-3, TC-5
+    _run_js(client, _CHART_JS, _CHART_SETUP + """
+if (revenueChart([]) !== "") throw new Error("empty by_day must draw nothing");
+const many = Array.from({ length: 20 }, (_, i) => day(`2026-09-${String(i + 1).padStart(2, "0")}`, 10000, 0));
+const svg = revenueChart(many);
+if (count(svg, /class="c-cons"/g) !== 20) throw new Error("all bars drawn");
+if (count(svg, /class="c-tot"/g) !== 0) throw new Error("total labels must be dropped above 14 days");
+""")
+
+
+def test_revenue_chart_escapes_every_printed_value(client):  # T-032 TC-7
+    # fmtKey and money only return locale text today; stub them with markup so a dropped esc() shows up.
+    names = [n for n in _CHART_JS if n not in ("const money", "const fmtKey")]
+    _run_js(client, names, _CHART_SETUP + """
+const money = () => "<i>m</i>", fmtKey = () => "<b>x</b>";
+const svg = revenueChart([day("2026-10-12", 48000, 6000), day("2026-10-13", 100, 0)]);
+if (/<b>|<i>/.test(svg)) throw new Error("unescaped markup in the chart: " + svg);
+if (!svg.includes("&lt;b&gt;x&lt;/b&gt;")) throw new Error("labels missing");
+""")
+
+
+def test_revenue_chart_axis_steps_are_whole_dollars_and_geometry_is_finite(client):  # T-032 TC-8
+    _run_js(client, _CHART_JS, _CHART_SETUP + """
+for (const c of [0, 1, 999, 1000, 99999, 123456]) {
+  const s = chartStep(c);
+  if (s % 100 !== 0 || s < 1000 || Math.ceil(c / s) > 5) throw new Error(`step ${s} for ${c}`);
+}
+const svg = revenueChart([day("2026-10-12", 1, 0), day("2026-10-13", 99999, 0)]);
+if (/NaN|Infinity/.test(svg)) throw new Error("bad geometry");
 """)
 
 

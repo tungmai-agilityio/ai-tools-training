@@ -1,4 +1,4 @@
-name: release
+name: Release
 
 # A pushed vX.Y.Z tag drafts the GitHub release from docs/releases/<tag>.md.
 on:
@@ -12,7 +12,9 @@ jobs:
   draft:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false  # gh drafts the release with GH_TOKEN, so git credentials are not needed
       - name: Draft release
         env:
           GH_TOKEN: ${{ github.token }}

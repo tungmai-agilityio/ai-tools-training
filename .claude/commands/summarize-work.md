@@ -16,7 +16,7 @@ echo "Window starts: $S"; echo
 echo "Commits on all branches, oldest first:"
 git log --all --reverse --since="$S" --format='%h %ad %an | %s' --date=format:'%a %H:%M'; echo
 echo "Merged into develop (origin, just fetched):"
-git log origin/develop --merges --first-parent --since="$S" --format='%h %s'; echo
+git log origin/develop --first-parent --since="$S" --format='%h %s'; echo
 echo "Files touched:"
 git log --all --since="$S" --name-only --format= | sort | uniq -c | sort -rn | head -15
 ```

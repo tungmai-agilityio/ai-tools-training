@@ -1,6 +1,6 @@
 # Plan: Render free-tier test hosting
 
-**Author:** Claude (draft, for maintainer edit)  **Status:** Draft, all questions answered, awaiting maintainer approval
+**Author:** Claude (draft, for maintainer edit)  **Status:** Implemented (T-028 closed)
 Draft, Claude-assisted, human-edited. No code, no accounts, no deploy until a maintainer approves. Open questions are asked one at a time; answers are folded into section 7.
 
 ## 1. Context

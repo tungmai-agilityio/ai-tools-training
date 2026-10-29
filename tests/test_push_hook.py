@@ -207,3 +207,19 @@ def test_no_allow_without_a_project_dir(tmp_path):
 def test_no_allow_for_python_m_when_a_local_pip_shadows_it(tmp_path, shadow):
     (tmp_path / shadow).write_text("")
     assert "allow" not in _run("python -m pip install -r requirements.txt", tmp_path).stdout
+
+
+@pytest.mark.parametrize("cmd", [
+    "git status; echo it's done and push later",
+    "cat <<'EOF'\nmaintainer's note: push later\nEOF\ngit status",
+])
+def test_prose_push_in_an_unparseable_command_is_allowed(tmp_path, cmd):
+    assert not _blocked(cmd, _repo(tmp_path, "feat/T-015"))
+
+
+@pytest.mark.parametrize("cmd", [
+    "echo it's; git push --force origin x",
+    "echo it's\n git push origin develop",
+])
+def test_a_real_push_in_an_unparseable_command_is_still_blocked(tmp_path, cmd):
+    assert _blocked(cmd, _repo(tmp_path, "feat/T-015"))
