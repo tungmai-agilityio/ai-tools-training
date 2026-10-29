@@ -12,5 +12,5 @@ Reference: `docs/references/git-conventions.md`. **Ask before each push and each
 
 **Finish** (after GitHub approval)
 5. If `develop` moved and GitHub reports a conflict, rebase (step 2) and push with `--force-with-lease`, then re-request approval.
-6. **Go-ahead → merge** with `gh pr merge --merge --delete-branch`. GitHub closes the issue through `Closes #N`. Never merge or commit into `develop` locally.
-7. Pull `develop`, check the merge commit and that the issue closed, and report it with any follow-ups.
+6. **Go-ahead → merge** with `gh pr merge --squash --delete-branch` (squash is the only method the repo allows). A maintainer merging their own PR adds `--admin` (ruleset bypass) only after `gh pr checks` is green and `/review-pr` passed. GitHub closes the issue through `Closes #N`. Never merge or commit into `develop` locally.
+7. Pull `develop`, check the squash commit and that the issue closed, and report it with any follow-ups.

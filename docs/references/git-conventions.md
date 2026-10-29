@@ -47,15 +47,15 @@ Conventional Commits, one line, imperative, lower case, no period, issue number 
 ## Pull requests
 - Title = the commit subject. Description = `.github/pull_request_template.md` (repo root), filled in, with `Closes #N`. If the ticket has a Jira key, add a `Jira: CLB-12` line (see the comment in the template); otherwise leave it out.
 - Before opening: `pytest` is green and the diff is only the issue.
-- At least one approval. The author resolves every thread or answers it.
-- Merge with a merge commit (`Merge pull request #M from <user>/fix/31-...`) and delete the source branch.
+- At least one approval. The author resolves every thread or answers it. A maintainer may merge their own PR with the ruleset bypass (`gh pr merge --squash --admin`) only after `/review-pr` passed and `gh pr checks` is green: the bypass also skips the required `tests` check, so this is a rule of the team.
+- Merge with **squash merge only** and delete the source branch. The squash subject is the PR title plus GitHub's `(#M)`, so a commit may read `fix: x (#31) (#45)`; that is expected. Merge and rebase merges are off (the rulesets require linear history).
 
 ## Conflicts
 - Rebase your branch on `develop` (`git fetch && git rebase origin/develop`), resolve, re-run `pytest`, then push with `--force-with-lease`.
 - When both sides changed behaviour, keep both and ask the other author. Never drop someone's test to make it merge.
 
 ## Releases
-- `main` holds released code only. It moves through one PR from `develop` (`release: vX.Y.Z`), merged **without** deleting `develop`.
+- `main` holds released code only. It moves through one PR from `develop` (`release: vX.Y.Z`), squash-merged like any PR but **without** deleting `develop`. `tests` runs on that PR. Each squash adds a commit to `main` that `develop` does not have, so the PR's file list may grow over time; merging still works.
 - Release notes live in `docs/releases/vX.Y.Z.md`, merged into `develop` first on a `docs/release-vX.Y.Z` branch.
 - After the merge, tag `main` with an annotated `vX.Y.Z` tag. First release is `v0.1.0`; `feat` bumps minor, otherwise patch. Steps: `/release`.
 

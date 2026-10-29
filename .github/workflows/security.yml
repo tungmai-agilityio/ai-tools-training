@@ -2,7 +2,12 @@ name: Claude Security Review
 
 on:
   pull_request:
-    types: [opened, ready_for_review, reopened] # add `synchronize` to re-review on every push
+    types: [opened, synchronize, ready_for_review, reopened] # advisory comments only, not a required check
+
+# a newer push replaces a review still running for the same PR
+concurrency:
+  group: security-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   review:
