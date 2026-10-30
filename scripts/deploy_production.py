@@ -140,7 +140,7 @@ def verify(app_url: str, retries: int | None = None, delay: float | None = None)
     attempt = 0
     while True:
         codes = {path: _status(_join(app_url, path)) for path in paths}
-        if all(code == 200 for code in codes.values()) or attempt == retries:
+        if all(code == 200 for code in codes.values()) or attempt >= retries:
             return codes
         attempt += 1
         time.sleep(delay)

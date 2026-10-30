@@ -52,8 +52,13 @@ jobs:
           sha=$(bash scripts/check_release_ref.sh "$REF" "$BRANCH")
           # production has no approver, so only an earlier commit than the live one may be restored (never new main code)
           if [ "$BRANCH" = main ]; then
-            live=$(curl -fsS --max-time 15 "${APP_URL%/}/health" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("commit") or "")')
-            git merge-base --is-ancestor "$sha" "$live" 2>/dev/null || { echo "ref $sha is not an ancestor of the live commit '$live'; use Deploy Production for new code" >&2; exit 1; }
+            live=$(curl -fsS --max-time 15 "${APP_URL%/}/health" 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("commit") or "")' 2>/dev/null || true)
+            if ! git cat-file -e "$live^{commit}" 2>/dev/null; then
+              # a crashed app is the reason to roll back: fall back to the main tip and say so
+              echo "Live commit unknown (/health gave '${live}'): the earlier-than-live check used the main tip." >> "$GITHUB_STEP_SUMMARY"
+              live=refs/remotes/origin/main
+            fi
+            git merge-base --is-ancestor "$sha" "$live" || { echo "ref $sha is not an ancestor of the live commit $live; use Deploy Production for new code" >&2; exit 1; }
           fi
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
 

@@ -81,3 +81,19 @@ def test_deploy_workflow_still_requires_approval():  # AC-1, AC-6
     text = DEPLOY.read_text()
 
     assert re.search(r"^\s+name: production\s*$", text, re.MULTILINE)
+
+
+def test_deploy_takes_a_fixed_ref_with_green_ci():
+    text = DEPLOY.read_text()
+
+    assert r"^([0-9a-f]{40}|v[0-9]+\.[0-9]+\.[0-9]+)$" in text
+    assert "gh run list --workflow ci.yml" in text and "--status success" in text
+
+
+def test_ci_runs_on_main_and_release_tags_must_be_on_main():
+    ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
+    release = (ROOT / ".github" / "workflows" / "release.yml").read_text()
+
+    assert "branches: [develop, main]" in ci
+    assert 'tags: ["v[0-9]+.[0-9]+.[0-9]+"]' in release
+    assert "merge-base --is-ancestor" in release and "fetch-depth: 0" in release
