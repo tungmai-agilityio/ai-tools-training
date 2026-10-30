@@ -137,12 +137,13 @@ def verify(app_url: str, retries: int | None = None, delay: float | None = None)
     retries = VERIFY_RETRIES if retries is None else retries
     delay = VERIFY_DELAY if delay is None else delay
     paths = ("/", "/health")
-    for attempt in range(retries + 1):
+    attempt = 0
+    while True:
         codes = {path: _status(_join(app_url, path)) for path in paths}
-        if all(code == 200 for code in codes.values()) or attempt == retries:
+        if all(code == 200 for code in codes.values()) or attempt >= retries:
             return codes
+        attempt += 1
         time.sleep(delay)
-    return codes  # unreachable; keeps type checkers happy
 
 
 def _config() -> tuple[str, str, str, int]:

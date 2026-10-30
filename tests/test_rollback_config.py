@@ -50,10 +50,11 @@ def test_workflow_runs_the_develop_tooling():  # AC-2
     assert re.search(r"^\s+cancel-in-progress:\s*false\s*$", text, re.MULTILINE)
 
 
-def test_production_rollback_shares_the_deploy_queue():  # one deploy per service
+def test_rollback_has_its_own_queue_and_only_restores_earlier_production_commits():
     text = WORKFLOW.read_text()
 
-    assert "group: ${{ inputs.environment == 'production' && 'deploy-production' || 'rollback-staging' }}" in text
+    assert "group: rollback-${{ inputs.environment }}" in text  # a later deploy dispatch cannot cancel a rollback
+    assert "is not an ancestor of the live commit" in text
 
 
 def test_guard_uses_the_branch_for_the_chosen_environment():  # AC-2
@@ -80,3 +81,19 @@ def test_deploy_workflow_still_requires_approval():  # AC-1, AC-6
     text = DEPLOY.read_text()
 
     assert re.search(r"^\s+name: production\s*$", text, re.MULTILINE)
+
+
+def test_deploy_takes_a_fixed_ref_with_green_ci():
+    text = DEPLOY.read_text()
+
+    assert r"^([0-9a-f]{40}|v[0-9]+\.[0-9]+\.[0-9]+)$" in text
+    assert "gh run list --workflow ci.yml" in text and "--status success" in text
+
+
+def test_ci_runs_on_main_and_release_tags_must_be_on_main():
+    ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
+    release = (ROOT / ".github" / "workflows" / "release.yml").read_text()
+
+    assert "branches: [develop, main]" in ci
+    assert 'tags: ["v[0-9]+.[0-9]+.[0-9]+"]' in release
+    assert "merge-base --is-ancestor" in release and "fetch-depth: 0" in release

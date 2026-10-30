@@ -8,12 +8,13 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: Tag or commit on main to deploy
+        description: vX.Y.Z tag or full commit SHA on main to deploy
         required: true
         type: string
 
 permissions:
   contents: read
+  actions: read  # the CI check on the target commit
 
 # deploys queue instead of racing; a third dispatch cancels the one still waiting for approval
 concurrency:
@@ -40,8 +41,13 @@ jobs:
         id: target
         env:
           REF: ${{ inputs.ref }}
+          GH_TOKEN: ${{ github.token }}
         run: |
+          # a fixed ref only: a branch name could move between dispatch and approval
+          [[ $REF =~ ^([0-9a-f]{40}|v[0-9]+\.[0-9]+\.[0-9]+)$ ]] || { echo "ref must be a vX.Y.Z tag or a full commit SHA" >&2; exit 1; }
           sha=$(bash scripts/check_release_ref.sh "$REF")
+          ok=$(gh run list --workflow ci.yml --commit "$sha" --status success --limit 1 --json conclusion --jq length --repo "$GITHUB_REPOSITORY")
+          [ "${ok:-0}" -gt 0 ] || { echo "no successful CI run for $sha" >&2; exit 1; }
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
           echo "main=$(git rev-parse refs/remotes/origin/main)" >> "$GITHUB_OUTPUT"
           echo "ahead=$(git rev-list --count "$sha..refs/remotes/origin/main")" >> "$GITHUB_OUTPUT"
