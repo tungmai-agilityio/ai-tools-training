@@ -20,10 +20,9 @@ on:
 permissions:
   contents: read
 
-# one deploy per service: a production rollback shares the deploy-production queue instead of racing it
-# (Render runs one deploy at a time and answers 202 for the other, which would time the run out)
+# its own queue: sharing deploy-production would let a later dispatch cancel a pending rollback (or a deploy awaiting approval)
 concurrency:
-  group: ${{ inputs.environment == 'production' && 'deploy-production' || 'rollback-staging' }}
+  group: rollback-${{ inputs.environment }}
   cancel-in-progress: false
 
 jobs:
@@ -48,8 +47,14 @@ jobs:
         env:
           REF: ${{ inputs.ref }}
           BRANCH: ${{ inputs.environment == 'production' && 'main' || 'develop' }}
+          APP_URL: ${{ vars.APP_URL }}
         run: |
           sha=$(bash scripts/check_release_ref.sh "$REF" "$BRANCH")
+          # production has no approver, so only an earlier commit than the live one may be restored (never new main code)
+          if [ "$BRANCH" = main ]; then
+            live=$(curl -fsS --max-time 15 "${APP_URL%/}/health" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("commit") or "")')
+            git merge-base --is-ancestor "$sha" "$live" 2>/dev/null || { echo "ref $sha is not an ancestor of the live commit '$live'; use Deploy Production for new code" >&2; exit 1; }
+          fi
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
       - name: Trigger the rollback and verify it

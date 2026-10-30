@@ -50,10 +50,11 @@ def test_workflow_runs_the_develop_tooling():  # AC-2
     assert re.search(r"^\s+cancel-in-progress:\s*false\s*$", text, re.MULTILINE)
 
 
-def test_production_rollback_shares_the_deploy_queue():  # one deploy per service
+def test_rollback_has_its_own_queue_and_only_restores_earlier_production_commits():
     text = WORKFLOW.read_text()
 
-    assert "group: ${{ inputs.environment == 'production' && 'deploy-production' || 'rollback-staging' }}" in text
+    assert "group: rollback-${{ inputs.environment }}" in text  # a later deploy dispatch cannot cancel a rollback
+    assert "is not an ancestor of the live commit" in text
 
 
 def test_guard_uses_the_branch_for_the_chosen_environment():  # AC-2
